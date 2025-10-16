@@ -116,4 +116,17 @@ export class DatabaseClient {
     if (!this.queries) throw new Error("Database not initialized");
     return this.queries.getAllMetricValues();
   }
+
+  getMetricTimeSeries(metricName: string): Array<
+    MetricValue & {
+      metric_name: string;
+      commit_sha: string;
+      branch: string;
+      run_number: number;
+      build_timestamp: string;
+    }
+  > {
+    if (!this.queries) throw new Error("Database not initialized");
+    return this.queries.getMetricTimeSeries(metricName);
+  }
 }

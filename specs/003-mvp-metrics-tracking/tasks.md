@@ -142,22 +142,35 @@
 - [ ] T042 [P] [US3] Write unit test for sparse data handling in tests/unit/reporter/generator.test.ts
 - [ ] T043 [US3] Write integration test for report generation workflow in tests/integration/reporting.test.ts
 - [ ] T043a [US3] Write unit test for XSS sanitization in metric names/descriptions in tests/unit/reporter/templates.test.ts
-- [ ] T043b [US3] Write unit test for summary statistics calculation (min/max/avg/trend) in tests/unit/reporter/generator.test.ts
+- [x] T043b [US3] Write unit test for summary statistics calculation (min/max/avg/trend) in tests/unit/reporter/generator.test.ts
 - [ ] T043c [US3] Write unit test for responsive breakpoint data attributes in tests/unit/reporter/templates.test.ts
 
 ### Implementation for User Story 3
 
-- [ ] T044 [P] [US3] Implement time-series query functions in src/database/queries.ts
-- [ ] T045 [P] [US3] Implement Chart.js configuration builder in src/reporter/charts.ts
+- [x] T044 [P] [US3] Implement time-series query functions in src/database/queries.ts
+- [x] T045 [P] [US3] Implement Chart.js configuration builder in src/reporter/charts.ts
 - [ ] T046 [US3] Implement HTML template with Tailwind CSS and embedded Chart.js in src/reporter/templates.ts
 - [ ] T047 [US3] Implement report generator orchestration in src/reporter/generator.ts
 - [ ] T048 [US3] Add error handling for missing/invalid data in src/reporter/generator.ts
 - [ ] T048a [US3] Implement XSS sanitization for user-provided content in src/reporter/templates.ts
-- [ ] T048b [US3] Implement summary statistics calculator (min/max/avg/trend) in src/reporter/generator.ts
+- [x] T048b [US3] Implement summary statistics calculator (min/max/avg/trend) in src/reporter/generator.ts
 - [ ] T048c [US3] Add responsive layout with Tailwind classes (mobile/tablet/desktop) in src/reporter/templates.ts
 - [ ] T048d [US3] Add dark mode support using Tailwind dark: variants in src/reporter/templates.ts
 - [ ] T048e [US3] Add print stylesheet for PDF export in src/reporter/templates.ts
 - [ ] T048f [US3] Add accessibility features (ARIA labels, semantic HTML) in src/reporter/templates.ts
+
+### Visual Acceptance Testing for User Story 3
+
+**Purpose**: Manual quality assurance for HTML template design, usability, and accessibility
+
+- [ ] T048g [US3] Create test fixture: minimal data (unentropy.json + 5 data points) in tests/fixtures/visual-review/minimal/
+- [ ] T048h [US3] Create test fixture: full-featured (4 metrics + 100 data points) in tests/fixtures/visual-review/full-featured/
+- [ ] T048i [US3] Create test fixture: sparse data (2 metrics + 3 data points) in tests/fixtures/visual-review/sparse-data/
+- [ ] T048j [US3] Create test fixture: edge cases (special chars, extreme values) in tests/fixtures/visual-review/edge-cases/
+- [ ] T048k [US3] Implement fixture generation script (generate-fixture command) in scripts/generate-fixture.ts
+- [ ] T048l [US3] Generate HTML reports from all 4 test fixtures
+- [ ] T048m [US3] Manual visual review: Complete all checklist items from contracts/visual-acceptance-criteria.md
+- [ ] T048n [US3] Document review findings and capture screenshots for documentation
 
 **Checkpoint**: HTML reports can be generated from collected data and viewed in browser
 

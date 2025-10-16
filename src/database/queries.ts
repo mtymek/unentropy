@@ -127,4 +127,39 @@ export class DatabaseQueries {
     `);
     return stmt.all() as Array<MetricValue & { metric_name: string }>;
   }
+
+  getMetricTimeSeries(metricName: string): Array<
+    MetricValue & {
+      metric_name: string;
+      commit_sha: string;
+      branch: string;
+      run_number: number;
+      build_timestamp: string;
+    }
+  > {
+    const db = this.client.getConnection();
+    const stmt = db.prepare(`
+      SELECT 
+        mv.*,
+        md.name as metric_name,
+        bc.commit_sha,
+        bc.branch,
+        bc.run_number,
+        bc.timestamp as build_timestamp
+      FROM metric_values mv
+      JOIN metric_definitions md ON mv.metric_id = md.id
+      JOIN build_contexts bc ON mv.build_id = bc.id
+      WHERE md.name = ?
+      ORDER BY bc.timestamp ASC
+    `);
+    return stmt.all(metricName) as Array<
+      MetricValue & {
+        metric_name: string;
+        commit_sha: string;
+        branch: string;
+        run_number: number;
+        build_timestamp: string;
+      }
+    >;
+  }
 }
