@@ -6,8 +6,8 @@ on:
   pull_request:
 
 jobs:
-  test:
-    name: Test
+  test-bun:
+    name: Test (Bun)
     runs-on: ubuntu-latest
 
     steps:
@@ -36,3 +36,22 @@ jobs:
 
       - name: Build
         run: bun run build
+
+  test-node:
+    name: Test (Node.js)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
