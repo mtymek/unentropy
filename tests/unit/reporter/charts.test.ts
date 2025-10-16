@@ -42,7 +42,7 @@ describe("buildChartConfig - numeric metrics", () => {
     expect(config.type).toBe("line");
     expect(config.data.labels).toHaveLength(3);
     expect(config.data.datasets).toHaveLength(1);
-    expect(config.data.datasets[0]!!.label).toBe("test-coverage");
+    expect(config.data.datasets[0]!.label).toBe("test-coverage");
   });
 
   test("includes all data points in correct order", () => {

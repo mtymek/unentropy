@@ -12,7 +12,7 @@ export interface CommandResult {
 export async function runCommand(
   command: string,
   env: Record<string, string>,
-  timeoutMs: number = 60000
+  timeoutMs = 60000
 ): Promise<CommandResult> {
   const startTime = Date.now();
 

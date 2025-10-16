@@ -102,7 +102,7 @@ export class DatabaseClient {
     return this.queries.getMetricDefinition(name);
   }
 
-  getMetricValues(buildId: number): Array<MetricValue & { metric_name: string }> {
+  getMetricValues(buildId: number): (MetricValue & { metric_name: string })[] {
     if (!this.queries) throw new Error("Database not initialized");
     return this.queries.getMetricValuesByBuildId(buildId);
   }
@@ -112,20 +112,18 @@ export class DatabaseClient {
     return this.queries.getAllMetricDefinitions();
   }
 
-  getAllMetricValues(): Array<MetricValue & { metric_name: string }> {
+  getAllMetricValues(): (MetricValue & { metric_name: string })[] {
     if (!this.queries) throw new Error("Database not initialized");
     return this.queries.getAllMetricValues();
   }
 
-  getMetricTimeSeries(metricName: string): Array<
-    MetricValue & {
+  getMetricTimeSeries(metricName: string): (MetricValue & {
       metric_name: string;
       commit_sha: string;
       branch: string;
       run_number: number;
       build_timestamp: string;
-    }
-  > {
+    })[] {
     if (!this.queries) throw new Error("Database not initialized");
     return this.queries.getMetricTimeSeries(metricName);
   }

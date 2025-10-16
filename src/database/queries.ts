@@ -99,7 +99,7 @@ export class DatabaseQueries {
     return stmt.get(metricId, buildId) as MetricValue | undefined;
   }
 
-  getMetricValuesByBuildId(buildId: number): Array<MetricValue & { metric_name: string }> {
+  getMetricValuesByBuildId(buildId: number): (MetricValue & { metric_name: string })[] {
     const db = this.client.getConnection();
     const stmt = db.prepare(`
       SELECT mv.*, md.name as metric_name
@@ -108,7 +108,7 @@ export class DatabaseQueries {
       WHERE mv.build_id = ?
       ORDER BY md.name
     `);
-    return stmt.all(buildId) as Array<MetricValue & { metric_name: string }>;
+    return stmt.all(buildId) as (MetricValue & { metric_name: string })[];
   }
 
   getAllMetricDefinitions(): MetricDefinition[] {
@@ -117,7 +117,7 @@ export class DatabaseQueries {
     return stmt.all() as MetricDefinition[];
   }
 
-  getAllMetricValues(): Array<MetricValue & { metric_name: string }> {
+  getAllMetricValues(): (MetricValue & { metric_name: string })[] {
     const db = this.client.getConnection();
     const stmt = db.prepare(`
       SELECT mv.*, md.name as metric_name
@@ -125,18 +125,16 @@ export class DatabaseQueries {
       JOIN metric_definitions md ON mv.metric_id = md.id
       ORDER BY mv.build_id, md.name
     `);
-    return stmt.all() as Array<MetricValue & { metric_name: string }>;
+    return stmt.all() as (MetricValue & { metric_name: string })[];
   }
 
-  getMetricTimeSeries(metricName: string): Array<
-    MetricValue & {
+  getMetricTimeSeries(metricName: string): (MetricValue & {
       metric_name: string;
       commit_sha: string;
       branch: string;
       run_number: number;
       build_timestamp: string;
-    }
-  > {
+    })[] {
     const db = this.client.getConnection();
     const stmt = db.prepare(`
       SELECT 
@@ -152,14 +150,12 @@ export class DatabaseQueries {
       WHERE md.name = ?
       ORDER BY bc.timestamp ASC
     `);
-    return stmt.all(metricName) as Array<
-      MetricValue & {
+    return stmt.all(metricName) as (MetricValue & {
         metric_name: string;
         commit_sha: string;
         branch: string;
         run_number: number;
         build_timestamp: string;
-      }
-    >;
+      })[];
   }
 }

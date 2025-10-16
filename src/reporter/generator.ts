@@ -1,5 +1,12 @@
 import type { DatabaseClient } from "../database/client";
 import type { MetricType } from "../database/types";
+import { buildChartConfig } from "./charts";
+import {
+  generateHtmlReport,
+  type ReportData,
+  type ReportMetadata,
+  type MetricReportData,
+} from "./templates";
 
 export interface TimeSeriesDataPoint {
   timestamp: string;
@@ -25,6 +32,11 @@ export interface SummaryStats {
   average: number | null;
   trendDirection: "up" | "down" | "stable" | null;
   trendPercent: number | null;
+}
+
+export interface GenerateReportOptions {
+  repository?: string;
+  metricNames?: string[];
 }
 
 export function getMetricTimeSeries(db: DatabaseClient, metricName: string): TimeSeriesData {
