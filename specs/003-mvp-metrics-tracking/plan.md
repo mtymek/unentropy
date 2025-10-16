@@ -1,0 +1,140 @@
+# Implementation Plan: MVP Metrics Tracking System
+
+**Branch**: `003-mvp-metrics-tracking` | **Date**: Thu Oct 16 2025 | **Spec**: [spec.md](./spec.md)
+**Input**: Feature specification from `/specs/003-mvp-metrics-tracking/spec.md`
+
+**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
+
+## Summary
+
+Build a serverless metrics tracking system that allows developers to define custom metrics via `unentropy.json`, automatically collect those metrics during CI/CD runs through a GitHub Action, store data in SQLite, and generate self-contained HTML reports with trend visualizations using Chart.js.
+
+## Technical Context
+
+**Language/Version**: TypeScript 5.x / Node.js 20.x (matches existing project setup)  
+**Primary Dependencies**: 
+- `better-sqlite3` for database operations
+- `@actions/core` and `@actions/github` for GitHub Actions integration
+- Chart.js (via CDN) for HTML report visualizations
+- `zod` for configuration validation
+
+**Storage**: SQLite database file stored as GitHub Actions artifact (persisted across workflow runs)  
+**Testing**: Existing test setup (npm test with unit and integration tests)  
+**Target Platform**: GitHub Actions runners (Ubuntu latest, Node.js 20.x)  
+**Project Type**: Single project (CLI tool / library with GitHub Action wrapper)  
+**Performance Goals**: 
+- Configuration validation: <100ms for typical configs
+- Metric collection: <30 seconds total overhead per CI run
+- Report generation: <10 seconds for 100 data points
+
+**Constraints**: 
+- Must be serverless (no external services)
+- Single-file HTML output (no separate assets)
+- Database must handle concurrent writes from parallel jobs
+- Zero configuration for standard use cases
+
+**Scale/Scope**: 
+- Support 50+ concurrent workflow runs
+- Handle 1000+ metric data points per repository
+- Support 10+ custom metrics per project
+
+## Constitution Check
+
+*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+
+### ✅ I. Serverless Architecture
+**Status**: PASS  
+**Justification**: All components run within GitHub Actions. SQLite database stored as artifact (no external database service). HTML reports generated locally. No servers required.
+
+### ✅ II. Technology Stack Consistency
+**Status**: PASS  
+**Justification**: Using existing Node.js/TypeScript stack. SQLite for storage (as specified). Chart.js for visualization (as specified in dependencies). Consistent with project setup.
+
+### ✅ III. Code Quality Standards
+**Status**: PASS  
+**Justification**: Will use existing TypeScript strict mode, Prettier config, and ESLint setup. Following existing patterns from `src/lib/` structure.
+
+### ✅ IV. Security Best Practices
+**Status**: PASS  
+**Justification**: No secrets handling required for MVP. Database contains only metric data (no sensitive information). User-provided metric collection commands run in isolated CI environment.
+
+### ✅ V. Testing Discipline
+**Status**: PASS  
+**Justification**: Will implement unit tests for configuration parsing, database operations, and report generation. Integration tests for end-to-end workflow. Contract tests for GitHub Action interface.
+
+### ✅ Additional Constraints
+**Status**: PASS  
+**Justification**: Lightweight implementation. Self-contained with no external service dependencies beyond GitHub Actions. Compatible with standard CI/CD environments.
+
+**Overall Gate Status**: ✅ PASS - Proceed to Phase 0
+
+## Project Structure
+
+### Documentation (this feature)
+
+```
+specs/003-mvp-metrics-tracking/
+├── plan.md              # This file (/speckit.plan command output)
+├── research.md          # Phase 0 output (/speckit.plan command)
+├── data-model.md        # Phase 1 output (/speckit.plan command)
+├── quickstart.md        # Phase 1 output (/speckit.plan command)
+├── contracts/           # Phase 1 output (/speckit.plan command)
+│   ├── config-schema.md       # unentropy.json schema
+│   ├── database-schema.md     # SQLite table definitions
+│   └── action-interface.md    # GitHub Action inputs/outputs
+└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
+```
+
+### Source Code (repository root)
+
+```
+src/
+├── config/
+│   ├── schema.ts           # Zod schema for unentropy.json
+│   ├── loader.ts           # Config file reading and validation
+│   └── types.ts            # TypeScript types for configuration
+├── database/
+│   ├── client.ts           # SQLite connection management
+│   ├── migrations.ts       # Schema initialization
+│   ├── queries.ts          # Data access functions
+│   └── types.ts            # Database entity types
+├── collector/
+│   ├── runner.ts           # Execute metric collection commands
+│   ├── collector.ts        # Main collection orchestration
+│   └── context.ts          # Build context extraction (git SHA, etc.)
+├── reporter/
+│   ├── generator.ts        # HTML report generation
+│   ├── charts.ts           # Chart.js configuration builder
+│   └── templates.ts        # HTML templates
+├── actions/
+│   ├── collect.ts          # GitHub Action entrypoint for collection
+│   └── report.ts           # GitHub Action entrypoint for reporting
+└── index.ts                # Main library exports
+
+tests/
+├── unit/
+│   ├── config/             # Configuration validation tests
+│   ├── database/           # Database operations tests
+│   ├── collector/          # Collection logic tests
+│   └── reporter/           # Report generation tests
+├── integration/
+│   ├── end-to-end.test.ts  # Full workflow tests
+│   └── fixtures/           # Test data and configs
+└── contract/
+    └── action.test.ts      # GitHub Action interface tests
+
+.github/
+└── actions/
+    ├── collect-metrics/
+    │   ├── action.yml      # GitHub Action definition (collection)
+    │   └── dist/           # Compiled action code
+    └── generate-report/
+        ├── action.yml      # GitHub Action definition (reporting)
+        └── dist/           # Compiled action code
+```
+
+**Structure Decision**: Using single project structure (Option 1) as this is a CLI tool/library with GitHub Action wrappers. All components are TypeScript/Node.js. Clear separation of concerns: config parsing, database operations, collection logic, and reporting are independent modules that can be tested separately.
+
+## Complexity Tracking
+
+*No violations detected. All constitution checks passed.*
