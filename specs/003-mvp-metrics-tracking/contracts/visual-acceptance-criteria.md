@@ -304,16 +304,16 @@ Visual acceptance testing ensures the HTML reports meet design, usability, and a
 
 ```bash
 # Generate minimal fixture
-npm run generate-fixture -- --fixture=minimal --output=tests/fixtures/visual-review/minimal/report.html
+bun run generate-fixture -- --fixture=minimal --output=tests/fixtures/visual-review/minimal/report.html
 
 # Generate full-featured fixture
-npm run generate-fixture -- --fixture=full-featured --output=tests/fixtures/visual-review/full-featured/report.html
+bun run generate-fixture -- --fixture=full-featured --output=tests/fixtures/visual-review/full-featured/report.html
 
 # Generate sparse data fixture
-npm run generate-fixture -- --fixture=sparse-data --output=tests/fixtures/visual-review/sparse-data/report.html
+bun run generate-fixture -- --fixture=sparse-data --output=tests/fixtures/visual-review/sparse-data/report.html
 
 # Generate edge cases fixture
-npm run generate-fixture -- --fixture=edge-cases --output=tests/fixtures/visual-review/edge-cases/report.html
+bun run generate-fixture -- --fixture=edge-cases --output=tests/fixtures/visual-review/edge-cases/report.html
 ```
 
 ### Review All Reports

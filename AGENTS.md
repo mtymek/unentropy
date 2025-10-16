@@ -6,11 +6,11 @@ Unentropy is a serverless tool for tracking custom code metrics in CI/CD pipelin
 
 ## Build/Lint/Test Commands
 
-- Build: npm run build
-- Lint: npm run lint
-- Test: npm test
-- Single test: npm test -- --testNamePattern="<test name>"
-- Type check: npm run typecheck
+- Build: bun run build
+- Lint: bun run lint
+- Test: bun test
+- Single test: bun test --testNamePattern="<test name>"
+- Type check: bun run typecheck
 
 ## Code Style Guidelines
 
@@ -24,7 +24,8 @@ Unentropy is a serverless tool for tracking custom code metrics in CI/CD pipelin
 
 ## Additional Notes
 
+- Project uses Bun as the package manager and runtime (NOT npm)
 - Project uses GitHub Actions for CI; no serverless setup needed
 - Follow security best practices; avoid logging secrets
 - Mimic existing code style from src/ and tests/ directories
-- When working on tasks from spec/*/tasks.md, make sure to update the status after completion in that file 
+- When working on tasks from spec/\*/tasks.md, make sure to update the status after completion in that file

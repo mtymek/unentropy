@@ -15,7 +15,7 @@ Follow-up TODOs: RATIFICATION_DATE (original adoption date unknown)
 All components must be serverless and operate within GitHub Actions workflows. No external servers or cloud services required for core functionality.
 
 ### II. Technology Stack Consistency
-Use Node.js/TypeScript for implementation, SQLite for data storage, and Chart.js for report generation. Maintain consistency across the project.
+Use Bun runtime with TypeScript for implementation, SQLite for data storage, and Chart.js for report generation. Use Bun as the package manager (NOT npm). Maintain consistency across the project.
 
 ### III. Code Quality Standards
 Enforce strict TypeScript types, use Prettier for formatting, and avoid unnecessary comments unless explicitly requested. Follow existing code conventions.
