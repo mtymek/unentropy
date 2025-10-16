@@ -11,7 +11,7 @@ Create foundational project scaffolding with TypeScript and Bun runtime to enabl
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.9.3, Bun 1.3  
+**Language/Version**: TypeScript 5.9.3, Bun 1.2  
 **Primary Dependencies**: ESLint 9.x, typescript-eslint 8.x, Prettier 3.x, Bun built-in test runner  
 **Storage**: SQLite (per constitution, but not needed for scaffolding feature)  
 **Testing**: Bun built-in test runner (Jest-compatible API, 10-30x faster)  
@@ -39,7 +39,7 @@ Create foundational project scaffolding with TypeScript and Bun runtime to enabl
 
 **Post-Design Re-evaluation (Phase 1 Complete)**:
 - ✅ I. Serverless Architecture: GitHub Actions workflow defined, no external servers
-- ✅ II. Technology Stack Consistency: TypeScript 5.9.3 + Bun 1.3 selected, SQLite deferred to future features
+- ✅ II. Technology Stack Consistency: TypeScript 5.9.3 + Bun 1.2 selected, SQLite deferred to future features
 - ✅ III. Code Quality Standards: ESLint strict + Prettier configs defined in contracts
 - ✅ IV. Security Best Practices: No secrets in scaffolding; patterns established for future
 - ✅ V. Testing Discipline: Bun test runner, unit/integration/contract structure, CI pipeline

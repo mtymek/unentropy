@@ -31,17 +31,18 @@
 
 ## Bun Runtime Version
 
-**Decision**: Bun v1.3 (Latest Stable)
+**Decision**: Bun v1.2 (Stable)
 
 **Rationale**:
-- Latest stable release with significant performance improvements
+- Stable release with proven reliability
 - Excellent GitHub Actions support via official `oven-sh/setup-bun` action v2
 - Strong Node.js API compatibility (~95%+)
 - Native TypeScript execution without transpilation step
 - 30x faster package installation than npm
 
 **Alternatives Considered**:
-- Bun 1.2.x: Stable but missing latest features
+- Bun 1.3.x: Latest but not required for scaffolding needs
+- Bun 1.1.x or earlier: Older, missing important stability improvements
 - Node.js: More mature but significantly slower runtime performance
 - Deno: Good TypeScript support but different ecosystem and less Node.js compatibility
 
@@ -49,7 +50,7 @@
 ```yaml
 - uses: oven-sh/setup-bun@v2
   with:
-    bun-version: latest
+    bun-version: "1.2"
 ```
 
 **Constraints Met**:
@@ -310,7 +311,7 @@ jobs:
       
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: "1.2"
       
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -343,7 +344,7 @@ jobs:
 
 | Component | Technology | Version | Rationale |
 |-----------|-----------|---------|-----------|
-| **Runtime** | Bun | 1.3 | Fast, TypeScript-native, GitHub Actions support |
+| **Runtime** | Bun | 1.2 | Stable, TypeScript-native, GitHub Actions support |
 | **Language** | TypeScript | 5.9.3 | Latest stable, strict type safety |
 | **Test Framework** | Bun Test | Built-in | 10-30x faster, zero config, Jest-compatible |
 | **Linter** | ESLint + typescript-eslint | 9.x / 8.x | Industry standard, type-aware rules |
