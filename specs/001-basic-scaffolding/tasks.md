@@ -66,11 +66,11 @@
 ### Implementation for User Story 2
 
 - [x] T023 [US2] Add test:watch script to package.json: `bun test --watch`
-- [ ] T024 [US2] Verify type checker catches and reports type errors with clear messages
-- [ ] T025 [US2] Verify watch mode automatically re-runs tests when files change
-- [ ] T026 [US2] Verify linter identifies and reports code style violations
-- [ ] T027 [US2] Test auto-fix functionality: introduce linting violation → run `bun run lint:fix` → verify fix applied
-- [ ] T028 [US2] Test format functionality: introduce formatting violation → run `bun run format` → verify formatting applied
+- [x] T024 [US2] Verify type checker catches and reports type errors with clear messages
+- [x] T025 [US2] Verify watch mode automatically re-runs tests when files change
+- [x] T026 [US2] Verify linter identifies and reports code style violations
+- [x] T027 [US2] Test auto-fix functionality: introduce linting violation → run `bun run lint:fix` → verify fix applied
+- [x] T028 [US2] Test format functionality: introduce formatting violation → run `bun run format` → verify formatting applied
 
 **Checkpoint**: User Story 2 complete - developers have immediate feedback mechanisms for code quality.
 
@@ -84,14 +84,14 @@
 
 ### Implementation for User Story 3
 
-- [ ] T029 [US3] Create src/lib/ directory for utility functions
-- [ ] T030 [US3] Create sample utility file src/lib/sample.ts with exported function (demonstrates lib/ pattern)
-- [ ] T031 [US3] Create corresponding test file tests/unit/sample.test.ts
-- [ ] T032 [US3] Verify TypeScript automatically includes new files in compilation (tsconfig.json include: ["src/**/*"])
-- [ ] T033 [US3] Verify test runner discovers and executes new test files (tests/**/*.test.ts pattern)
-- [ ] T034 [US3] Verify module resolution works correctly across files (import/export)
-- [ ] T035 [US3] Test cross-file imports: import from src/lib/sample.ts into src/index.ts and re-export (validates entry point pattern)
-- [ ] T036 [US3] Verify IDE autocomplete and type checking work for cross-file imports
+- [x] T029 [US3] Create src/lib/ directory for utility functions
+- [x] T030 [US3] Create sample utility file src/lib/sample.ts with exported function (demonstrates lib/ pattern)
+- [x] T031 [US3] Create corresponding test file tests/unit/sample.test.ts
+- [x] T032 [US3] Verify TypeScript automatically includes new files in compilation (tsconfig.json include: ["src/**/*"])
+- [x] T033 [US3] Verify test runner discovers and executes new test files (tests/**/*.test.ts pattern)
+- [x] T034 [US3] Verify module resolution works correctly across files (import/export)
+- [x] T035 [US3] Test cross-file imports: import from src/lib/sample.ts into src/index.ts and re-export (validates entry point pattern)
+- [x] T036 [US3] Verify IDE autocomplete and type checking work for cross-file imports
 
 **Checkpoint**: User Story 3 complete - developers can add new features seamlessly.
 
