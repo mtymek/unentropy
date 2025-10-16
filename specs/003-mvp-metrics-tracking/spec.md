@@ -46,7 +46,7 @@ As a developer or team lead, I want to view my metrics over time in a simple HTM
 
 **Why this priority**: Visualization is the final piece that delivers insights, but requires both configuration and data collection to be working first. This is the user-facing output that justifies the system's existence.
 
-**Independent Test**: Can be fully tested by generating an HTML report from stored metric data, verifying charts and trends display correctly, delivering value by providing actionable insights from collected data.
+**Independent Test**: Can be fully tested by generating an HTML report from **test fixture data** (predefined unentropy.json configurations with dummy SQLite databases), verifying charts and trends display correctly through **manual visual review** against acceptance criteria, delivering value by providing actionable insights from collected data.
 
 **Acceptance Scenarios**:
 
