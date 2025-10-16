@@ -22,10 +22,10 @@
 
 **Purpose**: Project initialization and dependencies
 
-- [ ] T001 Install dependencies: better-sqlite3, zod, @actions/core, @actions/github
-- [ ] T002 [P] Create directory structure: src/config/, src/database/, src/collector/, src/reporter/, src/actions/
-- [ ] T003 [P] Create directory structure: tests/unit/config/, tests/unit/database/, tests/unit/collector/, tests/unit/reporter/
-- [ ] T004 [P] Create directory structure: tests/integration/, tests/contract/
+- [x] T001 Install dependencies: better-sqlite3, zod, @actions/core, @actions/github
+- [x] T002 [P] Create directory structure: src/config/, src/database/, src/collector/, src/reporter/, src/actions/
+- [x] T003 [P] Create directory structure: tests/unit/config/, tests/unit/database/, tests/unit/collector/, tests/unit/reporter/
+- [x] T004 [P] Create directory structure: tests/integration/, tests/contract/
 
 ---
 
@@ -35,13 +35,13 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T005 Create TypeScript types for database entities in src/database/types.ts
-- [ ] T006 Implement database client with connection management in src/database/client.ts
-- [ ] T007 Implement database schema initialization in src/database/migrations.ts
-- [ ] T008 Implement database query functions (insert/upsert) in src/database/queries.ts
-- [ ] T009 [P] Write unit tests for database client in tests/unit/database/client.test.ts
-- [ ] T010 [P] Write unit tests for schema initialization in tests/unit/database/migrations.test.ts
-- [ ] T011 [P] Write unit tests for query functions in tests/unit/database/queries.test.ts
+- [x] T005 Create TypeScript types for database entities in src/database/types.ts
+- [x] T006 Implement database client with connection management in src/database/client.ts
+- [x] T007 Implement database schema initialization in src/database/migrations.ts
+- [x] T008 Implement database query functions (insert/upsert) in src/database/queries.ts
+- [x] T009 [P] Write unit tests for database client in tests/unit/database/client.test.ts
+- [x] T010 [P] Write unit tests for schema initialization in tests/unit/database/migrations.test.ts
+- [x] T011 [P] Write unit tests for query functions in tests/unit/database/queries.test.ts
 
 **Checkpoint**: Database layer ready - user story implementation can now begin
 
