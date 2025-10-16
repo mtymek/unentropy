@@ -35,15 +35,15 @@ This allows teams to see trends, spot entropy spikes, and visualize codebase hea
 * **Git-Native Tracking:** Metrics are always tied directly to the commit SHA that generated them.
 * **Simple Reporting:** Generate static trend charts (e.g., trend lines for LOC, complexity score, etc.) accessible directly from the CI run summary.
 
-## **🏗️ Architectural Recommendations**
+## **🏗️ Tech Stack**
 
-*(These are the initial technology recommendations for implementation, focusing on simplicity and GitHub Action compatibility. We welcome community input on these choices\!)*
+*(These are the selected technologies for the initial implementation, chosen for simplicity and GitHub Action compatibility. We welcome community input on these choices\!)*
 
-| Component | Recommendation | Why? |
+| Component | Chosen Technology | Why? |
 | :---- | :---- | :---- |
 | **Tooling Language** | **Node.js / TypeScript** | Native support for GitHub Actions, high performance, and robust tooling ecosystem. |
 | **Data Storage** | **SQLite** | The gold standard for lightweight, file-based, zero-config databases. Perfect for storing historical data in an artifact file. |
-| **Data Visualization** | **Chart.js or similar** | Used to generate simple, static charts embedded in an HTML file for easy artifact viewing. |
+| **Data Visualization** | **Chart.js** | Used to generate simple, static charts embedded in an HTML file for easy artifact viewing. |
 | **Packaging** | **GitHub Action (JavaScript/Container)** | The core delivery mechanism, providing a single, clean step for users' workflows. |
 
 ## **🚀 Getting Started (Planned Usage)**
