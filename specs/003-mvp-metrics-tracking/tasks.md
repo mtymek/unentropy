@@ -131,33 +131,36 @@
 
 **Independent Test**: Generate an HTML report from stored metric data, verify charts and trends display correctly in a browser, report works offline
 
+**Status**: Core implementation and ALL TESTS complete ✅ (T036-T048f). Remaining: Visual acceptance testing (T048g-T048n).
+
 ### Tests for User Story 3
 
-- [ ] T036 [P] [US3] Write unit test for time-series data query in tests/unit/reporter/generator.test.ts
-- [ ] T037 [P] [US3] Write unit test for Chart.js config builder (numeric) in tests/unit/reporter/charts.test.ts
-- [ ] T038 [P] [US3] Write unit test for Chart.js config builder (label) in tests/unit/reporter/charts.test.ts
-- [ ] T039 [P] [US3] Write unit test for HTML template rendering in tests/unit/reporter/templates.test.ts
-- [ ] T040 [P] [US3] Write unit test for self-contained output validation in tests/unit/reporter/templates.test.ts
-- [ ] T041 [P] [US3] Write unit test for empty data handling in tests/unit/reporter/generator.test.ts
-- [ ] T042 [P] [US3] Write unit test for sparse data handling in tests/unit/reporter/generator.test.ts
-- [ ] T043 [US3] Write integration test for report generation workflow in tests/integration/reporting.test.ts
-- [ ] T043a [US3] Write unit test for XSS sanitization in metric names/descriptions in tests/unit/reporter/templates.test.ts
+- [x] T036 [P] [US3] Write unit test for time-series data query in tests/unit/reporter/generator.test.ts
+- [x] T037 [P] [US3] Write unit test for Chart.js config builder (numeric) in tests/unit/reporter/charts.test.ts
+- [x] T038 [P] [US3] Write unit test for Chart.js config builder (label) in tests/unit/reporter/charts.test.ts
+- [x] T039 [P] [US3] Write unit test for HTML template rendering in tests/unit/reporter/templates.test.ts
+- [x] T040 [P] [US3] Write unit test for self-contained output validation in tests/unit/reporter/templates.test.ts
+- [x] T041 [P] [US3] Write unit test for empty data handling in tests/unit/reporter/generator.test.ts
+- [x] T042 [P] [US3] Write unit test for sparse data handling in tests/unit/reporter/generator.test.ts
+- [x] T043 [US3] Write integration test for report generation workflow in tests/integration/reporting.test.ts
+- [x] T043a [US3] Write unit test for XSS sanitization in metric names/descriptions in tests/unit/reporter/templates.test.ts
 - [x] T043b [US3] Write unit test for summary statistics calculation (min/max/avg/trend) in tests/unit/reporter/generator.test.ts
-- [ ] T043c [US3] Write unit test for responsive breakpoint data attributes in tests/unit/reporter/templates.test.ts
+- [x] T043c [US3] Write unit test for responsive breakpoint data attributes in tests/unit/reporter/templates.test.ts
 
 ### Implementation for User Story 3
 
 - [x] T044 [P] [US3] Implement time-series query functions in src/database/queries.ts
+- [x] T044a [US3] Implement getAllBuildContexts query in src/database/queries.ts (added for report metadata)
 - [x] T045 [P] [US3] Implement Chart.js configuration builder in src/reporter/charts.ts
-- [ ] T046 [US3] Implement HTML template with Tailwind CSS and embedded Chart.js in src/reporter/templates.ts
-- [ ] T047 [US3] Implement report generator orchestration in src/reporter/generator.ts
-- [ ] T048 [US3] Add error handling for missing/invalid data in src/reporter/generator.ts
-- [ ] T048a [US3] Implement XSS sanitization for user-provided content in src/reporter/templates.ts
+- [x] T046 [US3] Implement HTML template with Tailwind CSS and embedded Chart.js in src/reporter/templates.ts
+- [x] T047 [US3] Implement report generator orchestration in src/reporter/generator.ts
+- [x] T048 [US3] Add error handling for missing/invalid data in src/reporter/generator.ts
+- [x] T048a [US3] Implement XSS sanitization for user-provided content in src/reporter/templates.ts
 - [x] T048b [US3] Implement summary statistics calculator (min/max/avg/trend) in src/reporter/generator.ts
-- [ ] T048c [US3] Add responsive layout with Tailwind classes (mobile/tablet/desktop) in src/reporter/templates.ts
-- [ ] T048d [US3] Add dark mode support using Tailwind dark: variants in src/reporter/templates.ts
-- [ ] T048e [US3] Add print stylesheet for PDF export in src/reporter/templates.ts
-- [ ] T048f [US3] Add accessibility features (ARIA labels, semantic HTML) in src/reporter/templates.ts
+- [x] T048c [US3] Add responsive layout with Tailwind classes (mobile/tablet/desktop) in src/reporter/templates.ts
+- [x] T048d [US3] Add dark mode support using Tailwind dark: variants in src/reporter/templates.ts
+- [x] T048e [US3] Add print stylesheet for PDF export in src/reporter/templates.ts
+- [x] T048f [US3] Add accessibility features (ARIA labels, semantic HTML) in src/reporter/templates.ts
 
 ### Visual Acceptance Testing for User Story 3
 

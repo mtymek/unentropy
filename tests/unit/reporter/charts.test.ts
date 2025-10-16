@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { buildChartConfig, type ChartConfig } from "../../../src/reporter/charts";
+import { buildChartConfig } from "../../../src/reporter/charts";
 import type { TimeSeriesData } from "../../../src/reporter/generator";
 
 describe("buildChartConfig - numeric metrics", () => {
@@ -42,7 +42,7 @@ describe("buildChartConfig - numeric metrics", () => {
     expect(config.type).toBe("line");
     expect(config.data.labels).toHaveLength(3);
     expect(config.data.datasets).toHaveLength(1);
-    expect(config.data.datasets[0]!.label).toBe("test-coverage");
+    expect(config.data.datasets[0]?.label).toBe("test-coverage");
   });
 
   test("includes all data points in correct order", () => {
@@ -53,13 +53,13 @@ describe("buildChartConfig - numeric metrics", () => {
       "2025-10-02T12:00:00Z",
       "2025-10-03T12:00:00Z",
     ]);
-    expect(config.data.datasets[0]!.data).toEqual([85.2, 86.1, 87.5]);
+    expect(config.data.datasets[0]?.data).toEqual([85.2, 86.1, 87.5]);
   });
 
   test("includes metadata in data points", () => {
     const config = buildChartConfig(numericData);
 
-    expect(config.data.datasets[0]!.metadata).toEqual([
+    expect(config.data.datasets[0]?.metadata).toEqual([
       { commitSha: "abc123", runNumber: 1 },
       { commitSha: "def456", runNumber: 2 },
       { commitSha: "ghi789", runNumber: 3 },
@@ -89,10 +89,10 @@ describe("buildChartConfig - numeric metrics", () => {
   test("configures time scale for x-axis", () => {
     const config = buildChartConfig(numericData);
 
-    expect(config.options.scales.x!.type).toBe("time");
-    expect(config.options.scales.x!.time!.unit).toBe("day");
-    expect(config.options.scales.x!.title.display).toBe(true);
-    expect(config.options.scales.x!.title.text).toBe("Build Date");
+    expect(config.options.scales.x?.type).toBe("time");
+    expect(config.options.scales.x?.time?.unit).toBe("day");
+    expect(config.options.scales.x?.title.display).toBe(true);
+    expect(config.options.scales.x?.title.text).toBe("Build Date");
   });
 
   test("configures y-axis with metric name", () => {
@@ -106,17 +106,17 @@ describe("buildChartConfig - numeric metrics", () => {
   test("uses blue color theme", () => {
     const config = buildChartConfig(numericData);
 
-    expect(config.data.datasets[0]!.borderColor).toBe("rgb(59, 130, 246)");
-    expect(config.data.datasets[0]!.backgroundColor).toBe("rgba(59, 130, 246, 0.1)");
+    expect(config.data.datasets[0]?.borderColor).toBe("rgb(59, 130, 246)");
+    expect(config.data.datasets[0]?.backgroundColor).toBe("rgba(59, 130, 246, 0.1)");
   });
 
   test("sets line styling properties", () => {
     const config = buildChartConfig(numericData);
 
-    expect(config.data.datasets[0]!.tension).toBe(0.4);
-    expect(config.data.datasets[0]!.fill).toBe(true);
-    expect(config.data.datasets[0]!.pointRadius).toBe(4);
-    expect(config.data.datasets[0]!.pointHoverRadius).toBe(6);
+    expect(config.data.datasets[0]?.tension).toBe(0.4);
+    expect(config.data.datasets[0]?.fill).toBe(true);
+    expect(config.data.datasets[0]?.pointRadius).toBe(4);
+    expect(config.data.datasets[0]?.pointHoverRadius).toBe(6);
   });
 });
 
@@ -159,7 +159,7 @@ describe("buildChartConfig - label metrics", () => {
 
     expect(config.type).toBe("bar");
     expect(config.data.datasets).toHaveLength(1);
-    expect(config.data.datasets[0]!.label).toBe("Occurrences");
+    expect(config.data.datasets[0]?.label).toBe("Occurrences");
   });
 
   test("aggregates label occurrences", () => {
@@ -171,23 +171,24 @@ describe("buildChartConfig - label metrics", () => {
     const successIndex = config.data.labels.indexOf("success");
     const failureIndex = config.data.labels.indexOf("failure");
 
-    expect(config.data.datasets[0]!.data[successIndex]).toBe(2);
-    expect(config.data.datasets[0]!.data[failureIndex]).toBe(1);
+    const dataset = config.data.datasets[0];
+    expect(dataset?.data[successIndex]).toBe(2);
+    expect(dataset?.data[failureIndex]).toBe(1);
   });
 
   test("uses blue color theme for bars", () => {
     const config = buildChartConfig(labelData);
 
-    expect(config.data.datasets[0]!.backgroundColor).toBe("rgba(59, 130, 246, 0.8)");
-    expect(config.data.datasets[0]!.borderColor).toBe("rgb(59, 130, 246)");
-    expect(config.data.datasets[0]!.borderWidth).toBe(1);
+    expect(config.data.datasets[0]?.backgroundColor).toBe("rgba(59, 130, 246, 0.8)");
+    expect(config.data.datasets[0]?.borderColor).toBe("rgb(59, 130, 246)");
+    expect(config.data.datasets[0]?.borderWidth).toBe(1);
   });
 
   test("configures y-axis with integer steps", () => {
     const config = buildChartConfig(labelData);
 
     expect(config.options.scales.y.beginAtZero).toBe(true);
-    expect(config.options.scales.y.ticks!.stepSize).toBe(1);
+    expect(config.options.scales.y.ticks?.stepSize).toBe(1);
     expect(config.options.scales.y.title.text).toBe("Count");
   });
 

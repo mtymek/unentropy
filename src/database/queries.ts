@@ -129,12 +129,12 @@ export class DatabaseQueries {
   }
 
   getMetricTimeSeries(metricName: string): (MetricValue & {
-      metric_name: string;
-      commit_sha: string;
-      branch: string;
-      run_number: number;
-      build_timestamp: string;
-    })[] {
+    metric_name: string;
+    commit_sha: string;
+    branch: string;
+    run_number: number;
+    build_timestamp: string;
+  })[] {
     const db = this.client.getConnection();
     const stmt = db.prepare(`
       SELECT 
@@ -151,11 +151,17 @@ export class DatabaseQueries {
       ORDER BY bc.timestamp ASC
     `);
     return stmt.all(metricName) as (MetricValue & {
-        metric_name: string;
-        commit_sha: string;
-        branch: string;
-        run_number: number;
-        build_timestamp: string;
-      })[];
+      metric_name: string;
+      commit_sha: string;
+      branch: string;
+      run_number: number;
+      build_timestamp: string;
+    })[];
+  }
+
+  getAllBuildContexts(): BuildContext[] {
+    const db = this.client.getConnection();
+    const stmt = db.prepare("SELECT * FROM build_contexts ORDER BY timestamp");
+    return stmt.all() as BuildContext[];
   }
 }

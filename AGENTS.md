@@ -7,7 +7,7 @@ Unentropy is a serverless tool for tracking custom code metrics in CI/CD pipelin
 ## Build/Lint/Test Commands
 
 - Build: bun run build
-- Lint: bun run lint
+- Lint: bun lint
 - Test: bun test
 - Single test: bun test --testNamePattern="<test name>"
 - Type check: bun run typecheck

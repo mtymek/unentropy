@@ -92,7 +92,7 @@ export function calculateSummaryStats(data: TimeSeriesData): SummaryStats {
     };
   }
 
-  const latest = numericValues[numericValues.length - 1]!;
+  const latest = numericValues[numericValues.length - 1] ?? null;
   const min = Math.min(...numericValues);
   const max = Math.max(...numericValues);
   const average = numericValues.reduce((sum, v) => sum + v, 0) / numericValues.length;
@@ -101,8 +101,18 @@ export function calculateSummaryStats(data: TimeSeriesData): SummaryStats {
   let trendPercent: number | null = null;
 
   if (numericValues.length >= 2) {
-    const first = numericValues[0]!;
-    const last = numericValues[numericValues.length - 1]!;
+    const first = numericValues[0];
+    const last = numericValues[numericValues.length - 1];
+    if (first === undefined || last === undefined) {
+      return {
+        latest,
+        min,
+        max,
+        average,
+        trendDirection: null,
+        trendPercent: null,
+      };
+    }
     const change = last - first;
     const percentChange = first !== 0 ? (change / Math.abs(first)) * 100 : 0;
 
@@ -125,4 +135,88 @@ export function calculateSummaryStats(data: TimeSeriesData): SummaryStats {
     trendDirection,
     trendPercent,
   };
+}
+
+function getReportMetadata(db: DatabaseClient, repository: string): ReportMetadata {
+  const allBuilds = db.getAllBuildContexts();
+
+  if (allBuilds.length === 0) {
+    const now = new Date().toISOString();
+    return {
+      repository,
+      generatedAt: now,
+      buildCount: 0,
+      dateRange: {
+        start: now,
+        end: now,
+      },
+    };
+  }
+
+  const timestamps = allBuilds.map((b: { timestamp: string }) => b.timestamp).sort();
+  const start = timestamps[0];
+  const end = timestamps[timestamps.length - 1];
+
+  if (!start || !end) {
+    const now = new Date().toISOString();
+    return {
+      repository,
+      generatedAt: now,
+      buildCount: allBuilds.length,
+      dateRange: {
+        start: now,
+        end: now,
+      },
+    };
+  }
+
+  return {
+    repository,
+    generatedAt: new Date().toISOString(),
+    buildCount: allBuilds.length,
+    dateRange: {
+      start,
+      end,
+    },
+  };
+}
+
+export function generateReport(db: DatabaseClient, options: GenerateReportOptions = {}): string {
+  const repository = options.repository || "unknown/repository";
+
+  const allMetrics = db.getAllMetricDefinitions();
+  const metricNames = options.metricNames || allMetrics.map((m) => m.name);
+
+  const metrics: MetricReportData[] = [];
+
+  for (const metricName of metricNames) {
+    try {
+      const timeSeries = getMetricTimeSeries(db, metricName);
+      const stats = calculateSummaryStats(timeSeries);
+      const chartConfig = buildChartConfig(timeSeries);
+
+      const sparse = timeSeries.dataPoints.length < 10;
+
+      metrics.push({
+        id: metricName.replace(/[^a-zA-Z0-9-]/g, "-"),
+        name: timeSeries.metricName,
+        description: timeSeries.description,
+        stats,
+        chartConfig,
+        sparse,
+        dataPointCount: timeSeries.dataPoints.length,
+      });
+    } catch (error) {
+      console.warn(`Failed to generate report for metric '${metricName}':`, error);
+    }
+  }
+
+  const metadata = getReportMetadata(db, repository);
+
+  const reportData: ReportData = {
+    metadata,
+    metrics,
+  };
+
+  return generateHtmlReport(reportData);
 }

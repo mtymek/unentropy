@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { runCommand, type CommandResult } from "../../../src/collector/runner";
+import { runCommand } from "../../../src/collector/runner";
 
 describe("runCommand", () => {
   test("executes command and returns stdout", async () => {

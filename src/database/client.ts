@@ -118,13 +118,18 @@ export class DatabaseClient {
   }
 
   getMetricTimeSeries(metricName: string): (MetricValue & {
-      metric_name: string;
-      commit_sha: string;
-      branch: string;
-      run_number: number;
-      build_timestamp: string;
-    })[] {
+    metric_name: string;
+    commit_sha: string;
+    branch: string;
+    run_number: number;
+    build_timestamp: string;
+  })[] {
     if (!this.queries) throw new Error("Database not initialized");
     return this.queries.getMetricTimeSeries(metricName);
+  }
+
+  getAllBuildContexts(): import("./types").BuildContext[] {
+    if (!this.queries) throw new Error("Database not initialized");
+    return this.queries.getAllBuildContexts();
   }
 }

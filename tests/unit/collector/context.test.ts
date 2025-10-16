@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
-import { extractBuildContext, type BuildContext } from "../../../src/collector/context";
+import { extractBuildContext } from "../../../src/collector/context";
 
 describe("extractBuildContext", () => {
   const originalEnv = process.env;

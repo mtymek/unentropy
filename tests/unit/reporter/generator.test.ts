@@ -3,7 +3,7 @@ import { DatabaseClient } from "../../../src/database/client";
 import {
   getMetricTimeSeries,
   calculateSummaryStats,
-  type SummaryStats,
+  generateReport,
 } from "../../../src/reporter/generator";
 import fs from "fs";
 
@@ -100,6 +100,97 @@ describe("getMetricTimeSeries", () => {
     });
   });
 
+  describe("generateReport - sparse data handling", () => {
+    test("marks metrics with fewer than 10 data points as sparse", async () => {
+      const dbPath = "/tmp/test-sparse-data.db";
+      if (fs.existsSync(dbPath)) {
+        fs.unlinkSync(dbPath);
+      }
+
+      const db = new DatabaseClient({ path: dbPath });
+      await db.initialize();
+
+      db.insertBuildContext({
+        commit_sha: "abc123",
+        branch: "main",
+        run_id: "1",
+        run_number: 1,
+        timestamp: "2025-10-01T12:00:00Z",
+      });
+
+      const sparseMetric = db.upsertMetricDefinition({
+        name: "sparse-metric",
+        type: "numeric",
+        description: "Metric with few data points",
+      });
+
+      for (let i = 0; i < 5; i++) {
+        const bid = db.insertBuildContext({
+          commit_sha: `sha${i}`,
+          branch: "main",
+          run_id: `run${i}`,
+          run_number: i + 1,
+          timestamp: `2025-10-0${i + 1}T12:00:00Z`,
+        });
+
+        db.insertMetricValue({
+          metric_id: sparseMetric.id,
+          build_id: bid,
+          value_numeric: 50 + i,
+          collected_at: `2025-10-0${i + 1}T12:00:00Z`,
+        });
+      }
+
+      const html = generateReport(db, { repository: "test/repo" });
+
+      expect(html).toContain("Limited data available");
+      expect(html).toContain("5 builds");
+
+      db.close();
+      fs.unlinkSync(dbPath);
+    });
+
+    test("does not mark metrics with 10 or more data points as sparse", async () => {
+      const dbPath = "/tmp/test-non-sparse-data.db";
+      if (fs.existsSync(dbPath)) {
+        fs.unlinkSync(dbPath);
+      }
+
+      const db = new DatabaseClient({ path: dbPath });
+      await db.initialize();
+
+      const nonSparseMetric = db.upsertMetricDefinition({
+        name: "non-sparse-metric",
+        type: "numeric",
+        description: "Metric with sufficient data points",
+      });
+
+      for (let i = 0; i < 12; i++) {
+        const bid = db.insertBuildContext({
+          commit_sha: `sha${i}`,
+          branch: "main",
+          run_id: `run${i}`,
+          run_number: i + 1,
+          timestamp: `2025-10-${String(i + 1).padStart(2, "0")}T12:00:00Z`,
+        });
+
+        db.insertMetricValue({
+          metric_id: nonSparseMetric.id,
+          build_id: bid,
+          value_numeric: 50 + i,
+          collected_at: `2025-10-${String(i + 1).padStart(2, "0")}T12:00:00Z`,
+        });
+      }
+
+      const html = generateReport(db, { repository: "test/repo" });
+
+      expect(html).not.toContain("Limited data available");
+
+      db.close();
+      fs.unlinkSync(dbPath);
+    });
+  });
+
   afterAll(() => {
     db.close();
     if (fs.existsSync(TEST_DB_PATH)) {
@@ -116,11 +207,11 @@ describe("getMetricTimeSeries", () => {
     expect(data.unit).toBe("%");
     expect(data.description).toBe("Test coverage percentage");
     expect(data.dataPoints).toHaveLength(3);
-    expect(data.dataPoints[0]!.valueNumeric).toBe(85.2);
-    expect(data.dataPoints[1]!.valueNumeric).toBe(86.1);
-    expect(data.dataPoints[2]!.valueNumeric).toBe(87.5);
-    expect(data.dataPoints[0]!.commitSha).toBe("abc123");
-    expect(data.dataPoints[0]!.timestamp).toBe("2025-10-01T12:00:00Z");
+    expect(data.dataPoints[0]?.valueNumeric).toBe(85.2);
+    expect(data.dataPoints[1]?.valueNumeric).toBe(86.1);
+    expect(data.dataPoints[2]?.valueNumeric).toBe(87.5);
+    expect(data.dataPoints[0]?.commitSha).toBe("abc123");
+    expect(data.dataPoints[0]?.timestamp).toBe("2025-10-01T12:00:00Z");
   });
 
   test("retrieves time-series data for label metric", () => {
@@ -130,17 +221,17 @@ describe("getMetricTimeSeries", () => {
     expect(data.metricName).toBe("build-status");
     expect(data.metricType).toBe("label");
     expect(data.dataPoints).toHaveLength(3);
-    expect(data.dataPoints[0]!.valueLabel).toBe("success");
-    expect(data.dataPoints[1]!.valueLabel).toBe("success");
-    expect(data.dataPoints[2]!.valueLabel).toBe("failure");
+    expect(data.dataPoints[0]?.valueLabel).toBe("success");
+    expect(data.dataPoints[1]?.valueLabel).toBe("success");
+    expect(data.dataPoints[2]?.valueLabel).toBe("failure");
   });
 
   test("returns data sorted by timestamp ascending", () => {
     const data = getMetricTimeSeries(db, "test-coverage");
 
-    expect(data.dataPoints[0]!.timestamp).toBe("2025-10-01T12:00:00Z");
-    expect(data.dataPoints[1]!.timestamp).toBe("2025-10-02T12:00:00Z");
-    expect(data.dataPoints[2]!.timestamp).toBe("2025-10-03T12:00:00Z");
+    expect(data.dataPoints[0]?.timestamp).toBe("2025-10-01T12:00:00Z");
+    expect(data.dataPoints[1]?.timestamp).toBe("2025-10-02T12:00:00Z");
+    expect(data.dataPoints[2]?.timestamp).toBe("2025-10-03T12:00:00Z");
   });
 
   test("throws error for non-existent metric", () => {

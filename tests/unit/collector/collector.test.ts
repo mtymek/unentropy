@@ -1,9 +1,5 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
-import {
-  parseMetricValue,
-  collectMetrics,
-  type CollectionResult,
-} from "../../../src/collector/collector";
+import { parseMetricValue, collectMetrics } from "../../../src/collector/collector";
 import type { MetricConfig } from "../../../src/config/schema";
 import { DatabaseClient } from "../../../src/database/client";
 import { unlink } from "node:fs/promises";
