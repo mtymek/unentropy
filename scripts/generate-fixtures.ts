@@ -10,13 +10,13 @@ interface FixtureConfig {
   dbPath: string;
   outputPath: string;
   buildCount: number;
-  metricGenerators: Array<{
+  metricGenerators: {
     name: string;
     type: "numeric" | "label";
     description: string;
     unit?: string;
     valueGenerator: (buildIndex: number) => number | string;
-  }>;
+  }[];
 }
 
 const FIXTURES: Record<string, FixtureConfig> = {
@@ -150,7 +150,7 @@ async function generateFixture(config: FixtureConfig): Promise<void> {
   const fs = await import("fs/promises");
   try {
     await fs.unlink(config.dbPath);
-  } catch (e) {}
+  } catch {}
 
   const db = new DatabaseClient({ path: config.dbPath });
   await db.ready();
