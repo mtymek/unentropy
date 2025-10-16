@@ -54,6 +54,8 @@ As a developer or team lead, I want to view my metrics over time in a simple HTM
 2. **Given** I have multiple metrics configured, **When** viewing the report, **Then** each metric is displayed in its own section with appropriate visualizations
 3. **Given** I want to share results with my team, **When** the report is generated, **Then** it is a self-contained HTML file that can be viewed in any browser without external dependencies
 4. **Given** I have sparse data (few data points), **When** generating the report, **Then** the system still produces a valid report with available data and indicates where more data would improve insights
+5. **Given** I view the report on different devices, **When** the report is opened on mobile, tablet, or desktop, **Then** the layout adapts appropriately and remains readable
+6. **Given** I hover over data points on a chart, **When** interacting with the visualization, **Then** I see tooltips with exact values, timestamps, and relevant context
 
 ---
 
@@ -66,6 +68,10 @@ As a developer or team lead, I want to view my metrics over time in a simple HTM
 - What happens when the database file is corrupted or locked?
 - What happens when attempting to collect metrics with invalid configuration?
 - What happens when running multiple pipeline jobs concurrently that write to the same database?
+- What happens when viewing the report on a mobile device with small screen?
+- What happens when CDN resources (Tailwind CSS, Chart.js) fail to load?
+- What happens when metric names contain special characters or XSS payloads?
+- What happens when viewing the report in print mode or exporting to PDF?
 
 ## Requirements *(mandatory)*
 
@@ -97,6 +103,13 @@ As a developer or team lead, I want to view my metrics over time in a simple HTM
 - **FR-016**: Reports MUST display each configured metric in a separate section
 - **FR-017**: System MUST generate valid reports even with limited data (minimum 1 data point)
 - **FR-018**: Charts MUST clearly indicate time progression and metric values
+- **FR-019**: Reports MUST be responsive and render correctly on mobile, tablet, and desktop screens
+- **FR-020**: Reports MUST include summary statistics (min, max, average, trend direction) for each metric
+- **FR-021**: Charts MUST include interactive tooltips showing exact values and timestamps
+- **FR-022**: Reports MUST be accessible (WCAG 2.1 AA compliance for color contrast and semantic HTML)
+- **FR-023**: Reports MUST handle missing/sparse data with clear visual indicators and informative messages
+- **FR-024**: Reports MUST use Tailwind CSS from CDN for styling (no custom CSS compilation required)
+- **FR-025**: Reports MUST include metadata section showing repository name, generation timestamp, and data range
 
 ### Key Entities
 
@@ -114,8 +127,10 @@ As a developer or team lead, I want to view my metrics over time in a simple HTM
 - **SC-003**: Reports generate from 100 data points in under 10 seconds
 - **SC-004**: System handles 50+ concurrent pipeline executions without data corruption or loss
 - **SC-005**: 95% of users successfully generate their first report within 15 minutes of initial setup
-- **SC-006**: Generated reports are viewable in all major browsers without requiring internet connectivity
+- **SC-006**: Generated reports are viewable in all major browsers without requiring internet connectivity (after initial CDN resource load)
 - **SC-007**: Configuration errors are resolved within 3 attempts due to clear, actionable error messages
+- **SC-008**: Reports render correctly on screens from 320px (mobile) to 2560px (desktop) width
+- **SC-009**: Chart interactions (tooltips, hover states) respond within 100ms on standard hardware
 
 ## Assumptions *(mandatory)*
 
@@ -132,7 +147,9 @@ As a developer or team lead, I want to view my metrics over time in a simple HTM
 
 - GitHub Actions infrastructure for workflow execution
 - SQLite support in the CI environment (standard in most CI runners)
-- Chart generation library compatible with static HTML output (e.g., Chart.js, included via CDN in HTML)
+- Chart.js v4.x via CDN (jsDelivr) for interactive visualizations
+- Tailwind CSS v3.x via CDN for responsive styling
+- Modern browser support (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+)
 - Project must use GitHub for version control and CI/CD
 
 ## Scope Boundaries *(mandatory)*

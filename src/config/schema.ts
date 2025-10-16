@@ -15,6 +15,7 @@ export const MetricConfigSchema = z
     description: z.string().max(256).optional(),
     command: z.string().min(1, { message: "command cannot be empty" }).max(1024),
     unit: z.string().max(10).optional(),
+    timeout: z.number().int().positive().max(300000).optional(),
   })
   .strict();
 

@@ -99,9 +99,32 @@ export class DatabaseQueries {
     return stmt.get(metricId, buildId) as MetricValue | undefined;
   }
 
+  getMetricValuesByBuildId(buildId: number): Array<MetricValue & { metric_name: string }> {
+    const db = this.client.getConnection();
+    const stmt = db.prepare(`
+      SELECT mv.*, md.name as metric_name
+      FROM metric_values mv
+      JOIN metric_definitions md ON mv.metric_id = md.id
+      WHERE mv.build_id = ?
+      ORDER BY md.name
+    `);
+    return stmt.all(buildId) as Array<MetricValue & { metric_name: string }>;
+  }
+
   getAllMetricDefinitions(): MetricDefinition[] {
     const db = this.client.getConnection();
     const stmt = db.prepare("SELECT * FROM metric_definitions ORDER BY name");
     return stmt.all() as MetricDefinition[];
+  }
+
+  getAllMetricValues(): Array<MetricValue & { metric_name: string }> {
+    const db = this.client.getConnection();
+    const stmt = db.prepare(`
+      SELECT mv.*, md.name as metric_name
+      FROM metric_values mv
+      JOIN metric_definitions md ON mv.metric_id = md.id
+      ORDER BY mv.build_id, md.name
+    `);
+    return stmt.all() as Array<MetricValue & { metric_name: string }>;
   }
 }

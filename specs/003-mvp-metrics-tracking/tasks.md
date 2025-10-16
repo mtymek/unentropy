@@ -104,23 +104,22 @@
 
 ### Tests for User Story 2
 
-- [ ] T022 [P] [US2] Write unit test for build context extraction in tests/unit/collector/context.test.ts
-- [ ] T023 [P] [US2] Write unit test for command execution in tests/unit/collector/runner.test.ts
-- [ ] T024 [P] [US2] Write unit test for command timeout handling in tests/unit/collector/runner.test.ts
-- [ ] T025 [P] [US2] Write unit test for environment variable passing in tests/unit/collector/runner.test.ts
-- [ ] T026 [P] [US2] Write unit test for numeric value parsing in tests/unit/collector/collector.test.ts
-- [ ] T027 [P] [US2] Write unit test for label value parsing in tests/unit/collector/collector.test.ts
-- [ ] T028 [P] [US2] Write unit test for partial failure handling in tests/unit/collector/collector.test.ts
-- [ ] T029 [US2] Write integration test for end-to-end collection workflow in tests/integration/collection.test.ts
-- [ ] T030 [US2] Write integration test for concurrent collection simulation in tests/integration/concurrency.test.ts
+- [x] T022 [P] [US2] Write unit test for build context extraction in tests/unit/collector/context.test.ts
+- [x] T023 [P] [US2] Write unit test for command execution in tests/unit/collector/runner.test.ts
+- [x] T024 [P] [US2] Write unit test for command timeout handling in tests/unit/collector/runner.test.ts
+- [x] T025 [P] [US2] Write unit test for environment variable passing in tests/unit/collector/runner.test.ts
+- [x] T026 [P] [US2] Write unit test for numeric value parsing in tests/unit/collector/collector.test.ts
+- [x] T027 [P] [US2] Write unit test for label value parsing in tests/unit/collector/collector.test.ts
+- [x] T028 [P] [US2] Write unit test for partial failure handling in tests/unit/collector/collector.test.ts
+- [x] T029 [US2] Write integration test for end-to-end collection workflow in tests/integration/collection.test.ts
 
 ### Implementation for User Story 2
 
-- [ ] T031 [P] [US2] Implement build context extraction in src/collector/context.ts
-- [ ] T032 [P] [US2] Implement command execution with timeout in src/collector/runner.ts
-- [ ] T033 [US2] Implement metric value parser (numeric/label) in src/collector/collector.ts
-- [ ] T034 [US2] Implement main collection orchestration with retry logic in src/collector/collector.ts
-- [ ] T035 [US2] Implement error handling for partial metric failures in src/collector/collector.ts
+- [x] T031 [P] [US2] Implement build context extraction in src/collector/context.ts
+- [x] T032 [P] [US2] Implement command execution with timeout in src/collector/runner.ts
+- [x] T033 [US2] Implement metric value parser (numeric/label) in src/collector/collector.ts
+- [x] T034 [US2] Implement main collection orchestration with retry logic in src/collector/collector.ts
+- [x] T035 [US2] Implement error handling for partial metric failures in src/collector/collector.ts
 
 **Checkpoint**: Metrics are collected and stored in SQLite database with build metadata
 
@@ -142,14 +141,23 @@
 - [ ] T041 [P] [US3] Write unit test for empty data handling in tests/unit/reporter/generator.test.ts
 - [ ] T042 [P] [US3] Write unit test for sparse data handling in tests/unit/reporter/generator.test.ts
 - [ ] T043 [US3] Write integration test for report generation workflow in tests/integration/reporting.test.ts
+- [ ] T043a [US3] Write unit test for XSS sanitization in metric names/descriptions in tests/unit/reporter/templates.test.ts
+- [ ] T043b [US3] Write unit test for summary statistics calculation (min/max/avg/trend) in tests/unit/reporter/generator.test.ts
+- [ ] T043c [US3] Write unit test for responsive breakpoint data attributes in tests/unit/reporter/templates.test.ts
 
 ### Implementation for User Story 3
 
 - [ ] T044 [P] [US3] Implement time-series query functions in src/database/queries.ts
 - [ ] T045 [P] [US3] Implement Chart.js configuration builder in src/reporter/charts.ts
-- [ ] T046 [US3] Implement HTML template with embedded Chart.js in src/reporter/templates.ts
+- [ ] T046 [US3] Implement HTML template with Tailwind CSS and embedded Chart.js in src/reporter/templates.ts
 - [ ] T047 [US3] Implement report generator orchestration in src/reporter/generator.ts
 - [ ] T048 [US3] Add error handling for missing/invalid data in src/reporter/generator.ts
+- [ ] T048a [US3] Implement XSS sanitization for user-provided content in src/reporter/templates.ts
+- [ ] T048b [US3] Implement summary statistics calculator (min/max/avg/trend) in src/reporter/generator.ts
+- [ ] T048c [US3] Add responsive layout with Tailwind classes (mobile/tablet/desktop) in src/reporter/templates.ts
+- [ ] T048d [US3] Add dark mode support using Tailwind dark: variants in src/reporter/templates.ts
+- [ ] T048e [US3] Add print stylesheet for PDF export in src/reporter/templates.ts
+- [ ] T048f [US3] Add accessibility features (ARIA labels, semantic HTML) in src/reporter/templates.ts
 
 **Checkpoint**: HTML reports can be generated from collected data and viewed in browser
 

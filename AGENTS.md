@@ -27,4 +27,4 @@ Unentropy is a serverless tool for tracking custom code metrics in CI/CD pipelin
 - Project uses GitHub Actions for CI; no serverless setup needed
 - Follow security best practices; avoid logging secrets
 - Mimic existing code style from src/ and tests/ directories
-- When working on tasks from spec/*/tasks.md, make sure to update the status after completion 
+- When working on tasks from spec/*/tasks.md, make sure to update the status after completion in that file 

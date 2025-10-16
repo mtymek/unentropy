@@ -1,5 +1,13 @@
 import type { DatabaseAdapter } from "./adapters/interface";
 import { createAdapter } from "./adapters/factory";
+import { DatabaseQueries } from "./queries";
+import type {
+  InsertBuildContext,
+  InsertMetricDefinition,
+  InsertMetricValue,
+  MetricDefinition,
+  MetricValue,
+} from "./types";
 
 export interface DatabaseConfig {
   path: string;
@@ -11,12 +19,13 @@ export interface DatabaseConfig {
 export class DatabaseClient {
   private adapter: DatabaseAdapter | null = null;
   private initPromise: Promise<void>;
+  private queries: DatabaseQueries | null = null;
 
   constructor(private config: DatabaseConfig) {
     this.initPromise = this.initialize();
   }
 
-  private async initialize(): Promise<void> {
+  async initialize(): Promise<void> {
     const { path, readonly = false, timeout = 5000, verbose = false } = this.config;
 
     this.adapter = await createAdapter({
@@ -28,6 +37,13 @@ export class DatabaseClient {
     });
 
     this.configureConnection();
+
+    if (!readonly) {
+      const { initializeSchema } = await import("./migrations");
+      initializeSchema(this);
+    }
+
+    this.queries = new DatabaseQueries(this);
   }
 
   private configureConnection(): void {
@@ -64,5 +80,40 @@ export class DatabaseClient {
 
   isOpen(): boolean {
     return this.adapter?.open ?? false;
+  }
+
+  insertBuildContext(data: InsertBuildContext): number {
+    if (!this.queries) throw new Error("Database not initialized");
+    return this.queries.insertBuildContext(data);
+  }
+
+  upsertMetricDefinition(data: InsertMetricDefinition): MetricDefinition {
+    if (!this.queries) throw new Error("Database not initialized");
+    return this.queries.upsertMetricDefinition(data);
+  }
+
+  insertMetricValue(data: InsertMetricValue): number {
+    if (!this.queries) throw new Error("Database not initialized");
+    return this.queries.insertMetricValue(data);
+  }
+
+  getMetricDefinition(name: string): MetricDefinition | undefined {
+    if (!this.queries) throw new Error("Database not initialized");
+    return this.queries.getMetricDefinition(name);
+  }
+
+  getMetricValues(buildId: number): Array<MetricValue & { metric_name: string }> {
+    if (!this.queries) throw new Error("Database not initialized");
+    return this.queries.getMetricValuesByBuildId(buildId);
+  }
+
+  getAllMetricDefinitions(): MetricDefinition[] {
+    if (!this.queries) throw new Error("Database not initialized");
+    return this.queries.getAllMetricDefinitions();
+  }
+
+  getAllMetricValues(): Array<MetricValue & { metric_name: string }> {
+    if (!this.queries) throw new Error("Database not initialized");
+    return this.queries.getAllMetricValues();
   }
 }

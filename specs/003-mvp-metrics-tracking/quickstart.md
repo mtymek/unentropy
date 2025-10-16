@@ -390,29 +390,140 @@ export function renderTemplate(
 ): string {
   return `
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
-      <title>${options.title}</title>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${escapeHtml(options.title)}</title>
+      <script src="https://cdn.tailwindcss.com"></script>
       <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-      <style>${CSS_STYLES}</style>
+      <style>
+        @media print {
+          .no-print { display: none !important; }
+          .metric-card { page-break-inside: avoid; }
+        }
+      </style>
     </head>
-    <body>
-      <h1>${options.title}</h1>
-      ${metrics.map((m, i) => renderMetricSection(m, charts[i])).join('')}
+    <body class="bg-gray-50 dark:bg-gray-900">
+      ${renderHeader(options.metadata)}
+      ${renderMetricsGrid(metrics, charts)}
+      ${renderFooter(options.version)}
       <script>${renderChartScripts(charts)}</script>
     </body>
+    </html>
+  `;
+}
+
+// XSS sanitization helper
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+// Render responsive header with metadata
+function renderHeader(metadata: ReportMetadata): string {
+  return `
+    <header class="bg-white dark:bg-gray-800 shadow-sm">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+              Unentropy Metrics Report
+            </h1>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              ${escapeHtml(metadata.repository)}
+            </p>
+          </div>
+          <div class="mt-4 sm:mt-0 text-sm text-gray-600 dark:text-gray-400">
+            <div>Generated: ${formatDate(metadata.generatedAt)}</div>
+            <div>Builds: ${metadata.buildCount}</div>
+          </div>
+        </div>
+      </div>
+    </header>
+  `;
+}
+
+// Render metrics in responsive grid
+function renderMetricsGrid(metrics: MetricData[], charts: ChartConfig[]): string {
+  if (metrics.length === 0) {
+    return renderEmptyState();
+  }
+  
+  return `
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        ${metrics.map((m, i) => renderMetricCard(m, charts[i])).join('')}
+      </div>
+    </main>
+  `;
+}
+
+// Render individual metric card with stats and chart
+function renderMetricCard(metric: MetricData, chart: ChartConfig): string {
+  const stats = calculateStats(metric.values);
+  const trend = calculateTrend(metric.values);
+  
+  return `
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <div class="mb-4">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+          ${escapeHtml(metric.name)}
+        </h2>
+        ${metric.description ? `<p class="text-sm text-gray-600 dark:text-gray-400">${escapeHtml(metric.description)}</p>` : ''}
+      </div>
+      
+      <!-- Summary Statistics -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">${stats.latest}</div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Latest</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">${stats.min}</div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Min</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">${stats.max}</div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Max</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold ${trend.color}">${trend.arrow} ${trend.percent}%</div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Trend</div>
+        </div>
+      </div>
+      
+      <!-- Chart Canvas with accessibility -->
+      <div class="relative h-64 sm:h-80">
+        <canvas id="chart-${metric.id}" aria-label="Line chart showing ${escapeHtml(metric.name)} over time"></canvas>
+      </div>
+      
+      ${metric.values.length < 5 ? renderSparseDataWarning(metric.values.length) : ''}
+    </div>
+  `;
+}
     </html>
   `;
 }
 ```
 
 **Tests** (`tests/unit/reporter/`):
-- HTML output is valid
-- Chart configs generated correctly
-- Self-contained (no external files)
-- Empty data handled gracefully
+- HTML output is valid and well-formed
+- Chart configs generated correctly for numeric and categorical metrics
+- Self-contained (includes CDN links, no external files needed after load)
+- Empty data handled gracefully with proper empty state UI
+- XSS sanitization prevents malicious content in metric names
+- Responsive layout renders correctly at mobile/tablet/desktop breakpoints
+- Summary statistics (min/max/avg/trend) calculated accurately
+- Dark mode classes applied correctly
+- ARIA labels present for accessibility
+- Print stylesheet produces readable output
 
-**Acceptance**: User Story 3 (all scenarios), FR-013-FR-018
+**Acceptance**: User Story 3 (all scenarios), FR-013-FR-025
 
 ---
 
