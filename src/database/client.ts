@@ -1,4 +1,5 @@
-import Database from "better-sqlite3";
+import type { DatabaseAdapter } from "./adapters/interface";
+import { createAdapter } from "./adapters/factory";
 
 export interface DatabaseConfig {
   path: string;
@@ -8,46 +9,60 @@ export interface DatabaseConfig {
 }
 
 export class DatabaseClient {
-  private db: Database.Database;
+  private adapter: DatabaseAdapter | null = null;
+  private initPromise: Promise<void>;
 
-  constructor(config: DatabaseConfig) {
-    const { path, readonly = false, timeout = 5000, verbose = false } = config;
+  constructor(private config: DatabaseConfig) {
+    this.initPromise = this.initialize();
+  }
 
-    this.db = new Database(path, {
+  private async initialize(): Promise<void> {
+    const { path, readonly = false, timeout = 5000, verbose = false } = this.config;
+
+    this.adapter = await createAdapter({
+      path,
       readonly,
-      fileMustExist: false,
+      create: true,
       timeout,
-      verbose: verbose ? console.log : undefined,
+      verbose,
     });
 
     this.configureConnection();
   }
 
   private configureConnection(): void {
-    this.db.pragma("journal_mode = WAL");
-    this.db.pragma("synchronous = NORMAL");
-    this.db.pragma("foreign_keys = ON");
-    this.db.pragma("busy_timeout = 5000");
-    this.db.pragma("cache_size = -2000");
-    this.db.pragma("temp_store = MEMORY");
+    if (!this.adapter) throw new Error("Database not initialized");
+
+    this.adapter.pragma("journal_mode = WAL");
+    this.adapter.pragma("synchronous = NORMAL");
+    this.adapter.pragma("foreign_keys = ON");
+    this.adapter.pragma("busy_timeout = 5000");
+    this.adapter.pragma("cache_size = -2000");
+    this.adapter.pragma("temp_store = MEMORY");
   }
 
-  getConnection(): Database.Database {
-    return this.db;
+  async ready(): Promise<void> {
+    await this.initPromise;
+  }
+
+  getConnection(): DatabaseAdapter {
+    if (!this.adapter) throw new Error("Database not initialized");
+    return this.adapter;
   }
 
   close(): void {
-    if (this.db.open) {
-      this.db.close();
+    if (this.adapter?.open) {
+      this.adapter.close();
     }
   }
 
   transaction<T>(fn: () => T): T {
-    const tx = this.db.transaction(fn);
+    if (!this.adapter) throw new Error("Database not initialized");
+    const tx = this.adapter.transaction(fn);
     return tx();
   }
 
   isOpen(): boolean {
-    return this.db.open;
+    return this.adapter?.open ?? false;
   }
 }

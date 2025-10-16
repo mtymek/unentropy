@@ -6,8 +6,9 @@ describe("DatabaseClient", () => {
   const testDbPath = "./test-client.db";
   let client: DatabaseClient;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     client = new DatabaseClient({ path: testDbPath });
+    await client.ready();
   });
 
   afterEach(async () => {

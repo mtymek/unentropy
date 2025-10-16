@@ -7,8 +7,9 @@ describe("Schema Initialization", () => {
   const testDbPath = "./test-migrations.db";
   let client: DatabaseClient;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     client = new DatabaseClient({ path: testDbPath });
+    await client.ready();
   });
 
   afterEach(async () => {

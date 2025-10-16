@@ -89,7 +89,8 @@ export class DatabaseQueries {
   getMetricDefinition(name: string): MetricDefinition | undefined {
     const db = this.client.getConnection();
     const stmt = db.prepare("SELECT * FROM metric_definitions WHERE name = ?");
-    return stmt.get(name) as MetricDefinition | undefined;
+    const result = stmt.get(name) as MetricDefinition | null;
+    return result ?? undefined;
   }
 
   getMetricValues(metricId: number, buildId: number): MetricValue | undefined {

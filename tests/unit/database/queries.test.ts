@@ -9,8 +9,9 @@ describe("DatabaseQueries", () => {
   let client: DatabaseClient;
   let queries: DatabaseQueries;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     client = new DatabaseClient({ path: testDbPath });
+    await client.ready();
     initializeSchema(client);
     queries = new DatabaseQueries(client);
   });
