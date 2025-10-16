@@ -8,3 +8,4 @@ dist/
 coverage/
 *.db
 *.db-journal
+tests/fixtures/visual-review/*/report.html
