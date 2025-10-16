@@ -1,5 +1,6 @@
 {
   "name": "unentropy",
+  "homepage": "https://github.com/mtymek/unentropy",
   "version": "0.1.0",
   "type": "module",
   "description": "Serverless tool for tracking custom code metrics in CI/CD pipelines",
