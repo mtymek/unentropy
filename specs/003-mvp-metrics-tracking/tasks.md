@@ -55,16 +55,16 @@
 
 **Context**: better-sqlite3 native bindings don't work with Bun's incomplete N-API support. Both better-sqlite3 and bun:sqlite have highly compatible APIs, allowing a thin adapter layer.
 
-- [ ] T011a Define database adapter interface in src/database/adapters/interface.ts
-- [ ] T011b [P] Implement better-sqlite3 adapter in src/database/adapters/better-sqlite3.ts
-- [ ] T011c [P] Implement bun:sqlite adapter in src/database/adapters/bun-sqlite.ts
-- [ ] T011d Implement adapter factory with runtime detection in src/database/adapters/factory.ts
-- [ ] T011e Refactor DatabaseClient to use adapter pattern in src/database/client.ts
-- [ ] T011f Update database tests to work with both adapters in tests/unit/database/*.test.ts
-- [ ] T011g Verify tests pass with Bun locally
-- [ ] T011h Ensure CI tests still work with Node.js
+- [x] T011a Define database adapter interface in src/database/adapters/interface.ts
+- [x] T011b [P] Implement better-sqlite3 adapter in src/database/adapters/better-sqlite3.ts
+- [x] T011c [P] Implement bun:sqlite adapter in src/database/adapters/bun-sqlite.ts
+- [x] T011d Implement adapter factory with runtime detection in src/database/adapters/factory.ts
+- [x] T011e Refactor DatabaseClient to use adapter pattern in src/database/client.ts
+- [x] T011f Update database tests to work with both adapters in tests/unit/database/*.test.ts
+- [x] T011g Verify tests pass with Bun locally
+- [x] T011h Ensure CI tests still work with Node.js
 
-**Checkpoint**: Database layer works in both Bun and Node.js environments
+**Checkpoint**: Database layer works in both Bun and Node.js environments ✅
 
 ---
 
@@ -78,21 +78,21 @@
 
 **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T012 [P] [US1] Write unit test for valid config parsing in tests/unit/config/loader.test.ts
-- [ ] T013 [P] [US1] Write unit test for invalid metric names in tests/unit/config/schema.test.ts
-- [ ] T014 [P] [US1] Write unit test for duplicate metric names in tests/unit/config/schema.test.ts
-- [ ] T015 [P] [US1] Write unit test for type mismatches in tests/unit/config/schema.test.ts
-- [ ] T016 [P] [US1] Write unit test for empty/missing required fields in tests/unit/config/schema.test.ts
-- [ ] T017 [P] [US1] Write unit test for clear error messages in tests/unit/config/schema.test.ts
+- [x] T012 [P] [US1] Write unit test for valid config parsing in tests/unit/config/loader.test.ts
+- [x] T013 [P] [US1] Write unit test for invalid metric names in tests/unit/config/schema.test.ts
+- [x] T014 [P] [US1] Write unit test for duplicate metric names in tests/unit/config/schema.test.ts
+- [x] T015 [P] [US1] Write unit test for type mismatches in tests/unit/config/schema.test.ts
+- [x] T016 [P] [US1] Write unit test for empty/missing required fields in tests/unit/config/schema.test.ts
+- [x] T017 [P] [US1] Write unit test for clear error messages in tests/unit/config/schema.test.ts
 
 ### Implementation for User Story 1
 
-- [ ] T018 [US1] Define Zod schemas in src/config/schema.ts (MetricConfigSchema, DatabaseConfigSchema, UnentropyConfigSchema)
-- [ ] T019 [US1] Export inferred TypeScript types in src/config/types.ts
-- [ ] T020 [US1] Implement config file loader with validation in src/config/loader.ts
-- [ ] T021 [US1] Implement custom error formatter for validation errors in src/config/loader.ts
+- [x] T018 [US1] Define Zod schemas in src/config/schema.ts (MetricConfigSchema, DatabaseConfigSchema, UnentropyConfigSchema)
+- [x] T019 [US1] Export inferred TypeScript types in src/config/schema.ts (combined with T018)
+- [x] T020 [US1] Implement config file loader with validation in src/config/loader.ts
+- [x] T021 [US1] Implement custom error formatter for validation errors in src/config/loader.ts (integrated into schema.ts)
 
-**Checkpoint**: Users can create unentropy.json with metrics and get validation feedback
+**Checkpoint**: Users can create unentropy.json with metrics and get validation feedback ✅
 
 ---
 
