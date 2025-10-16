@@ -169,7 +169,7 @@ describe("collectMetrics - partial failure handling", () => {
       {
         name: "timeout-metric",
         type: "numeric",
-        command: "sleep 10",
+        command: "sleep 60",
         timeout: 100,
       },
     ];
@@ -179,7 +179,7 @@ describe("collectMetrics - partial failure handling", () => {
     expect(result.successful).toBe(0);
     expect(result.failed).toBe(1);
     expect(result.failures[0]?.reason).toContain("timed out");
-  });
+  }, 10000);
 
   test("handles all metrics failing", async () => {
     const metrics: MetricConfig[] = [

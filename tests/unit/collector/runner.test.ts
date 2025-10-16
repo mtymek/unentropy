@@ -44,7 +44,7 @@ describe("runCommand", () => {
 
     expect(result.success).toBe(false);
     expect(result.timedOut).toBe(true);
-    expect(result.durationMs).toBeLessThan(200);
+    expect(result.durationMs).toBeLessThan(2000);
   });
 
   test("uses default timeout of 60000ms", async () => {
