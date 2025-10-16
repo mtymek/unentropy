@@ -101,17 +101,16 @@
 
 **Purpose**: Final validation, documentation, and quality checks
 
-- [ ] T037 [P] Verify 100% of code passes linting (SC-004)
-- [ ] T038 [P] Run full CI pipeline locally to ensure all steps pass
-- [ ] T039 [P] Validate README.md enables developers to understand project in <10 minutes (SC-006)
-- [ ] T040 [P] Test edge case: build with syntax errors → verify clear error message
-- [ ] T041 [P] Test edge case: run tests with failing test → verify clear failure reporting
-- [ ] T042 [P] Verify quickstart.md instructions work end-to-end (clone → setup → all commands pass)
-- [ ] T043 Create GitHub Actions workflow triggers for push to main and pull requests
-- [ ] T044 Verify CI pipeline executes all steps: install, typecheck, lint, format:check, test, build (SC-005)
-- [ ] T045 Verify CI pipeline completes successfully on ubuntu-latest runner
-- [ ] T046 [P] Add LICENSE file if specified
-- [ ] T047 [P] Ensure bun.lockb is committed to repository for reproducible builds
+- [x] T037 [P] Verify 100% of code passes linting (SC-004)
+- [x] T038 [P] Run full CI pipeline locally to ensure all steps pass
+- [x] T039 [P] Validate README.md enables developers to understand project in <10 minutes (SC-006)
+- [x] T040 [P] Test edge case: build with syntax errors → verify clear error message
+- [x] T041 [P] Test edge case: run tests with failing test → verify clear failure reporting
+- [x] T042 [P] Verify quickstart.md instructions work end-to-end (clone → setup → all commands pass)
+- [x] T043 Create GitHub Actions workflow triggers for push to main and pull requests
+- [x] T044 Verify CI pipeline executes all steps: install, typecheck, lint, format:check, test, build (SC-005)
+- [x] T045 Verify CI pipeline completes successfully on ubuntu-latest runner
+- [x] T046 [P] Ensure bun.lock is committed to repository for reproducible builds
 
 ---
 
