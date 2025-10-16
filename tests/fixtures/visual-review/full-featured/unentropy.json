@@ -1,0 +1,33 @@
+{
+  "database": {
+    "path": "tests/fixtures/visual-review/full-featured/full-featured.db"
+  },
+  "metrics": [
+    {
+      "name": "test-coverage",
+      "type": "numeric",
+      "description": "Percentage of code covered by tests",
+      "command": "echo '85.5'",
+      "unit": "%"
+    },
+    {
+      "name": "bundle-size",
+      "type": "numeric",
+      "description": "JavaScript bundle size in KB",
+      "command": "echo '245.8'",
+      "unit": "KB"
+    },
+    {
+      "name": "build-status",
+      "type": "label",
+      "description": "CI build result",
+      "command": "echo 'success'"
+    },
+    {
+      "name": "primary-language",
+      "type": "label",
+      "description": "Most used programming language",
+      "command": "echo 'TypeScript'"
+    }
+  ]
+}

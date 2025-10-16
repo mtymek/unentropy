@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unentropy Metrics Report - unentropy/fixture-edge-cases</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  
+  <style>
+    @media print {
+      body {
+        background: white !important;
+      }
+      
+      .no-print {
+        display: none !important;
+      }
+      
+      .metric-card {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+      
+      canvas {
+        max-height: 300px;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900">
+  <header class="bg-white dark:bg-gray-800 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+            Unentropy Metrics Report
+          </h1>
+          <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            unentropy/fixture-edge-cases
+          </p>
+        </div>
+        <div class="mt-4 sm:mt-0 text-sm text-gray-600 dark:text-gray-400">
+          <div>Generated: Oct 16, 2025, 10:29 PM</div>
+          <div>Data Range: Jan 1, 2025, 01:00 AM - Jan 10, 2025, 01:00 AM</div>
+          <div>Total Builds: 10</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 metric-card">
+      <div class="mb-4">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+          bundle-size-kb
+        </h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400">Bundle size with special chars: @/\*</p>
+      </div>
+      
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            9999999.99
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Latest</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            9999999.99
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Min</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            9999999.99
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Max</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-600 dark:text-gray-400">
+            → 0.0%
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Trend</div>
+        </div>
+      </div>
+      
+      <div class="relative h-64 sm:h-80">
+        <canvas id="chart-bundle-size-kb" aria-label="Line chart showing bundle-size-kb over time"></canvas>
+      </div>
+      
+    </div>
+  
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 metric-card">
+      <div class="mb-4">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+          flatline-metric
+        </h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400">A metric that never changes</p>
+      </div>
+      
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            100.00
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Latest</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            100.00
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Min</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            100.00
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Max</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-600 dark:text-gray-400">
+            → 0.0%
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Trend</div>
+        </div>
+      </div>
+      
+      <div class="relative h-64 sm:h-80">
+        <canvas id="chart-flatline-metric" aria-label="Line chart showing flatline-metric over time"></canvas>
+      </div>
+      
+    </div>
+  
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 metric-card">
+      <div class="mb-4">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+          negative-metric
+        </h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400">Metric with negative values</p>
+      </div>
+      
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            -36.50
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Latest</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            -50.00
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Min</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            -36.50
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Max</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-green-600 dark:text-green-400">
+            ↑ 27.0%
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Trend</div>
+        </div>
+      </div>
+      
+      <div class="relative h-64 sm:h-80">
+        <canvas id="chart-negative-metric" aria-label="Line chart showing negative-metric over time"></canvas>
+      </div>
+      
+    </div>
+  
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 metric-card">
+      <div class="mb-4">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+          special-chars-label
+        </h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400">Label with special characters: &lt;script&gt;alert(&#039;xss&#039;)&lt;/script&gt;</p>
+      </div>
+      
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            N/A
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Latest</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            N/A
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Min</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            N/A
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Max</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-600 dark:text-gray-400">
+            — 0.0%
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Trend</div>
+        </div>
+      </div>
+      
+      <div class="relative h-64 sm:h-80">
+        <canvas id="chart-special-chars-label" aria-label="Bar chart showing special-chars-label over time"></canvas>
+      </div>
+      
+    </div>
+  
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 metric-card">
+      <div class="mb-4">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+          test-coverage
+        </h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400">This is a very long description that tests how the template handles descriptions with many characters and ensures that the layout doesn&#039;t break when displaying lengthy explanatory text about what a particular metric represents</p>
+      </div>
+      
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            0.00
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Latest</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            0.00
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Min</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            0.00
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Max</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-600 dark:text-gray-400">
+            → 0.0%
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Trend</div>
+        </div>
+      </div>
+      
+      <div class="relative h-64 sm:h-80">
+        <canvas id="chart-test-coverage" aria-label="Line chart showing test-coverage over time"></canvas>
+      </div>
+      
+    </div>
+  
+    </div>
+  </main>
+
+  <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 mt-8 border-t border-gray-200 dark:border-gray-700">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm text-gray-600 dark:text-gray-400">
+      <div>
+        Generated by <span class="font-semibold">Unentropy</span> v0.1.0
+      </div>
+      <div class="mt-2 sm:mt-0">
+        <a href="https://github.com/unentropy/unentropy" class="hover:text-gray-900 dark:hover:text-white">
+          View Documentation
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const chartsData = [{"id":"bundle-size-kb","config":{"type":"line","data":{"labels":["2025-01-01T00:00:00.000Z","2025-01-02T00:00:00.000Z","2025-01-03T00:00:00.000Z","2025-01-04T00:00:00.000Z","2025-01-05T00:00:00.000Z","2025-01-06T00:00:00.000Z","2025-01-07T00:00:00.000Z","2025-01-08T00:00:00.000Z","2025-01-09T00:00:00.000Z","2025-01-10T00:00:00.000Z"],"datasets":[{"label":"bundle-size-kb","data":[9999999.99,9999999.99,9999999.99,9999999.99,9999999.99,9999999.99,9999999.99,9999999.99,9999999.99,9999999.99],"metadata":[{"commitSha":"abc0000def0123456789012345678901234","runNumber":1},{"commitSha":"abc0001def0123456789012345678901234","runNumber":2},{"commitSha":"abc0002def0123456789012345678901234","runNumber":3},{"commitSha":"abc0003def0123456789012345678901234","runNumber":4},{"commitSha":"abc0004def0123456789012345678901234","runNumber":5},{"commitSha":"abc0005def0123456789012345678901234","runNumber":6},{"commitSha":"abc0006def0123456789012345678901234","runNumber":7},{"commitSha":"abc0007def0123456789012345678901234","runNumber":8},{"commitSha":"abc0008def0123456789012345678901234","runNumber":9},{"commitSha":"abc0009def0123456789012345678901234","runNumber":10}],"borderColor":"rgb(59, 130, 246)","backgroundColor":"rgba(59, 130, 246, 0.1)","tension":0.4,"fill":true,"pointRadius":4,"pointHoverRadius":6}]},"options":{"responsive":true,"maintainAspectRatio":false,"interaction":{"mode":"index","intersect":false},"plugins":{"legend":{"display":false}},"scales":{"x":{"type":"time","time":{"unit":"day","displayFormats":{"day":"MMM d"}},"title":{"display":true,"text":"Build Date"}},"y":{"beginAtZero":true,"title":{"display":true,"text":"bundle-size-kb"}}}}}},{"id":"flatline-metric","config":{"type":"line","data":{"labels":["2025-01-01T00:00:00.000Z","2025-01-02T00:00:00.000Z","2025-01-03T00:00:00.000Z","2025-01-04T00:00:00.000Z","2025-01-05T00:00:00.000Z","2025-01-06T00:00:00.000Z","2025-01-07T00:00:00.000Z","2025-01-08T00:00:00.000Z","2025-01-09T00:00:00.000Z","2025-01-10T00:00:00.000Z"],"datasets":[{"label":"flatline-metric","data":[100,100,100,100,100,100,100,100,100,100],"metadata":[{"commitSha":"abc0000def0123456789012345678901234","runNumber":1},{"commitSha":"abc0001def0123456789012345678901234","runNumber":2},{"commitSha":"abc0002def0123456789012345678901234","runNumber":3},{"commitSha":"abc0003def0123456789012345678901234","runNumber":4},{"commitSha":"abc0004def0123456789012345678901234","runNumber":5},{"commitSha":"abc0005def0123456789012345678901234","runNumber":6},{"commitSha":"abc0006def0123456789012345678901234","runNumber":7},{"commitSha":"abc0007def0123456789012345678901234","runNumber":8},{"commitSha":"abc0008def0123456789012345678901234","runNumber":9},{"commitSha":"abc0009def0123456789012345678901234","runNumber":10}],"borderColor":"rgb(59, 130, 246)","backgroundColor":"rgba(59, 130, 246, 0.1)","tension":0.4,"fill":true,"pointRadius":4,"pointHoverRadius":6}]},"options":{"responsive":true,"maintainAspectRatio":false,"interaction":{"mode":"index","intersect":false},"plugins":{"legend":{"display":false}},"scales":{"x":{"type":"time","time":{"unit":"day","displayFormats":{"day":"MMM d"}},"title":{"display":true,"text":"Build Date"}},"y":{"beginAtZero":true,"title":{"display":true,"text":"flatline-metric"}}}}}},{"id":"negative-metric","config":{"type":"line","data":{"labels":["2025-01-01T00:00:00.000Z","2025-01-02T00:00:00.000Z","2025-01-03T00:00:00.000Z","2025-01-04T00:00:00.000Z","2025-01-05T00:00:00.000Z","2025-01-06T00:00:00.000Z","2025-01-07T00:00:00.000Z","2025-01-08T00:00:00.000Z","2025-01-09T00:00:00.000Z","2025-01-10T00:00:00.000Z"],"datasets":[{"label":"negative-metric","data":[-50,-48.5,-47,-45.5,-44,-42.5,-41,-39.5,-38,-36.5],"metadata":[{"commitSha":"abc0000def0123456789012345678901234","runNumber":1},{"commitSha":"abc0001def0123456789012345678901234","runNumber":2},{"commitSha":"abc0002def0123456789012345678901234","runNumber":3},{"commitSha":"abc0003def0123456789012345678901234","runNumber":4},{"commitSha":"abc0004def0123456789012345678901234","runNumber":5},{"commitSha":"abc0005def0123456789012345678901234","runNumber":6},{"commitSha":"abc0006def0123456789012345678901234","runNumber":7},{"commitSha":"abc0007def0123456789012345678901234","runNumber":8},{"commitSha":"abc0008def0123456789012345678901234","runNumber":9},{"commitSha":"abc0009def0123456789012345678901234","runNumber":10}],"borderColor":"rgb(59, 130, 246)","backgroundColor":"rgba(59, 130, 246, 0.1)","tension":0.4,"fill":true,"pointRadius":4,"pointHoverRadius":6}]},"options":{"responsive":true,"maintainAspectRatio":false,"interaction":{"mode":"index","intersect":false},"plugins":{"legend":{"display":false}},"scales":{"x":{"type":"time","time":{"unit":"day","displayFormats":{"day":"MMM d"}},"title":{"display":true,"text":"Build Date"}},"y":{"beginAtZero":true,"title":{"display":true,"text":"negative-metric"}}}}}},{"id":"special-chars-label","config":{"type":"bar","data":{"labels":["\"quoted\"","&amp;","<script>alert('xss')</script>","apostrophe's","normal-value"],"datasets":[{"label":"Occurrences","data":[2,2,2,2,2],"backgroundColor":"rgba(59, 130, 246, 0.8)","borderColor":"rgb(59, 130, 246)","borderWidth":1}]},"options":{"responsive":true,"maintainAspectRatio":false,"interaction":{"mode":"index","intersect":false},"plugins":{"legend":{"display":false}},"scales":{"y":{"beginAtZero":true,"ticks":{"stepSize":1},"title":{"display":true,"text":"Count"}}}}}},{"id":"test-coverage","config":{"type":"line","data":{"labels":["2025-01-01T00:00:00.000Z","2025-01-02T00:00:00.000Z","2025-01-03T00:00:00.000Z","2025-01-04T00:00:00.000Z","2025-01-05T00:00:00.000Z","2025-01-06T00:00:00.000Z","2025-01-07T00:00:00.000Z","2025-01-08T00:00:00.000Z","2025-01-09T00:00:00.000Z","2025-01-10T00:00:00.000Z"],"datasets":[{"label":"test-coverage","data":[0,0,0,0,0,0,0,0,0,0],"metadata":[{"commitSha":"abc0000def0123456789012345678901234","runNumber":1},{"commitSha":"abc0001def0123456789012345678901234","runNumber":2},{"commitSha":"abc0002def0123456789012345678901234","runNumber":3},{"commitSha":"abc0003def0123456789012345678901234","runNumber":4},{"commitSha":"abc0004def0123456789012345678901234","runNumber":5},{"commitSha":"abc0005def0123456789012345678901234","runNumber":6},{"commitSha":"abc0006def0123456789012345678901234","runNumber":7},{"commitSha":"abc0007def0123456789012345678901234","runNumber":8},{"commitSha":"abc0008def0123456789012345678901234","runNumber":9},{"commitSha":"abc0009def0123456789012345678901234","runNumber":10}],"borderColor":"rgb(59, 130, 246)","backgroundColor":"rgba(59, 130, 246, 0.1)","tension":0.4,"fill":true,"pointRadius":4,"pointHoverRadius":6}]},"options":{"responsive":true,"maintainAspectRatio":false,"interaction":{"mode":"index","intersect":false},"plugins":{"legend":{"display":false}},"scales":{"x":{"type":"time","time":{"unit":"day","displayFormats":{"day":"MMM d"}},"title":{"display":true,"text":"Build Date"}},"y":{"beginAtZero":true,"title":{"display":true,"text":"test-coverage"}}}}}}];
+    
+    chartsData.forEach(chartData => {
+      const ctx = document.getElementById('chart-' + chartData.id);
+      if (ctx) {
+        new Chart(ctx, chartData.config);
+      }
+    });
+  </script>
+</body>
+</html>

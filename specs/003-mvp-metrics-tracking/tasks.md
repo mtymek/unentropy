@@ -166,12 +166,12 @@
 
 **Purpose**: Manual quality assurance for HTML template design, usability, and accessibility
 
-- [ ] T048g [US3] Create test fixture: minimal data (unentropy.json + 5 data points) in tests/fixtures/visual-review/minimal/
-- [ ] T048h [US3] Create test fixture: full-featured (4 metrics + 100 data points) in tests/fixtures/visual-review/full-featured/
-- [ ] T048i [US3] Create test fixture: sparse data (2 metrics + 3 data points) in tests/fixtures/visual-review/sparse-data/
-- [ ] T048j [US3] Create test fixture: edge cases (special chars, extreme values) in tests/fixtures/visual-review/edge-cases/
-- [ ] T048k [US3] Implement fixture generation script (generate-fixture command) in scripts/generate-fixture.ts
-- [ ] T048l [US3] Generate HTML reports from all 4 test fixtures
+- [x] T048g [US3] Create test fixture: minimal data (unentropy.json + 5 data points) in tests/fixtures/visual-review/minimal/
+- [x] T048h [US3] Create test fixture: full-featured (4 metrics + 100 data points) in tests/fixtures/visual-review/full-featured/
+- [x] T048i [US3] Create test fixture: sparse data (2 metrics + 3 data points) in tests/fixtures/visual-review/sparse-data/
+- [x] T048j [US3] Create test fixture: edge cases (special chars, extreme values) in tests/fixtures/visual-review/edge-cases/
+- [x] T048k [US3] Implement fixture generation script (generate-fixture command) in scripts/generate-fixture.ts
+- [x] T048l [US3] Generate HTML reports from all 4 test fixtures
 - [ ] T048m [US3] Manual visual review: Complete all checklist items from contracts/visual-acceptance-criteria.md
 - [ ] T048n [US3] Document review findings and capture screenshots for documentation
 

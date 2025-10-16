@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unentropy Metrics Report - unentropy/fixture-full-featured</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  
+  <style>
+    @media print {
+      body {
+        background: white !important;
+      }
+      
+      .no-print {
+        display: none !important;
+      }
+      
+      .metric-card {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+      
+      canvas {
+        max-height: 300px;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900">
+  <header class="bg-white dark:bg-gray-800 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+            Unentropy Metrics Report
+          </h1>
+          <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            unentropy/fixture-full-featured
+          </p>
+        </div>
+        <div class="mt-4 sm:mt-0 text-sm text-gray-600 dark:text-gray-400">
+          <div>Generated: Oct 16, 2025, 10:29 PM</div>
+          <div>Data Range: Jan 1, 2025, 01:00 AM - Jan 25, 2025, 01:00 AM</div>
+          <div>Total Builds: 25</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 metric-card">
+      <div class="mb-4">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+          build-status
+        </h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400">CI build result</p>
+      </div>
+      
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            N/A
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Latest</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            N/A
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Min</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            N/A
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Max</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-600 dark:text-gray-400">
+            — 0.0%
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Trend</div>
+        </div>
+      </div>
+      
+      <div class="relative h-64 sm:h-80">
+        <canvas id="chart-build-status" aria-label="Bar chart showing build-status over time"></canvas>
+      </div>
+      
+    </div>
+  
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 metric-card">
+      <div class="mb-4">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+          bundle-size
+        </h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400">JavaScript bundle size in KB</p>
+      </div>
+      
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            236.25
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Latest</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            229.90
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Min</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            262.30
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Max</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-green-600 dark:text-green-400">
+            ↑ 2.7%
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Trend</div>
+        </div>
+      </div>
+      
+      <div class="relative h-64 sm:h-80">
+        <canvas id="chart-bundle-size" aria-label="Line chart showing bundle-size over time"></canvas>
+      </div>
+      
+    </div>
+  
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 metric-card">
+      <div class="mb-4">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+          primary-language
+        </h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400">Most used programming language</p>
+      </div>
+      
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            N/A
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Latest</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            N/A
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Min</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            N/A
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Max</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-600 dark:text-gray-400">
+            — 0.0%
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Trend</div>
+        </div>
+      </div>
+      
+      <div class="relative h-64 sm:h-80">
+        <canvas id="chart-primary-language" aria-label="Bar chart showing primary-language over time"></canvas>
+      </div>
+      
+    </div>
+  
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 metric-card">
+      <div class="mb-4">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+          test-coverage
+        </h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400">Percentage of code covered by tests</p>
+      </div>
+      
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            92.54
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Latest</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            71.22
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Min</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            92.54
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Max</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-green-600 dark:text-green-400">
+            ↑ 23.4%
+          </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Trend</div>
+        </div>
+      </div>
+      
+      <div class="relative h-64 sm:h-80">
+        <canvas id="chart-test-coverage" aria-label="Line chart showing test-coverage over time"></canvas>
+      </div>
+      
+    </div>
+  
+    </div>
+  </main>
+
+  <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 mt-8 border-t border-gray-200 dark:border-gray-700">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm text-gray-600 dark:text-gray-400">
+      <div>
+        Generated by <span class="font-semibold">Unentropy</span> v0.1.0
+      </div>
+      <div class="mt-2 sm:mt-0">
+        <a href="https://github.com/unentropy/unentropy" class="hover:text-gray-900 dark:hover:text-white">
+          View Documentation
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const chartsData = [{"id":"build-status","config":{"type":"bar","data":{"labels":["failure","success","warning"],"datasets":[{"label":"Occurrences","data":[4,19,2],"backgroundColor":"rgba(59, 130, 246, 0.8)","borderColor":"rgb(59, 130, 246)","borderWidth":1}]},"options":{"responsive":true,"maintainAspectRatio":false,"interaction":{"mode":"index","intersect":false},"plugins":{"legend":{"display":false}},"scales":{"y":{"beginAtZero":true,"ticks":{"stepSize":1},"title":{"display":true,"text":"Count"}}}}}},{"id":"bundle-size","config":{"type":"line","data":{"labels":["2025-01-01T00:00:00.000Z","2025-01-02T00:00:00.000Z","2025-01-03T00:00:00.000Z","2025-01-04T00:00:00.000Z","2025-01-05T00:00:00.000Z","2025-01-06T00:00:00.000Z","2025-01-07T00:00:00.000Z","2025-01-08T00:00:00.000Z","2025-01-09T00:00:00.000Z","2025-01-10T00:00:00.000Z","2025-01-11T00:00:00.000Z","2025-01-12T00:00:00.000Z","2025-01-13T00:00:00.000Z","2025-01-14T00:00:00.000Z","2025-01-15T00:00:00.000Z","2025-01-16T00:00:00.000Z","2025-01-17T00:00:00.000Z","2025-01-18T00:00:00.000Z","2025-01-19T00:00:00.000Z","2025-01-20T00:00:00.000Z","2025-01-21T00:00:00.000Z","2025-01-22T00:00:00.000Z","2025-01-23T00:00:00.000Z","2025-01-24T00:00:00.000Z","2025-01-25T00:00:00.000Z"],"datasets":[{"label":"bundle-size","data":[230,229.89866844317515,230.5787801199423,231.99328770180642,234.0658658130567,236.6939538826372,239.75284491046654,243.10065714199519,246.58399044602578,250.04404189386173,253.32293673094284,256.2700223451069,258.7478743108249,260.6377750673789,261.84444681337317,262.2998499320089,261.96589551589506,260.8359638515892,258.93516832668297,256.3193542382883,253.07287241727227,249.305216426814,245.14665739956837,240.74305053870108,236.25002033121106],"metadata":[{"commitSha":"abc0000def0123456789012345678901234","runNumber":1},{"commitSha":"abc0001def0123456789012345678901234","runNumber":2},{"commitSha":"abc0002def0123456789012345678901234","runNumber":3},{"commitSha":"abc0003def0123456789012345678901234","runNumber":4},{"commitSha":"abc0004def0123456789012345678901234","runNumber":5},{"commitSha":"abc0005def0123456789012345678901234","runNumber":6},{"commitSha":"abc0006def0123456789012345678901234","runNumber":7},{"commitSha":"abc0007def0123456789012345678901234","runNumber":8},{"commitSha":"abc0008def0123456789012345678901234","runNumber":9},{"commitSha":"abc0009def0123456789012345678901234","runNumber":10},{"commitSha":"abc0010def0123456789012345678901234","runNumber":11},{"commitSha":"abc0011def0123456789012345678901234","runNumber":12},{"commitSha":"abc0012def0123456789012345678901234","runNumber":13},{"commitSha":"abc0013def0123456789012345678901234","runNumber":14},{"commitSha":"abc0014def0123456789012345678901234","runNumber":15},{"commitSha":"abc0015def0123456789012345678901234","runNumber":16},{"commitSha":"abc0016def0123456789012345678901234","runNumber":17},{"commitSha":"abc0017def0123456789012345678901234","runNumber":18},{"commitSha":"abc0018def0123456789012345678901234","runNumber":19},{"commitSha":"abc0019def0123456789012345678901234","runNumber":20},{"commitSha":"abc0020def0123456789012345678901234","runNumber":21},{"commitSha":"abc0021def0123456789012345678901234","runNumber":22},{"commitSha":"abc0022def0123456789012345678901234","runNumber":23},{"commitSha":"abc0023def0123456789012345678901234","runNumber":24},{"commitSha":"abc0024def0123456789012345678901234","runNumber":25}],"borderColor":"rgb(59, 130, 246)","backgroundColor":"rgba(59, 130, 246, 0.1)","tension":0.4,"fill":true,"pointRadius":4,"pointHoverRadius":6}]},"options":{"responsive":true,"maintainAspectRatio":false,"interaction":{"mode":"index","intersect":false},"plugins":{"legend":{"display":false}},"scales":{"x":{"type":"time","time":{"unit":"day","displayFormats":{"day":"MMM d"}},"title":{"display":true,"text":"Build Date"}},"y":{"beginAtZero":true,"title":{"display":true,"text":"bundle-size"}}}}}},{"id":"primary-language","config":{"type":"bar","data":{"labels":["JavaScript","Python","TypeScript"],"datasets":[{"label":"Occurrences","data":[5,5,15],"backgroundColor":"rgba(59, 130, 246, 0.8)","borderColor":"rgb(59, 130, 246)","borderWidth":1}]},"options":{"responsive":true,"maintainAspectRatio":false,"interaction":{"mode":"index","intersect":false},"plugins":{"legend":{"display":false}},"scales":{"y":{"beginAtZero":true,"ticks":{"stepSize":1},"title":{"display":true,"text":"Count"}}}}}},{"id":"test-coverage","config":{"type":"line","data":{"labels":["2025-01-01T00:00:00.000Z","2025-01-02T00:00:00.000Z","2025-01-03T00:00:00.000Z","2025-01-04T00:00:00.000Z","2025-01-05T00:00:00.000Z","2025-01-06T00:00:00.000Z","2025-01-07T00:00:00.000Z","2025-01-08T00:00:00.000Z","2025-01-09T00:00:00.000Z","2025-01-10T00:00:00.000Z","2025-01-11T00:00:00.000Z","2025-01-12T00:00:00.000Z","2025-01-13T00:00:00.000Z","2025-01-14T00:00:00.000Z","2025-01-15T00:00:00.000Z","2025-01-16T00:00:00.000Z","2025-01-17T00:00:00.000Z","2025-01-18T00:00:00.000Z","2025-01-19T00:00:00.000Z","2025-01-20T00:00:00.000Z","2025-01-21T00:00:00.000Z","2025-01-22T00:00:00.000Z","2025-01-23T00:00:00.000Z","2025-01-24T00:00:00.000Z","2025-01-25T00:00:00.000Z"],"datasets":[{"label":"test-coverage","data":[75,78.3552020666134,81.44642473395035,84.03326909627484,85.92039085967225,86.97494986604055,87.13847630878196,86.43209366648874,84.95463180551151,82.8737988023383,80.41120008059868,77.82254305856752,75.37479556705148,73.32233840816026,71.88424227586411,71.22469882334903,71.4383539116416,72.54185317672267,74.47235512444013,77.09314457402363,80.20584501801073,83.5681390048435,86.91541363513377,89.98439764388199,92.53667863849154],"metadata":[{"commitSha":"abc0000def0123456789012345678901234","runNumber":1},{"commitSha":"abc0001def0123456789012345678901234","runNumber":2},{"commitSha":"abc0002def0123456789012345678901234","runNumber":3},{"commitSha":"abc0003def0123456789012345678901234","runNumber":4},{"commitSha":"abc0004def0123456789012345678901234","runNumber":5},{"commitSha":"abc0005def0123456789012345678901234","runNumber":6},{"commitSha":"abc0006def0123456789012345678901234","runNumber":7},{"commitSha":"abc0007def0123456789012345678901234","runNumber":8},{"commitSha":"abc0008def0123456789012345678901234","runNumber":9},{"commitSha":"abc0009def0123456789012345678901234","runNumber":10},{"commitSha":"abc0010def0123456789012345678901234","runNumber":11},{"commitSha":"abc0011def0123456789012345678901234","runNumber":12},{"commitSha":"abc0012def0123456789012345678901234","runNumber":13},{"commitSha":"abc0013def0123456789012345678901234","runNumber":14},{"commitSha":"abc0014def0123456789012345678901234","runNumber":15},{"commitSha":"abc0015def0123456789012345678901234","runNumber":16},{"commitSha":"abc0016def0123456789012345678901234","runNumber":17},{"commitSha":"abc0017def0123456789012345678901234","runNumber":18},{"commitSha":"abc0018def0123456789012345678901234","runNumber":19},{"commitSha":"abc0019def0123456789012345678901234","runNumber":20},{"commitSha":"abc0020def0123456789012345678901234","runNumber":21},{"commitSha":"abc0021def0123456789012345678901234","runNumber":22},{"commitSha":"abc0022def0123456789012345678901234","runNumber":23},{"commitSha":"abc0023def0123456789012345678901234","runNumber":24},{"commitSha":"abc0024def0123456789012345678901234","runNumber":25}],"borderColor":"rgb(59, 130, 246)","backgroundColor":"rgba(59, 130, 246, 0.1)","tension":0.4,"fill":true,"pointRadius":4,"pointHoverRadius":6}]},"options":{"responsive":true,"maintainAspectRatio":false,"interaction":{"mode":"index","intersect":false},"plugins":{"legend":{"display":false}},"scales":{"x":{"type":"time","time":{"unit":"day","displayFormats":{"day":"MMM d"}},"title":{"display":true,"text":"Build Date"}},"y":{"beginAtZero":true,"title":{"display":true,"text":"test-coverage"}}}}}}];
+    
+    chartsData.forEach(chartData => {
+      const ctx = document.getElementById('chart-' + chartData.id);
+      if (ctx) {
+        new Chart(ctx, chartData.config);
+      }
+    });
+  </script>
+</body>
+</html>

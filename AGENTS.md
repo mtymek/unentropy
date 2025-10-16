@@ -11,6 +11,8 @@ Unentropy is a serverless tool for tracking custom code metrics in CI/CD pipelin
 - Test: bun test
 - Single test: bun test --testNamePattern="<test name>"
 - Type check: bun run typecheck
+- Generate visual test fixtures: bun run generate-fixtures
+- Visual review (generate + open in browser): bun run visual-review
 
 ## Code Style Guidelines
 
@@ -29,3 +31,11 @@ Unentropy is a serverless tool for tracking custom code metrics in CI/CD pipelin
 - Follow security best practices; avoid logging secrets
 - Mimic existing code style from src/ and tests/ directories
 - When working on tasks from spec/\*/tasks.md, make sure to update the status after completion in that file
+
+## Visual Testing
+
+- Test fixtures are located in tests/fixtures/visual-review/ with 4 scenarios: minimal, full-featured, sparse-data, edge-cases
+- Each fixture contains unentropy.json config, generated .db database, and report.html output
+- SQLite databases (.db, .db-journal) are gitignored and regenerated on each run
+- Run `bun run visual-review` to regenerate all fixtures and open HTML reports in browser
+- Visual acceptance criteria checklist is in specs/003-mvp-metrics-tracking/contracts/visual-acceptance-criteria.md
