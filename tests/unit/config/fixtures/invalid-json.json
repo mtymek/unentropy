@@ -1,0 +1,9 @@
+{
+  "metrics": [
+    {
+      "name": "test-coverage"
+      "type": "numeric",
+      "command": "echo 85"
+    }
+  ]
+}
