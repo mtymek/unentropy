@@ -43,7 +43,28 @@
 - [x] T010 [P] Write unit tests for schema initialization in tests/unit/database/migrations.test.ts
 - [x] T011 [P] Write unit tests for query functions in tests/unit/database/queries.test.ts
 
+**Note**: Tests T009-T011 failed with better-sqlite3 incompatibility in Bun environment. Requires adapter pattern implementation.
+
 **Checkpoint**: Database layer ready - user story implementation can now begin
+
+---
+
+## Phase 2.5: Database Adapter Layer (Blocking Fix)
+
+**Purpose**: Enable database layer to work in both Bun (local development) and Node.js (GitHub Actions) environments
+
+**Context**: better-sqlite3 native bindings don't work with Bun's incomplete N-API support. Both better-sqlite3 and bun:sqlite have highly compatible APIs, allowing a thin adapter layer.
+
+- [ ] T011a Define database adapter interface in src/database/adapters/interface.ts
+- [ ] T011b [P] Implement better-sqlite3 adapter in src/database/adapters/better-sqlite3.ts
+- [ ] T011c [P] Implement bun:sqlite adapter in src/database/adapters/bun-sqlite.ts
+- [ ] T011d Implement adapter factory with runtime detection in src/database/adapters/factory.ts
+- [ ] T011e Refactor DatabaseClient to use adapter pattern in src/database/client.ts
+- [ ] T011f Update database tests to work with both adapters in tests/unit/database/*.test.ts
+- [ ] T011g Verify tests pass with Bun locally
+- [ ] T011h Ensure CI tests still work with Node.js
+
+**Checkpoint**: Database layer works in both Bun and Node.js environments
 
 ---
 

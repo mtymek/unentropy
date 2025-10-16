@@ -13,7 +13,9 @@ Build a serverless metrics tracking system that allows developers to define cust
 
 **Language/Version**: TypeScript 5.x / Node.js 20.x (matches existing project setup)  
 **Primary Dependencies**: 
-- `better-sqlite3` for database operations
+- `better-sqlite3` for database operations (Node.js/GitHub Actions)
+- `bun:sqlite` for database operations (Bun local development)
+- Database adapter layer for runtime environment detection
 - `@actions/core` and `@actions/github` for GitHub Actions integration
 - Chart.js (via CDN) for HTML report visualizations
 - `zod` for configuration validation
@@ -32,6 +34,8 @@ Build a serverless metrics tracking system that allows developers to define cust
 - Single-file HTML output (no separate assets)
 - Database must handle concurrent writes from parallel jobs
 - Zero configuration for standard use cases
+- Must support both Bun (local development) and Node.js (GitHub Actions) environments
+- Database adapter must provide consistent API across both environments
 
 **Scale/Scope**: 
 - Support 50+ concurrent workflow runs
@@ -94,7 +98,12 @@ src/
 │   ├── loader.ts           # Config file reading and validation
 │   └── types.ts            # TypeScript types for configuration
 ├── database/
-│   ├── client.ts           # SQLite connection management
+│   ├── adapters/
+│   │   ├── interface.ts    # Common database adapter interface
+│   │   ├── better-sqlite3.ts  # Node.js adapter (better-sqlite3)
+│   │   ├── bun-sqlite.ts   # Bun adapter (bun:sqlite)
+│   │   └── factory.ts      # Runtime environment detection
+│   ├── client.ts           # SQLite connection management (uses adapter)
 │   ├── migrations.ts       # Schema initialization
 │   ├── queries.ts          # Data access functions
 │   └── types.ts            # Database entity types
