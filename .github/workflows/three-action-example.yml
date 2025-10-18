@@ -22,6 +22,9 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Build GitHub Actions
+        run: bun run build:actions
+
       - name: Find latest database
         id: find-database
         uses: ./.github/actions/find-database
