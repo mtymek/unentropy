@@ -6,7 +6,7 @@ The project already uses several toolkit packages (`@actions/core`, `@actions/gi
 
 ## Key Simplification Opportunities
 
-### 1. **Eliminate Manual Output File Handling**
+### 1. **Eliminate Manual Output File Handling** (DONE)
 
 **Current**: Each action writes outputs to temp files, then bash scripts read them back
 **Toolkit Solution**: Use `@actions/core` outputs directly
@@ -15,7 +15,7 @@ The project already uses several toolkit packages (`@actions/core`, `@actions/gi
 - Use `core.setOutput()` directly (already partially implemented)
 - Eliminate the complex bash wrapper scripts
 
-### 2. **Replace Manual GitHub API Calls with @actions/github**
+### 2. **Replace Manual GitHub API Calls with @actions/github** (DONE)
 
 **Current**: `find-database.ts` makes manual `fetch()` calls to GitHub REST API
 **Toolkit Solution**: Use the authenticated Octokit client from `@actions/github`
