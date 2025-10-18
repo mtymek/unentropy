@@ -34,11 +34,6 @@ function parseInputs(): ActionInputs {
   const branchFilterInput = process.env.INPUT_BRANCH_FILTER;
   const branchFilter = branchFilterInput || process.env.GITHUB_REF_NAME || "main";
 
-  // Debug output
-  core.info(`Debug - INPUT_BRANCH_FILTER: '${branchFilterInput}'`);
-  core.info(`Debug - GITHUB_REF_NAME: '${process.env.GITHUB_REF_NAME}'`);
-  core.info(`Debug - final branchFilter: '${branchFilter}'`);
-
   // Validate inputs
   if (!/^[a-zA-Z0-9_-]+$/.test(databaseArtifact)) {
     throw new Error(
