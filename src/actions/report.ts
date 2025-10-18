@@ -1,14 +1,16 @@
 import * as core from "@actions/core";
 import { promises as fs } from "fs";
-import { dirname } from "path";
+import { dirname, resolve } from "path";
 import { DatabaseClient } from "../database/client";
 import { generateReport } from "../reporter/generator";
+import { loadConfig } from "../config/loader";
 
 interface ActionInputs {
   databasePath: string;
   outputPath: string;
   timeRange: string;
   title: string;
+  configPath: string;
 }
 
 interface ActionOutputs {
@@ -29,6 +31,7 @@ function parseInputs(): ActionInputs {
   const outputPath = core.getInput("output-path") || "./unentropy-report.html";
   const timeRange = core.getInput("time-range") || "all";
   const title = core.getInput("title") || "Metrics Report";
+  const configPath = core.getInput("config-path") || "./unentropy.json";
 
   if (!outputPath.endsWith(".html")) {
     throw new Error(`Invalid output-path: must end with .html. Got: ${outputPath}`);
@@ -51,6 +54,7 @@ function parseInputs(): ActionInputs {
     outputPath,
     timeRange,
     title,
+    configPath,
   };
 }
 
@@ -181,6 +185,21 @@ async function run(): Promise<void> {
     const inputs = parseInputs();
     core.info(`Starting report generation with title: ${inputs.title}`);
 
+    // Load configuration
+    let config;
+    try {
+      const resolvedConfigPath = resolve(inputs.configPath);
+      config = await loadConfig(resolvedConfigPath);
+      core.info(`Configuration loaded from: ${resolvedConfigPath}`);
+      core.info(`Found ${config.metrics.length} configured metrics`);
+    } catch (error) {
+      core.warning(
+        `Failed to load config from ${inputs.configPath}: ${error instanceof Error ? error.message : String(error)}`
+      );
+      core.warning("Report will include all metrics found in database");
+      config = undefined;
+    }
+
     // Ensure output directory exists
     await ensureOutputDirectory(inputs.outputPath);
 
@@ -210,6 +229,7 @@ async function run(): Promise<void> {
       const emptyReport = generateReport(db, {
         repository: process.env.GITHUB_REPOSITORY || "unknown/repository",
         metricNames: [],
+        config,
       });
 
       await fs.writeFile(inputs.outputPath, emptyReport, "utf-8");
@@ -237,6 +257,7 @@ async function run(): Promise<void> {
       const report = generateReport(db, {
         repository: process.env.GITHUB_REPOSITORY || "unknown/repository",
         metricNames: allMetrics.map((m) => m.name),
+        config,
       });
 
       await fs.writeFile(inputs.outputPath, report, "utf-8");
@@ -265,6 +286,7 @@ async function run(): Promise<void> {
       report = generateReport(db, {
         repository: process.env.GITHUB_REPOSITORY || "unknown/repository",
         metricNames: filteredMetricNames,
+        config,
       });
       core.info(`Report generated successfully with ${filteredMetricNames.length} metrics`);
     } catch (error) {

@@ -26,6 +26,10 @@ inputs:
     description: "Report title"
     required: false
     default: "Metrics Report"
+  config-path:
+    description: "Path to unentropy.json configuration file"
+    required: false
+    default: "./unentropy.json"
 
 outputs:
   report-path:
@@ -108,3 +112,4 @@ runs:
         INPUT_OUTPUT_PATH: ${{ inputs.output-path }}
         INPUT_TIME_RANGE: ${{ inputs.time-range }}
         INPUT_TITLE: ${{ inputs.title }}
+        INPUT_CONFIG_PATH: ${{ inputs.config-path }}

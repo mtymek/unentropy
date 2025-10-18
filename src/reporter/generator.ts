@@ -1,5 +1,6 @@
 import type { DatabaseClient } from "../database/client";
 import type { MetricType } from "../database/types";
+import type { UnentropyConfig } from "../config/schema";
 import { buildChartConfig } from "./charts";
 import {
   generateHtmlReport,
@@ -37,6 +38,7 @@ export interface SummaryStats {
 export interface GenerateReportOptions {
   repository?: string;
   metricNames?: string[];
+  config?: UnentropyConfig;
 }
 
 export function getMetricTimeSeries(db: DatabaseClient, metricName: string): TimeSeriesData {
@@ -185,7 +187,22 @@ export function generateReport(db: DatabaseClient, options: GenerateReportOption
   const repository = options.repository || "unknown/repository";
 
   const allMetrics = db.getAllMetricDefinitions();
-  const metricNames = options.metricNames || allMetrics.map((m) => m.name);
+
+  // If config is provided, only show metrics that are configured
+  let metricNames: string[];
+  if (options.config) {
+    const configuredMetricNames = options.config.metrics.map((m) => m.name);
+    if (options.metricNames) {
+      // Filter both by config and explicit metricNames
+      metricNames = options.metricNames.filter((name) => configuredMetricNames.includes(name));
+    } else {
+      // Use only configured metrics
+      metricNames = configuredMetricNames;
+    }
+  } else {
+    // No config provided, use all metrics (backward compatibility)
+    metricNames = options.metricNames || allMetrics.map((m) => m.name);
+  }
 
   const metrics: MetricReportData[] = [];
 
