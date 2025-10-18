@@ -28,13 +28,14 @@ interface Artifact {
 }
 
 function parseInputs(): ActionInputs {
-  const databaseArtifact = core.getInput("database-artifact") || "unentropy-metrics";
-  const databasePath = core.getInput("database-path") || "./unentropy-metrics.db";
-  const branchFilterInput = core.getInput("branch-filter");
+  // Read from environment variables since this is a composite action
+  const databaseArtifact = process.env.INPUT_DATABASE_ARTIFACT || "unentropy-metrics";
+  const databasePath = process.env.INPUT_DATABASE_PATH || "./unentropy-metrics.db";
+  const branchFilterInput = process.env.INPUT_BRANCH_FILTER;
   const branchFilter = branchFilterInput || process.env.GITHUB_REF_NAME || "main";
 
   // Debug output
-  core.info(`Debug - branch-filter input: '${branchFilterInput}'`);
+  core.info(`Debug - INPUT_BRANCH_FILTER: '${branchFilterInput}'`);
   core.info(`Debug - GITHUB_REF_NAME: '${process.env.GITHUB_REF_NAME}'`);
   core.info(`Debug - final branchFilter: '${branchFilter}'`);
 
