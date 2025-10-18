@@ -62,8 +62,7 @@ runs:
           if [ -n "$ARTIFACT_ID" ]; then
             echo "Downloading database artifact: $ARTIFACT_ID"
             cd "$DB_DIR"
-            gh api repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_ID/zip \
-              --output database.zip
+            gh api repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_ID/zip > database.zip
             
             # Extract the database
             unzip -o database.zip
