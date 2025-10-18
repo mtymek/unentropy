@@ -14,18 +14,5 @@
       "command": "find src/ -name '*.ts' -not -path '*/node_modules/*' | xargs wc -l | tail -1 | awk '{print $1}' || echo '0'",
       "unit": "LOC"
     },
-    {
-      "name": "bundle-size",
-      "type": "numeric",
-      "description": "Size of the built action bundle in KB",
-      "command": "du -k dist/actions/collect.node.js dist/actions/report.node.js 2>/dev/null | awk '{sum += $1} END {print sum || 0}'",
-      "unit": "KB"
-    },
-    {
-      "name": "build-status",
-      "type": "label",
-      "description": "Overall build status",
-      "command": "echo 'healthy'"
-    }
   ]
 }
