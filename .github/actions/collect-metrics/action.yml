@@ -32,8 +32,17 @@ runs:
   using: "composite"
   steps:
     - name: Run metrics collection
+      id: collect
       shell: bash
-      run: node "${{ github.action_path }}/dist/collect.node.js"
+      run: |
+        # Run the Node.js script and capture outputs
+        node "${{ github.action_path }}/dist/collect.node.js"
+
+        # Read the outputs from environment variables set by the script
+        echo "metrics-collected=${METRICS_COLLECTED:-0}" >> $GITHUB_OUTPUT
+        echo "metrics-failed=${METRICS_FAILED:-0}" >> $GITHUB_OUTPUT
+        echo "database-path=${DATABASE_PATH:-./unentropy-metrics.db}" >> $GITHUB_OUTPUT
+        echo "build-id=${BUILD_ID:-}" >> $GITHUB_OUTPUT
       env:
         INPUT_CONFIG_PATH: ${{ inputs.config-path }}
         INPUT_DATABASE_PATH: ${{ inputs.database-path }}

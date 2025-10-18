@@ -195,11 +195,19 @@ async function downloadArtifact(
 }
 
 async function setOutputs(outputs: ActionOutputs): Promise<void> {
+  // Set outputs using core.setOutput (for logging)
   core.setOutput("database-found", outputs.databaseFound.toString());
   core.setOutput("database-path", outputs.databasePath);
 
   if (outputs.sourceRunId) {
     core.setOutput("source-run-id", outputs.sourceRunId.toString());
+  }
+
+  // Also set environment variables for composite action output capture
+  process.env.DATABASE_FOUND = outputs.databaseFound.toString();
+  process.env.DATABASE_PATH = outputs.databasePath;
+  if (outputs.sourceRunId) {
+    process.env.SOURCE_RUN_ID = outputs.sourceRunId.toString();
   }
 }
 

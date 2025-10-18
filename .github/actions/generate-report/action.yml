@@ -42,8 +42,18 @@ runs:
   using: "composite"
   steps:
     - name: Run report generation
+      id: report
       shell: bash
-      run: node "${{ github.action_path }}/dist/report.node.js"
+      run: |
+        # Run the Node.js script and capture outputs
+        node "${{ github.action_path }}/dist/report.node.js"
+
+        # Read the outputs from environment variables set by the script
+        echo "report-path=${REPORT_PATH:-./unentropy-report.html}" >> $GITHUB_OUTPUT
+        echo "metrics-count=${METRICS_COUNT:-0}" >> $GITHUB_OUTPUT
+        echo "data-points=${DATA_POINTS:-0}" >> $GITHUB_OUTPUT
+        echo "time-range-start=${TIME_RANGE_START:-}" >> $GITHUB_OUTPUT
+        echo "time-range-end=${TIME_RANGE_END:-}" >> $GITHUB_OUTPUT
       env:
         INPUT_DATABASE_PATH: ${{ inputs.database-path }}
         INPUT_OUTPUT_PATH: ${{ inputs.output-path }}

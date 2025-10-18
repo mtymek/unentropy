@@ -336,6 +336,17 @@ async function run(): Promise<void> {
       core.setOutput("time-range-end", outputs.timeRangeEnd);
     }
 
+    // Also set environment variables for composite action output capture
+    process.env.REPORT_PATH = outputs.reportPath;
+    process.env.METRICS_COUNT = outputs.metricsCount.toString();
+    process.env.DATA_POINTS = outputs.dataPoints.toString();
+    if (outputs.timeRangeStart) {
+      process.env.TIME_RANGE_START = outputs.timeRangeStart;
+    }
+    if (outputs.timeRangeEnd) {
+      process.env.TIME_RANGE_END = outputs.timeRangeEnd;
+    }
+
     core.info("Action completed successfully");
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);

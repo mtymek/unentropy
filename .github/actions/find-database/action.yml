@@ -31,8 +31,16 @@ runs:
   using: "composite"
   steps:
     - name: Find and download database
+      id: find-db
       shell: bash
-      run: node "${{ github.action_path }}/dist/find-database.node.js"
+      run: |
+        # Run the Node.js script and capture outputs
+        node "${{ github.action_path }}/dist/find-database.node.js"
+
+        # Read the outputs from environment variables set by the script
+        echo "database-found=${DATABASE_FOUND:-false}" >> $GITHUB_OUTPUT
+        echo "database-path=${DATABASE_PATH:-./unentropy-metrics.db}" >> $GITHUB_OUTPUT
+        echo "source-run-id=${SOURCE_RUN_ID:-}" >> $GITHUB_OUTPUT
       env:
         INPUT_DATABASE_ARTIFACT: ${{ inputs.database-artifact }}
         INPUT_DATABASE_PATH: ${{ inputs.database-path }}

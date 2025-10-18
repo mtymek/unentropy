@@ -129,6 +129,14 @@ async function run(): Promise<void> {
       core.setOutput("build-id", outputs.buildId.toString());
     }
 
+    // Also set environment variables for composite action output capture
+    process.env.METRICS_COLLECTED = outputs.metricsCollected.toString();
+    process.env.METRICS_FAILED = outputs.metricsFailed.toString();
+    process.env.DATABASE_PATH = outputs.databasePath;
+    if (outputs.buildId !== undefined) {
+      process.env.BUILD_ID = outputs.buildId.toString();
+    }
+
     // Handle continue-on-error logic
     if (collectionResult.failed > 0 && !inputs.continueOnError) {
       if (collectionResult.successful === 0) {
