@@ -10,3 +10,5 @@ coverage/
 .opencode/
 .specify/
 specs/
+
+tests/unit/config/fixtures/invalid-json.json

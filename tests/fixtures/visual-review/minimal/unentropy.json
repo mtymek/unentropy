@@ -1,0 +1,14 @@
+{
+  "database": {
+    "path": "tests/fixtures/visual-review/minimal/minimal.db"
+  },
+  "metrics": [
+    {
+      "name": "test-coverage",
+      "type": "numeric",
+      "description": "Code coverage percentage",
+      "command": "echo '85.5'",
+      "unit": "%"
+    }
+  ]
+}

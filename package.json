@@ -1,5 +1,6 @@
 {
   "name": "unentropy",
+  "homepage": "https://github.com/mtymek/unentropy",
   "version": "0.1.0",
   "type": "module",
   "description": "Serverless tool for tracking custom code metrics in CI/CD pipelines",
@@ -14,20 +15,30 @@
   },
   "scripts": {
     "build": "bun build ./src/index.ts --outdir ./dist --target node",
+    "build:actions": "bun build ./src/actions/collect.node.ts --outdir ./.github/actions/collect-metrics/dist --target node --entrypoint ./src/actions/collect.node.ts --outfile collect.js && bun build ./src/actions/report.node.ts --outdir ./.github/actions/generate-report/dist --target node --entrypoint ./src/actions/report.node.ts --outfile report.js",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "generate-fixtures": "bun run scripts/generate-fixtures.ts",
+    "visual-review": "bun run scripts/generate-fixtures.ts && bun run scripts/open-reports.ts"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/bun": "latest",
     "eslint": "^9.0.0",
     "eslint-config-prettier": "^9.0.0",
     "prettier": "^3.0.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.0.0"
+  },
+  "dependencies": {
+    "@actions/core": "^1.11.1",
+    "@actions/github": "^6.0.1",
+    "better-sqlite3": "^12.4.1",
+    "zod": "^4.1.12"
   }
 }

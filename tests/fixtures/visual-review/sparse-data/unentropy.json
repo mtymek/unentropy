@@ -1,0 +1,20 @@
+{
+  "database": {
+    "path": "tests/fixtures/visual-review/sparse-data/sparse-data.db"
+  },
+  "metrics": [
+    {
+      "name": "test-coverage",
+      "type": "numeric",
+      "description": "Code coverage percentage",
+      "command": "echo '82.5'",
+      "unit": "%"
+    },
+    {
+      "name": "build-status",
+      "type": "label",
+      "description": "CI build result",
+      "command": "echo 'success'"
+    }
+  ]
+}

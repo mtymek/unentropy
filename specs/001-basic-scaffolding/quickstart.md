@@ -34,7 +34,7 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 Verify installation:
 ```bash
 bun --version
-# Expected: 1.3.x or higher
+# Expected: 1.2.x or higher
 ```
 
 ---
@@ -56,7 +56,7 @@ bun install
 
 **Expected output**:
 ```
-bun install v1.3.x
+bun install v1.2.x
 
 + typescript@5.9.3
 + eslint@9.x
@@ -65,8 +65,6 @@ bun install v1.3.x
 
 Done in 1.2s
 ```
-
-**Performance**: Bun installs dependencies ~30x faster than npm.
 
 ### 3. Verify TypeScript Configuration
 

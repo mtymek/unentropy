@@ -6,8 +6,8 @@ on:
   pull_request:
 
 jobs:
-  test:
-    name: Test
+  test-bun:
+    name: Test (Bun)
     runs-on: ubuntu-latest
 
     steps:
