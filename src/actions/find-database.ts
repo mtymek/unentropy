@@ -3,6 +3,7 @@ import * as github from "@actions/github";
 import { promises as fs } from "fs";
 import { dirname } from "path";
 import { execSync } from "child_process";
+import { DatabaseClient } from "../database/client";
 
 interface ActionInputs {
   databaseArtifact: string;
@@ -179,6 +180,39 @@ async function downloadArtifact(
   }
 }
 
+async function logDatabaseStats(databasePath: string): Promise<void> {
+  try {
+    const dbClient = new DatabaseClient({ path: databasePath, readonly: true });
+    await dbClient.ready();
+
+    const buildContexts = dbClient.getAllBuildContexts();
+    const metricDefinitions = dbClient.getAllMetricDefinitions();
+    const metricValues = dbClient.getAllMetricValues();
+
+    core.info(`Database statistics:`);
+    core.info(`- Build contexts: ${buildContexts.length}`);
+    core.info(`- Metric definitions: ${metricDefinitions.length}`);
+    core.info(`- Total metric values: ${metricValues.length}`);
+
+    if (buildContexts.length > 0) {
+      const oldestBuild = buildContexts[0];
+      const newestBuild = buildContexts[buildContexts.length - 1];
+      if (oldestBuild && newestBuild) {
+        core.info(`- Date range: ${oldestBuild.timestamp} to ${newestBuild.timestamp}`);
+      }
+    }
+
+    if (metricDefinitions.length > 0) {
+      const metricNames = metricDefinitions.map((md) => md.name).join(", ");
+      core.info(`- Metrics: ${metricNames}`);
+    }
+
+    dbClient.close();
+  } catch (error) {
+    core.warning(`Failed to analyze database contents: ${error}`);
+  }
+}
+
 async function setOutputs(outputs: ActionOutputs): Promise<void> {
   // Set outputs using core.setOutput (for logging)
   core.setOutput("database-found", outputs.databaseFound.toString());
@@ -279,6 +313,9 @@ async function run(): Promise<void> {
     }
 
     core.info(`Successfully downloaded database to: ${inputs.databasePath}`);
+
+    // Log database statistics for debugging
+    await logDatabaseStats(inputs.databasePath);
 
     // Set success outputs
     await setOutputs({
