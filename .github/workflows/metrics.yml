@@ -17,8 +17,8 @@ permissions:
   id-token: write
 
 jobs:
-  metrics:
-    name: Collect and Report Metrics
+  build:
+    name: Build Metrics
     runs-on: ubuntu-latest
 
     steps:
@@ -68,13 +68,6 @@ jobs:
           INPUT_TIME_RANGE: "all"
           INPUT_TITLE: "Unentropy Project Metrics"
 
-      - name: Upload metrics report
-        uses: actions/upload-artifact@v4
-        with:
-          name: metrics-report
-          path: ./report/
-          retention-days: 90
-
       - name: Save metrics database for next run
         uses: actions/upload-artifact@v4
         with:
@@ -82,12 +75,21 @@ jobs:
           path: ./unentropy-metrics.db
           retention-days: 365
 
-      - name: Deploy to GitHub Pages (if report generated)
-        if: steps.generate-report.outputs.report-path != ''
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./report
-          destination_dir: ./
-          keep_files: false
-          force_orphan: true
+          path: ./report/
+
+  deploy:
+    name: Deploy to GitHub Pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    if: always() && needs.build.result == 'success'
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
