@@ -37,3 +37,4 @@ runs:
         INPUT_DATABASE_ARTIFACT: ${{ inputs.database-artifact }}
         INPUT_DATABASE_PATH: ${{ inputs.database-path }}
         INPUT_BRANCH_FILTER: ${{ inputs.branch-filter }}
+        GITHUB_TOKEN: ${{ github.token }}
