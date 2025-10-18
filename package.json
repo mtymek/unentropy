@@ -15,7 +15,7 @@
   },
   "scripts": {
     "build": "bun build ./src/index.ts --outdir ./dist --target node",
-    "build:actions": "bun build ./src/actions/collect.node.ts --outdir ./.github/actions/collect-metrics/dist --target node --entrypoint ./src/actions/collect.node.ts --outfile collect.js && bun build ./src/actions/report.node.ts --outdir ./.github/actions/generate-report/dist --target node --entrypoint ./src/actions/report.node.ts --outfile report.js",
+    "build:actions": "bun run scripts/build-actions.ts",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "lint": "eslint .",
@@ -36,6 +36,7 @@
     "typescript-eslint": "^8.0.0"
   },
   "dependencies": {
+    "@actions/artifact": "^2.3.2",
     "@actions/core": "^1.11.1",
     "@actions/github": "^6.0.1",
     "better-sqlite3": "^12.4.1",

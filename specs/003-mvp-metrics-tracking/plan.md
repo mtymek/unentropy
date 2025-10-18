@@ -7,7 +7,7 @@
 
 ## Summary
 
-Build a serverless metrics tracking system that allows developers to define custom metrics via `unentropy.json`, automatically collect those metrics during CI/CD runs through a GitHub Action, store data in SQLite, and generate self-contained HTML reports with trend visualizations using Chart.js.
+Build a serverless metrics tracking system that allows developers to define custom metrics via `unentropy.json`, automatically collect those metrics during CI/CD runs through a GitHub Action, store data in SQLite, and generate self-contained HTML reports with trend visualizations using Chart.js. After implementing the core functionality, the MVP will include a self-monitoring implementation where Unentropy tracks its own test coverage and lines of code, serving as both a demonstration and genuine project health monitoring.
 
 ## Technical Context
 
@@ -41,6 +41,7 @@ Build a serverless metrics tracking system that allows developers to define cust
 - Support 50+ concurrent workflow runs
 - Handle 1000+ metric data points per repository
 - Support 10+ custom metrics per project
+- Self-monitoring implementation: 2 metrics (test coverage, LoC) for demonstration (User Story 4)
 
 ## Constitution Check
 
@@ -130,16 +131,20 @@ tests/
  │   ├── end-to-end.test.ts  # Full workflow tests
  │   └── fixtures/           # Test data and configs
  └── contract/
-    └── action.test.ts      # GitHub Action interface tests
+     └── action.test.ts      # GitHub Action interface tests
 
 .github/
- └── actions/
-     ├── collect-metrics/
-     │   ├── action.yml      # GitHub Action definition (collection)
-     │   └── dist/           # Compiled action code
-     └── generate-report/
-         ├── action.yml      # GitHub Action definition (reporting)
-         └── dist/           # Compiled action code
+ ├── actions/
+ │   ├── collect-metrics/
+ │   │   ├── action.yml      # GitHub Action definition (collection)
+ │   │   └── dist/           # Compiled action code
+ │   └── generate-report/
+ │       ├── action.yml      # GitHub Action definition (reporting)
+ │       └── dist/           # Compiled action code
+ └── workflows/
+     └── ci.yml              # Updated to include self-monitoring steps
+
+unentropy.json               # Self-monitoring configuration (test coverage + LoC)
 ```
 
 **Structure Decision**: Using single project structure as this is a CLI tool/library with GitHub Action wrappers. All components are TypeScript/Bun. Clear separation of concerns: config parsing, database operations, collection logic, and reporting are independent modules that can be tested separately.
@@ -150,4 +155,52 @@ tests/
 |-----------|------------|-------------------------------------|
 | better-sqlite3 dependency (Constitution II) | GitHub Actions runners use Node.js environment, not Bun. better-sqlite3 provides native SQLite bindings for Node.js with high performance and proper concurrency handling. | bun:sqlite only works in Bun environment. Using only bun:sqlite would prevent the tool from running in GitHub Actions, which is the primary CI/CD target platform. |
 | Database adapter pattern | Provides consistent API across Bun (local dev) and Node.js (GitHub Actions) environments while maintaining performance. | Conditional imports would complicate the codebase and make testing harder. Runtime detection with adapter pattern keeps the implementation clean and maintainable. |
+
+## User Story 4 Implementation: Self-Monitoring
+
+### Reference Configuration
+
+After core functionality is complete, the project will include `unentropy.json` in the root directory:
+
+```json
+{
+  "metrics": [
+    {
+      "name": "test_coverage",
+      "type": "percentage", 
+      "description": "Test coverage percentage for the codebase",
+      "command": "bun test --coverage 2>/dev/null | grep -E '^Lines\\s*:' | awk '{print $2}' | sed 's/%//' || echo '0'"
+    },
+    {
+      "name": "lines_of_code",
+      "type": "numeric",
+      "description": "Total lines of TypeScript code in src/ directory", 
+      "command": "find src/ -name '*.ts' -not -path '*/node_modules/*' | xargs wc -l | tail -1 | awk '{print $1}' || echo '0'"
+    }
+  ]
+}
+```
+
+### CI/CD Integration
+
+The existing `.github/workflows/ci.yml` will be extended to include:
+
+1. **Metric Collection Step**: After tests pass, run the collect-metrics action
+2. **Database Persistence**: Store SQLite database as workflow artifact  
+3. **Report Generation**: Generate HTML report and attach as artifact or PR comment
+
+### Demonstration Value
+
+This self-monitoring setup provides:
+- **Live Example**: Users can see actual Unentropy configuration and results
+- **Validation**: Each PR shows impact on test coverage and code size
+- **Performance Tracking**: Monitor how changes affect project metrics
+- **Documentation**: Working reference implementation
+
+### Success Metrics for Self-Monitoring
+
+- Test coverage trends visible over time
+- LoC growth tracking for project scope management  
+- Reports generated successfully on each commit
+- Configuration serves as clear example for new users
 

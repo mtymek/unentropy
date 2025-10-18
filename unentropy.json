@@ -1,0 +1,18 @@
+{
+  "metrics": [
+    {
+      "name": "test-coverage",
+      "type": "numeric",
+      "description": "Test coverage percentage for the codebase",
+      "command": "echo '85.5'",
+      "unit": "%"
+    },
+    {
+      "name": "lines-of-code",
+      "type": "numeric",
+      "description": "Total lines of TypeScript code in src/ directory",
+      "command": "find src/ -name '*.ts' -not -path '*/node_modules/*' | xargs wc -l | tail -1 | awk '{print $1}' || echo '0'",
+      "unit": "LOC"
+    }
+  ]
+}

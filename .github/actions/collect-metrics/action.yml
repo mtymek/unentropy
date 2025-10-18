@@ -34,5 +34,13 @@ outputs:
     description: "Database ID of the build context record created"
 
 runs:
-  using: "node20"
-  main: "dist/collect.js"
+  using: "composite"
+  steps:
+    - name: Run metrics collection
+      shell: bash
+      run: node "${{ github.action_path }}/dist/collect.node.js"
+      env:
+        INPUT_CONFIG_PATH: ${{ inputs.config-path }}
+        INPUT_DATABASE_ARTIFACT: ${{ inputs.database-artifact }}
+        INPUT_DATABASE_PATH: ${{ inputs.database-path }}
+        INPUT_CONTINUE_ON_ERROR: ${{ inputs.continue-on-error }}
