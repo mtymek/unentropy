@@ -51,8 +51,8 @@ Build a serverless metrics tracking system that allows developers to define cust
 **Justification**: All components run within GitHub Actions. SQLite database stored as artifact (no external database service). HTML reports generated locally. No servers required.
 
 ### ✅ II. Technology Stack Consistency
-**Status**: PASS  
-**Justification**: Using Bun runtime with TypeScript as required by constitution. SQLite for storage (as specified). Chart.js for visualization (as specified in dependencies). Bun as package manager. Consistent with project setup and constitution requirements.
+**Status**: PASS with Justification  
+**Justification**: Using Bun runtime with TypeScript as required by constitution. SQLite for storage (as specified). Chart.js for visualization (as specified in dependencies). Bun as package manager. **Exception**: better-sqlite3 included for Node.js/GitHub Actions compatibility - justified because GitHub Actions runners use Node.js environment while local development uses Bun. Database adapter pattern provides consistent API across both environments.
 
 ### ✅ III. Code Quality Standards
 **Status**: PASS  
@@ -87,14 +87,6 @@ specs/003-mvp-metrics-tracking/
  │   ├── database-schema.md     # SQLite table definitions
  │   └── action-interface.md    # GitHub Action inputs/outputs
  └── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
-```
-specs/[###-feature]/
-├── plan.md              # This file (/speckit.plan command output)
-├── research.md          # Phase 0 output (/speckit.plan command)
-├── data-model.md        # Phase 1 output (/speckit.plan command)
-├── quickstart.md        # Phase 1 output (/speckit.plan command)
-├── contracts/           # Phase 1 output (/speckit.plan command)
-└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
 ```
 
 ### Source Code (repository root)
@@ -138,7 +130,7 @@ tests/
  │   ├── end-to-end.test.ts  # Full workflow tests
  │   └── fixtures/           # Test data and configs
  └── contract/
-     └── action.test.ts      # GitHub Action interface tests
+    └── action.test.ts      # GitHub Action interface tests
 
 .github/
  └── actions/
@@ -154,5 +146,8 @@ tests/
 
 ## Complexity Tracking
 
-*No violations detected. All constitution checks passed.*
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|-----------|------------|-------------------------------------|
+| better-sqlite3 dependency (Constitution II) | GitHub Actions runners use Node.js environment, not Bun. better-sqlite3 provides native SQLite bindings for Node.js with high performance and proper concurrency handling. | bun:sqlite only works in Bun environment. Using only bun:sqlite would prevent the tool from running in GitHub Actions, which is the primary CI/CD target platform. |
+| Database adapter pattern | Provides consistent API across Bun (local dev) and Node.js (GitHub Actions) environments while maintaining performance. | Conditional imports would complicate the codebase and make testing harder. Runtime detection with adapter pattern keeps the implementation clean and maintainable. |
 
