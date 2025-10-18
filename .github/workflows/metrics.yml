@@ -8,7 +8,7 @@ on:
       force_run:
         description: "Force metrics collection even if no changes"
         required: false
-        default: "false"
+        default: false
         type: boolean
 
 jobs:
