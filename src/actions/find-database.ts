@@ -1,4 +1,5 @@
 import * as core from "@actions/core";
+import * as github from "@actions/github";
 import { promises as fs } from "fs";
 import { dirname } from "path";
 import { execSync } from "child_process";
@@ -17,9 +18,10 @@ interface ActionOutputs {
 
 interface WorkflowRun {
   id: number;
-  status: string;
+  status: string | null;
   conclusion: string | null;
-  head_branch: string;
+  head_branch: string | null;
+  head_sha: string;
 }
 
 interface Artifact {
@@ -57,43 +59,30 @@ function parseInputs(): ActionInputs {
 }
 
 async function findLatestSuccessfulRun(
+  octokit: ReturnType<typeof github.getOctokit>,
   repo: string,
-  branch: string,
-  token: string
+  branch: string
 ): Promise<WorkflowRun | null> {
   try {
-    const response = await fetch(`https://api.github.com/repos/${repo}/actions/runs`, {
-      headers: {
-        Authorization: `token ${token}`,
-        Accept: "application/vnd.github.v3+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
-    });
+    const [owner, repoName] = repo.split("/");
 
-    if (!response.ok) {
-      if (response.status === 403) {
-        const rateLimitRemaining = response.headers.get("x-ratelimit-remaining");
-        const rateLimitReset = response.headers.get("x-ratelimit-reset");
-
-        if (rateLimitRemaining === "0") {
-          throw new Error(`GitHub API rate limit exceeded. Resets at: ${rateLimitReset}`);
-        }
-      }
-
-      throw new Error(`Failed to fetch workflow runs: ${response.status} ${response.statusText}`);
+    if (!owner || !repoName) {
+      throw new Error(`Invalid repository format: ${repo}`);
     }
 
-    const data = (await response.json()) as { workflow_runs?: WorkflowRun[] };
-    const runs: WorkflowRun[] = data.workflow_runs || [];
+    const { data } = await octokit.rest.actions.listWorkflowRunsForRepo({
+      owner,
+      repo: repoName,
+      branch,
+      status: "completed",
+      conclusion: "success",
+      per_page: 10,
+    });
 
-    // Filter for completed successful runs on the specified branch
-    const successfulRuns = runs.filter(
-      (run: WorkflowRun) =>
-        run.status === "completed" && run.conclusion === "success" && run.head_branch === branch
-    );
+    const runs = data.workflow_runs || [];
 
-    // Return the most recent successful run
-    return successfulRuns.length > 0 ? (successfulRuns[0] ?? null) : null;
+    // Return most recent successful run
+    return runs.length > 0 ? (runs[0] ?? null) : null;
   } catch (error) {
     core.warning(`Error finding workflow runs: ${error}`);
     return null;
@@ -101,29 +90,25 @@ async function findLatestSuccessfulRun(
 }
 
 async function findDatabaseArtifact(
+  octokit: ReturnType<typeof github.getOctokit>,
   repo: string,
   runId: number,
-  artifactName: string,
-  token: string
+  artifactName: string
 ): Promise<Artifact | null> {
   try {
-    const response = await fetch(
-      `https://api.github.com/repos/${repo}/actions/runs/${runId}/artifacts`,
-      {
-        headers: {
-          Authorization: `token ${token}`,
-          Accept: "application/vnd.github.v3+json",
-          "X-GitHub-Api-Version": "2022-11-28",
-        },
-      }
-    );
+    const [owner, repoName] = repo.split("/");
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch artifacts: ${response.status} ${response.statusText}`);
+    if (!owner || !repoName) {
+      throw new Error(`Invalid repository format: ${repo}`);
     }
 
-    const data = (await response.json()) as { artifacts?: Artifact[] };
-    const artifacts: Artifact[] = data.artifacts || [];
+    const { data } = await octokit.rest.actions.listWorkflowRunArtifacts({
+      owner,
+      repo: repoName,
+      run_id: runId,
+    });
+
+    const artifacts = data.artifacts || [];
 
     // Find the artifact with the specified name
     return artifacts.find((artifact: Artifact) => artifact.name === artifactName) || null;
@@ -245,8 +230,11 @@ async function run(): Promise<void> {
     core.info(`Target branch: ${inputs.branchFilter}`);
     core.info(`Database path: ${inputs.databasePath}`);
 
+    // Initialize GitHub client
+    const octokit = github.getOctokit(token);
+
     // Find the latest successful workflow run
-    const latestRun = await findLatestSuccessfulRun(repo, inputs.branchFilter, token);
+    const latestRun = await findLatestSuccessfulRun(octokit, repo, inputs.branchFilter);
 
     if (!latestRun) {
       core.info("No previous successful workflow run found (first run scenario)");
@@ -260,7 +248,12 @@ async function run(): Promise<void> {
     core.info(`Found latest successful run: ${latestRun.id}`);
 
     // Find the database artifact in that run
-    const artifact = await findDatabaseArtifact(repo, latestRun.id, inputs.databaseArtifact, token);
+    const artifact = await findDatabaseArtifact(
+      octokit,
+      repo,
+      latestRun.id,
+      inputs.databaseArtifact
+    );
 
     if (!artifact) {
       core.info(`No '${inputs.databaseArtifact}' artifact found in run ${latestRun.id}`);
