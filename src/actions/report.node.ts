@@ -1,10 +1,13 @@
 import * as core from "@actions/core";
+import { DefaultArtifactClient } from "@actions/artifact";
+const artifactClient = new DefaultArtifactClient();
 import { promises as fs } from "fs";
-import { dirname } from "path";
+import { dirname, join } from "path";
 import { DatabaseClient } from "../database/client";
 import { generateReport } from "../reporter/generator";
 
 interface ActionInputs {
+  databasePath: string;
   databaseArtifact: string;
   outputPath: string;
   timeRange: string;
@@ -25,12 +28,17 @@ interface TimeRangeFilter {
 }
 
 function parseInputs(): ActionInputs {
+  const databasePath = core.getInput("database-path") || "./unentropy-metrics.db";
   const databaseArtifact = core.getInput("database-artifact") || "unentropy-metrics";
   const outputPath = core.getInput("output-path") || "./unentropy-report.html";
   const timeRange = core.getInput("time-range") || "all";
   const title = core.getInput("title") || "Metrics Report";
 
   // Validate inputs
+  if (!databasePath.endsWith(".db")) {
+    throw new Error(`Invalid database-path: must end with .db. Got: ${databasePath}`);
+  }
+
   if (!/^[a-zA-Z0-9_-]+$/.test(databaseArtifact)) {
     throw new Error(
       `Invalid database-artifact: must match pattern ^[a-zA-Z0-9_-]+$. Got: ${databaseArtifact}`
@@ -54,6 +62,7 @@ function parseInputs(): ActionInputs {
   }
 
   return {
+    databasePath,
     databaseArtifact,
     outputPath,
     timeRange,
@@ -86,15 +95,54 @@ async function downloadArtifact(artifactName: string, targetPath: string): Promi
   try {
     core.info(`Attempting to download artifact: ${artifactName}`);
 
-    // In real implementation: await artifactClient.downloadArtifact(artifactName, targetPath);
+    const getArtifactResponse = await artifactClient.getArtifact(artifactName);
+    core.info(`Found artifact ID: ${getArtifactResponse.artifact.id}`);
 
-    // For now, just ensure the directory exists
-    await fs.mkdir(dirname(targetPath), { recursive: true });
-    core.info(`Artifact download location prepared: ${targetPath}`);
-  } catch (error) {
-    throw new Error(
-      `Artifact download failed: ${error instanceof Error ? error.message : String(error)}`
+    const downloadDir = dirname(targetPath);
+    await fs.mkdir(downloadDir, { recursive: true });
+
+    const downloadResponse = await artifactClient.downloadArtifact(
+      getArtifactResponse.artifact.id,
+      {
+        path: downloadDir,
+      }
     );
+
+    if (!downloadResponse.downloadPath) {
+      throw new Error("Download path not returned from artifact download");
+    }
+
+    const sourceFileName = targetPath.split("/").pop() ?? "metrics.db";
+    const downloadedDbPath = join(downloadResponse.downloadPath, sourceFileName);
+
+    await fs.rename(downloadedDbPath, targetPath);
+
+    core.info(`Artifact downloaded successfully to: ${targetPath}`);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    // Handle specific GitHub Actions environment errors gracefully
+    if (
+      errorMessage.includes("ACTIONS_RUNTIME_TOKEN") ||
+      errorMessage.includes("ACTIONS_RUNTIME_URL") ||
+      errorMessage.includes("not found")
+    ) {
+      core.warning(`Artifact download skipped: ${errorMessage}`);
+      core.info(
+        "This is expected when running outside of GitHub Actions environment or when artifact doesn't exist"
+      );
+
+      // Create empty database as fallback
+      const { DatabaseClient } = await import("../database/client");
+      const tempDb = new DatabaseClient({ path: targetPath });
+      await tempDb.ready();
+      tempDb.close();
+
+      core.info(`Created empty fallback database at: ${targetPath}`);
+      return;
+    }
+
+    throw new Error(`Artifact download failed: ${errorMessage}`);
   }
 }
 
@@ -207,14 +255,28 @@ async function run(): Promise<void> {
     // Ensure output directory exists
     await ensureOutputDirectory(inputs.outputPath);
 
-    // Download database artifact
-    const tempDbPath = `${inputs.outputPath}.db`;
-    await downloadArtifact(inputs.databaseArtifact, tempDbPath);
+    // Check if local database exists, otherwise try to download artifact
+    let dbPath = inputs.databasePath;
+    const localDbExists = await fs
+      .access(inputs.databasePath)
+      .then(() => true)
+      .catch(() => false);
+
+    if (!localDbExists) {
+      core.info(
+        `Local database not found at ${inputs.databasePath}, attempting to download artifact`
+      );
+      const tempDbPath = `${inputs.outputPath}.db`;
+      await downloadArtifact(inputs.databaseArtifact, tempDbPath);
+      dbPath = tempDbPath;
+    } else {
+      core.info(`Using local database at: ${inputs.databasePath}`);
+    }
 
     // Initialize database
     let db;
     try {
-      db = new DatabaseClient({ path: tempDbPath });
+      db = new DatabaseClient({ path: dbPath });
       await db.ready();
       core.info("Database initialized successfully");
     } catch (error) {

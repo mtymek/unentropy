@@ -1,9 +1,13 @@
 import * as core from "@actions/core";
+import { DefaultArtifactClient } from "@actions/artifact";
+const artifactClient = new DefaultArtifactClient();
 import { promises as fs } from "fs";
 import { dirname } from "path";
 import { DatabaseClient } from "../database/client";
 import { loadConfig } from "../config/loader";
 import { collectMetrics } from "../collector/collector.node";
+import { extractBuildContext } from "../collector/context";
+import { DatabaseQueries } from "../database/queries";
 
 interface ActionInputs {
   configPath: string;
@@ -59,12 +63,31 @@ async function uploadArtifact(artifactName: string, filePath: string): Promise<v
   try {
     core.info(`Uploading artifact: ${artifactName} from ${filePath}`);
 
-    // In real implementation: await artifactClient.uploadArtifact(artifactName, [filePath], rootDir);
-    core.info(`Artifact upload simulated for: ${filePath}`);
-  } catch (error) {
-    throw new Error(
-      `Artifact upload failed: ${error instanceof Error ? error.message : String(error)}`
+    const uploadResponse = await artifactClient.uploadArtifact(
+      artifactName,
+      [filePath],
+      dirname(filePath)
     );
+
+    core.info(
+      `Artifact uploaded successfully (ID: ${uploadResponse.id}, size: ${uploadResponse.size} bytes)`
+    );
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    // Handle specific GitHub Actions environment errors gracefully
+    if (
+      errorMessage.includes("ACTIONS_RUNTIME_TOKEN") ||
+      errorMessage.includes("ACTIONS_RUNTIME_URL")
+    ) {
+      core.warning(`Artifact upload skipped: ${errorMessage}`);
+      core.info(
+        "This is expected when running outside of GitHub Actions environment or during testing"
+      );
+      return;
+    }
+
+    throw new Error(`Artifact upload failed: ${errorMessage}`);
   }
 }
 
@@ -98,14 +121,14 @@ async function run(): Promise<void> {
       throw new Error(`Database error: ${error instanceof Error ? error.message : String(error)}`);
     }
 
-    // Get build context and calculate next build ID
-    const existingBuildContexts = db.getAllBuildContexts();
-    const buildId =
-      existingBuildContexts.length > 0
-        ? (existingBuildContexts[existingBuildContexts.length - 1]?.id ?? 0) + 1
-        : 1;
+    const buildContext = extractBuildContext();
+    const queries = new DatabaseQueries(db);
+    const buildId = queries.insertBuildContext({
+      ...buildContext,
+      timestamp: new Date().toISOString(),
+    });
+    core.info(`Build context created with ID: ${buildId}`);
 
-    // Collect metrics
     const results = await collectMetrics(config.metrics, buildId, inputs.databasePath);
 
     const successful = results.successful;
