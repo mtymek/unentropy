@@ -30,6 +30,12 @@ function parseInputs(): ActionInputs {
   const timeRange = core.getInput("time-range") || "all";
   const title = core.getInput("title") || "Metrics Report";
 
+  // Debug output
+  core.info(`Debug - databasePath: ${databasePath}`);
+  core.info(`Debug - outputPath: ${outputPath}`);
+  core.info(`Debug - timeRange: ${timeRange}`);
+  core.info(`Debug - title: ${title}`);
+
   // Validate inputs
   if (!databasePath.endsWith(".db")) {
     throw new Error(`Invalid database-path: must end with .db. Got: ${databasePath}`);
