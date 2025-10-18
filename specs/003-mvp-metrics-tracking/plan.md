@@ -26,6 +26,7 @@ Build a serverless metrics tracking system that allows developers to define cust
 **Project Type**: Single project (CLI tool / library with GitHub Action wrapper)  
 **Performance Goals**: 
 - Configuration validation: <100ms for typical configs
+- Database artifact download: <15 seconds (including API calls)
 - Metric collection: <30 seconds total overhead per CI run
 - Report generation: <10 seconds for 100 data points
 
@@ -36,6 +37,7 @@ Build a serverless metrics tracking system that allows developers to define cust
 - Zero configuration for standard use cases
 - Must support both Bun (local development) and Node.js (GitHub Actions) environments
 - Database adapter must provide consistent API across both environments
+- Database persistence via GitHub Actions artifacts (no external storage)
 
 **Scale/Scope**: 
 - Support 50+ concurrent workflow runs
@@ -118,7 +120,8 @@ src/
  │   └── templates.ts        # HTML templates
  ├── actions/
  │   ├── collect.ts          # GitHub Action entrypoint for collection
- │   └── report.ts           # GitHub Action entrypoint for reporting
+ │   ├── report.ts           # GitHub Action entrypoint for reporting
+ │   └── find-database.ts    # GitHub Action entrypoint for database finding
  └── index.ts                # Main library exports
 
 tests/
@@ -135,6 +138,9 @@ tests/
 
 .github/
  ├── actions/
+ │   ├── find-database/
+ │   │   ├── action.yml      # GitHub Action definition (database finding)
+ │   │   └── dist/           # Compiled action code
  │   ├── collect-metrics/
  │   │   ├── action.yml      # GitHub Action definition (collection)
  │   │   └── dist/           # Compiled action code
@@ -147,7 +153,7 @@ tests/
 unentropy.json               # Self-monitoring configuration (test coverage + LoC)
 ```
 
-**Structure Decision**: Using single project structure as this is a CLI tool/library with GitHub Action wrappers. All components are TypeScript/Bun. Clear separation of concerns: config parsing, database operations, collection logic, and reporting are independent modules that can be tested separately.
+**Structure Decision**: Using single project structure as this is a CLI tool/library with GitHub Action wrappers. All components are TypeScript/Bun. Clear separation of concerns: config parsing, database operations, collection logic, and reporting are independent modules that can be tested separately. Three-action architecture provides atomic operations: database finding, metric collection, and report generation.
 
 ## Complexity Tracking
 
@@ -155,6 +161,7 @@ unentropy.json               # Self-monitoring configuration (test coverage + Lo
 |-----------|------------|-------------------------------------|
 | better-sqlite3 dependency (Constitution II) | GitHub Actions runners use Node.js environment, not Bun. better-sqlite3 provides native SQLite bindings for Node.js with high performance and proper concurrency handling. | bun:sqlite only works in Bun environment. Using only bun:sqlite would prevent the tool from running in GitHub Actions, which is the primary CI/CD target platform. |
 | Database adapter pattern | Provides consistent API across Bun (local dev) and Node.js (GitHub Actions) environments while maintaining performance. | Conditional imports would complicate the codebase and make testing harder. Runtime detection with adapter pattern keeps the implementation clean and maintainable. |
+| Three-action architecture | Separates database finding logic from collection and reporting, enabling atomic operations and better error handling. Each action has a single responsibility and can be tested independently. | Single action approach would duplicate complex database finding logic in both collection and reporting actions, making maintenance harder and error handling more complex. |
 
 ## User Story 4 Implementation: Self-Monitoring
 
@@ -183,11 +190,12 @@ After core functionality is complete, the project will include `unentropy.json` 
 
 ### CI/CD Integration
 
-The existing `.github/workflows/ci.yml` will be extended to include:
+The existing `.github/workflows/ci.yml` will be extended to include three-step approach:
 
-1. **Metric Collection Step**: After tests pass, run the collect-metrics action
-2. **Database Persistence**: Store SQLite database as workflow artifact  
-3. **Report Generation**: Generate HTML report and attach as artifact or PR comment
+1. **Database Finding Step**: Find and download database artifact from previous successful runs
+2. **Metric Collection Step**: Run the collect-metrics action with found database (or create new)
+3. **Database Persistence**: Store updated SQLite database as workflow artifact  
+4. **Report Generation**: Generate HTML report and attach as artifact or PR comment
 
 ### Demonstration Value
 
