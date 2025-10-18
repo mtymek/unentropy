@@ -26,7 +26,7 @@
 - [x] T005 [P] Create .gitignore for node_modules, dist, and IDE files
 - [x] T006 [P] Create src/ and src/lib/ directory structure
 - [x] T007 [P] Create tests/ directory structure with unit/, integration/, contract/ subdirectories
-- [x] T008 Install development dependencies: typescript, eslint, typescript-eslint, prettier, eslint-config-prettier, @types/bun
+- [x] T008 Install development dependencies with bun: typescript, eslint, typescript-eslint, prettier, eslint-config-prettier, @types/bun
 - [x] T009 Create .github/workflows/ci.yml for GitHub Actions pipeline per contracts/ci-cd-pipeline.md
 
 ---

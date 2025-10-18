@@ -1,0 +1,38 @@
+name: "Unentropy Collect Metrics"
+description: "Collect custom code metrics and store in SQLite database"
+author: "Unentropy Team"
+branding:
+  icon: "bar-chart-2"
+  color: "blue"
+
+inputs:
+  config-path:
+    description: "Path to unentropy.json configuration file"
+    required: false
+    default: "./unentropy.json"
+  database-artifact:
+    description: "Name of GitHub Actions artifact to store database"
+    required: false
+    default: "unentropy-metrics"
+  database-path:
+    description: "Path where database file is stored locally"
+    required: false
+    default: ".unentropy/metrics.db"
+  continue-on-error:
+    description: "Continue workflow if metric collection fails"
+    required: false
+    default: "true"
+
+outputs:
+  metrics-collected:
+    description: "Count of successfully collected metrics"
+  metrics-failed:
+    description: "Count of metrics that failed to collect"
+  database-path:
+    description: "Path to the database file that was created/updated"
+  build-id:
+    description: "Database ID of the build context record created"
+
+runs:
+  using: "node20"
+  main: "dist/collect.js"

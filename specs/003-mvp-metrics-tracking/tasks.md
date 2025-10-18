@@ -222,10 +222,10 @@
 - [ ] T068 [P] Create example unentropy.json configurations
 - [ ] T069 [P] Create example GitHub Actions workflows
 - [ ] T070 Update main exports in src/index.ts
-- [ ] T071 Run npm run lint and fix any issues
-- [ ] T072 Run npm run typecheck and fix any issues
-- [ ] T073 Run npm test and ensure all tests pass
-- [ ] T074 Run npm run build and verify output
+- [ ] T071 Run bun run lint and fix any issues
+- [ ] T072 Run bun run typecheck and fix any issues
+- [ ] T073 Run bun test and ensure all tests pass
+- [ ] T074 Run bun run build and verify output
 - [ ] T075 Validate against quickstart.md acceptance criteria
 
 ---

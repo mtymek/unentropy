@@ -36,7 +36,7 @@ function openFile(filePath: string): void {
   try {
     execSync(`${openCmd} "${filePath}"`, { stdio: "inherit" });
     console.log(`✅ Opened: ${filePath}`);
-  } catch (error) {
+  } catch {
     console.log(`❌ Could not open: ${filePath}`);
     console.log(`📂 Open manually: ${filePath}`);
   }
