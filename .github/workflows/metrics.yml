@@ -42,15 +42,15 @@ jobs:
       - name: Build GitHub Actions
         run: bun run build:actions
 
-- name: Download previous metrics database
+      - name: Download previous metrics database
         id: download-db
         run: |
           # Find the most recent successful workflow run
           echo "🔍 Searching for previous successful workflow run..."
-          
+
           RUN_ID=$(gh api repos/${{ github.repository }}/actions/runs \
             --jq '.workflow_runs[] | select(.status == "completed" and .conclusion == "success" and .head_branch == "main") | .id' | head -1)
-          
+
           if [ -n "$RUN_ID" ]; then
             echo "✅ Found previous successful run: $RUN_ID"
             
