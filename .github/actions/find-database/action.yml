@@ -42,10 +42,15 @@ runs:
 
         # Read outputs from file and set them
         if [ -f "$OUTPUT_FILE" ]; then
+          echo "Output file contents:" >&2
+          cat "$OUTPUT_FILE" >&2
           while IFS='=' read -r key value; do
+            echo "Setting output: $key=$value" >&2
             echo "$key=$value" >> $GITHUB_OUTPUT
           done < "$OUTPUT_FILE"
           rm "$OUTPUT_FILE"
+        else
+          echo "Output file not found: $OUTPUT_FILE" >&2
         fi
       env:
         INPUT_DATABASE_ARTIFACT: ${{ inputs.database-artifact }}
