@@ -1,8 +1,8 @@
 import * as core from "@actions/core";
 import * as github from "@actions/github";
+import { DefaultArtifactClient } from "@actions/artifact";
 import { promises as fs } from "fs";
-import { dirname } from "path";
-import { execSync } from "child_process";
+import { dirname, join } from "path";
 
 interface ActionInputs {
   databaseArtifact: string;
@@ -30,10 +30,10 @@ interface Artifact {
 }
 
 function parseInputs(): ActionInputs {
-  // Read from environment variables since this is a composite action
-  const databaseArtifact = process.env.INPUT_DATABASE_ARTIFACT || "unentropy-metrics";
-  const databasePath = process.env.INPUT_DATABASE_PATH || "./unentropy-metrics.db";
-  const branchFilterInput = process.env.INPUT_BRANCH_FILTER;
+  // Use core.getInput() for consistent input handling
+  const databaseArtifact = core.getInput("database-artifact") || "unentropy-metrics";
+  const databasePath = core.getInput("database-path") || "./unentropy-metrics.db";
+  const branchFilterInput = core.getInput("branch-filter");
   const branchFilter = branchFilterInput || process.env.GITHUB_REF_NAME || "main";
 
   // Validate inputs
@@ -118,61 +118,52 @@ async function findDatabaseArtifact(
   }
 }
 
-async function downloadArtifact(
-  repo: string,
-  artifactId: number,
-  downloadPath: string,
-  token: string
-): Promise<boolean> {
+async function downloadArtifact(artifactId: number, downloadPath: string): Promise<boolean> {
   try {
-    const response = await fetch(
-      `https://api.github.com/repos/${repo}/actions/artifacts/${artifactId}/zip`,
-      {
-        headers: {
-          Authorization: `token ${token}`,
-          Accept: "application/vnd.github.v3+json",
-          "X-GitHub-Api-Version": "2022-11-28",
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Failed to download artifact: ${response.status} ${response.statusText}`);
-    }
-
-    // Get the zip content
-    const zipBuffer = await response.arrayBuffer();
-
-    // Write zip to temporary file
-    const tempZipPath = `${downloadPath}.tmp.zip`;
-    await fs.writeFile(tempZipPath, new Uint8Array(zipBuffer));
-
-    // Extract the zip (basic extraction - assumes single file)
-    const dbDir = dirname(downloadPath);
-
     // Create directory if it doesn't exist
+    const dbDir = dirname(downloadPath);
     await fs.mkdir(dbDir, { recursive: true });
 
-    try {
-      execSync(`cd "${dbDir}" && unzip -o "${tempZipPath}"`, { stdio: "pipe" });
+    // Initialize artifact client
+    const client = new DefaultArtifactClient();
 
-      // Check if the database file exists after extraction
-      await fs.access(downloadPath);
+    // Download artifact using @actions/artifact
+    const downloadResponse = await client.downloadArtifact(artifactId, {
+      path: dbDir,
+    });
 
-      // Clean up temporary zip file
-      await fs.unlink(tempZipPath);
-
-      return true;
-    } catch (extractError) {
-      core.warning(`Failed to extract zip: ${extractError}`);
-      // Clean up temporary zip file
-      try {
-        await fs.unlink(tempZipPath);
-      } catch {
-        // Ignore cleanup errors
-      }
+    if (!downloadResponse.downloadPath) {
+      core.warning(`Failed to download artifact: no download path returned`);
       return false;
     }
+
+    if (downloadResponse.digestMismatch) {
+      core.warning(`Artifact digest mismatch detected`);
+      return false;
+    }
+
+    // The artifact is downloaded to a directory, find the database file
+    const downloadedDir = downloadResponse.downloadPath;
+    const dbFileName = downloadPath.split("/").pop() || "unentropy-metrics.db";
+
+    // Check if database file exists directly
+    try {
+      await fs.access(downloadPath);
+      return true;
+    } catch {
+      // Look for the database file in downloaded directory
+      const downloadedFiles = await fs.readdir(downloadedDir);
+      const dbFile = downloadedFiles.find((f) => f === dbFileName);
+
+      if (dbFile) {
+        const sourcePath = join(downloadedDir, dbFile);
+        await fs.copyFile(sourcePath, downloadPath);
+        return true;
+      }
+    }
+
+    core.warning(`Database file not found after artifact extraction`);
+    return false;
   } catch (error) {
     core.warning(`Error downloading artifact: ${error}`);
     return false;
@@ -267,7 +258,7 @@ async function run(): Promise<void> {
     core.info(`Found database artifact: ${artifact.id}`);
 
     // Download and extract the artifact
-    const downloadSuccess = await downloadArtifact(repo, artifact.id, inputs.databasePath, token);
+    const downloadSuccess = await downloadArtifact(artifact.id, inputs.databasePath);
 
     if (!downloadSuccess) {
       core.error("Failed to download and extract database artifact");

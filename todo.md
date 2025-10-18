@@ -24,7 +24,7 @@ The project already uses several toolkit packages (`@actions/core`, `@actions/gi
 - Built-in authentication and error handling
 - Automatic rate limit handling
 
-### 3. **Use @actions/artifact for Artifact Operations**
+### 3. **Use @actions/artifact for Artifact Operations** (DONE)
 
 **Current**: Manual artifact download with `fetch()` + `unzip` commands
 **Toolkit Solution**: Use `@actions/artifact` package
@@ -33,7 +33,7 @@ The project already uses several toolkit packages (`@actions/core`, `@actions/gi
 - Built-in retry logic and error handling
 - No external `unzip` dependency
 
-### 4. **Simplify Input Handling**
+### 4. **Simplify Input Handling** (DONE)
 
 **Current**: Mixed input handling between `core.getInput()` and `process.env`
 **Toolkit Solution**: Standardize on `core.getInput()` everywhere

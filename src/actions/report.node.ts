@@ -25,18 +25,10 @@ interface TimeRangeFilter {
 }
 
 function parseInputs(): ActionInputs {
-  const databasePath =
-    core.getInput("database-path") || process.env.INPUT_DATABASE_PATH || "./unentropy-metrics.db";
-  const outputPath =
-    core.getInput("output-path") || process.env.INPUT_OUTPUT_PATH || "./unentropy-report.html";
-  const timeRange = core.getInput("time-range") || process.env.INPUT_TIME_RANGE || "all";
-  const title = core.getInput("title") || process.env.INPUT_TITLE || "Metrics Report";
-
-  // Debug output
-  core.info(`Debug - databasePath: ${databasePath}`);
-  core.info(`Debug - outputPath: ${outputPath}`);
-  core.info(`Debug - timeRange: ${timeRange}`);
-  core.info(`Debug - title: ${title}`);
+  const databasePath = core.getInput("database-path") || "./unentropy-metrics.db";
+  const outputPath = core.getInput("output-path") || "./unentropy-report.html";
+  const timeRange = core.getInput("time-range") || "all";
+  const title = core.getInput("title") || "Metrics Report";
 
   // Validate inputs
   if (!databasePath.endsWith(".db")) {
