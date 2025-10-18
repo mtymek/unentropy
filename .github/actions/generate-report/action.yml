@@ -67,7 +67,7 @@ runs:
             echo "Found successful run: $RUN_ID"
             
             # Get the artifact ID for the database
-            ARTIFACT_ID=$(gh api repos/${{ github.repository }}/runs/$RUN_ID/artifacts \
+            ARTIFACT_ID=$(gh api repos/${{ github.repository }}/actions/runs/$RUN_ID/artifacts \
               --jq '.artifacts[] | select(.name == "${{ inputs.database-artifact }}") | .id')
             
             if [ -n "$ARTIFACT_ID" ]; then
