@@ -1,6 +1,4 @@
 import * as core from "@actions/core";
-import { DefaultArtifactClient } from "@actions/artifact";
-const artifactClient = new DefaultArtifactClient();
 import { promises as fs } from "fs";
 import { dirname } from "path";
 import { DatabaseClient } from "../database/client";
@@ -11,7 +9,6 @@ import { DatabaseQueries } from "../database/queries";
 
 interface ActionInputs {
   configPath: string;
-  databaseArtifact: string;
   databasePath: string;
   continueOnError: boolean;
 }
@@ -25,19 +22,12 @@ interface ActionOutputs {
 
 function parseInputs(): ActionInputs {
   const configPath = core.getInput("config-path") || "./unentropy.json";
-  const databaseArtifact = core.getInput("database-artifact") || "unentropy-metrics";
-  const databasePath = core.getInput("database-path") || ".unentropy/metrics.db";
+  const databasePath = core.getInput("database-path") || "./unentropy-metrics.db";
   const continueOnErrorInput = core.getInput("continue-on-error") || "true";
 
   // Validate inputs
   if (!configPath.endsWith(".json")) {
     throw new Error(`Invalid config-path: must end with .json. Got: ${configPath}`);
-  }
-
-  if (!/^[a-zA-Z0-9_-]+$/.test(databaseArtifact)) {
-    throw new Error(
-      `Invalid database-artifact: must match pattern ^[a-zA-Z0-9_-]+$. Got: ${databaseArtifact}`
-    );
   }
 
   if (!databasePath.endsWith(".db")) {
@@ -48,7 +38,6 @@ function parseInputs(): ActionInputs {
 
   return {
     configPath,
-    databaseArtifact,
     databasePath,
     continueOnError,
   };
@@ -57,38 +46,6 @@ function parseInputs(): ActionInputs {
 async function ensureDatabaseDirectory(databasePath: string): Promise<void> {
   const dbDir = dirname(databasePath);
   await fs.mkdir(dbDir, { recursive: true });
-}
-
-async function uploadArtifact(artifactName: string, filePath: string): Promise<void> {
-  try {
-    core.info(`Uploading artifact: ${artifactName} from ${filePath}`);
-
-    const uploadResponse = await artifactClient.uploadArtifact(
-      artifactName,
-      [filePath],
-      dirname(filePath)
-    );
-
-    core.info(
-      `Artifact uploaded successfully (ID: ${uploadResponse.id}, size: ${uploadResponse.size} bytes)`
-    );
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-
-    // Handle specific GitHub Actions environment errors gracefully
-    if (
-      errorMessage.includes("ACTIONS_RUNTIME_TOKEN") ||
-      errorMessage.includes("ACTIONS_RUNTIME_URL")
-    ) {
-      core.warning(`Artifact upload skipped: ${errorMessage}`);
-      core.info(
-        "This is expected when running outside of GitHub Actions environment or during testing"
-      );
-      return;
-    }
-
-    throw new Error(`Artifact upload failed: ${errorMessage}`);
-  }
 }
 
 async function run(): Promise<void> {
@@ -140,9 +97,6 @@ async function run(): Promise<void> {
       const failedMetrics = results.failures.map((f) => f.metricName);
       throw new Error(`Failed to collect metrics: ${failedMetrics.join(", ")}`);
     }
-
-    // Upload database as artifact
-    await uploadArtifact(inputs.databaseArtifact, inputs.databasePath);
 
     // Get build context for output
     const buildContexts = db.getAllBuildContexts();
