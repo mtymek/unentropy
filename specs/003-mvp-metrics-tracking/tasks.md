@@ -229,11 +229,11 @@
 
 ### Tests for GitHub Actions
 
-- [ ] T049 [P] Write contract test for collect-metrics action inputs in tests/contract/collect-action.test.ts
-- [ ] T050 [P] Write contract test for collect-metrics action outputs in tests/contract/collect-action.test.ts
-- [ ] T051 [P] Write contract test for generate-report action inputs in tests/contract/report-action.test.ts
-- [ ] T052 [P] Write contract test for generate-report action outputs in tests/contract/report-action.test.ts
-- [ ] T053 [P] Write integration test for artifact upload/download in tests/integration/artifacts.test.ts
+- [x] T049 [P] Write contract test for collect-metrics action inputs in tests/contract/collect-action.test.ts
+- [x] T050 [P] Write contract test for collect-metrics action outputs in tests/contract/collect-action.test.ts
+- [x] T051 [P] Write contract test for generate-report action inputs in tests/contract/report-action.test.ts
+- [x] T052 [P] Write contract test for generate-report action outputs in tests/contract/report-action.test.ts
+- [x] T053 [P] Write integration test for artifact upload/download in tests/integration/artifacts.test.ts
 
 ### GitHub Action: collect-metrics
 
