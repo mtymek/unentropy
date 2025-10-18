@@ -40,18 +40,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: unentropy-metrics-db
-          path: ./unentropy-data/
+          path: ./unentropy-metrics.db
         continue-on-error: true
-
-      - name: Setup database path
-        run: |
-          if [ -f "./unentropy-data/metrics.db" ]; then
-            echo "Found previous database, using it"
-            mv ./unentropy-data/metrics.db ./unentropy-metrics.db
-          else
-            echo "No previous database found, starting fresh"
-            touch ./unentropy-metrics.db
-          fi
 
       - name: Collect metrics
         id: collect-metrics
