@@ -3,8 +3,6 @@ name: Metrics
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
     inputs:
       force_run:
@@ -50,7 +48,7 @@ jobs:
         with:
           database-artifact: "unentropy-metrics"
           database-path: "./unentropy-metrics.db"
-          branch-filter: ${{ github.event_name == 'pull_request' && github.base_ref || github.ref_name }}
+          branch-filter: main
 
       - name: Collect metrics
         id: collect-metrics
