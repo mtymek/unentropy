@@ -28,7 +28,7 @@ jobs:
         with:
           database-artifact: "unentropy-metrics"
           database-path: "./unentropy-metrics.db"
-          branch-filter: "${{ github.ref_name }}"
+          branch-filter: ${{ github.event_name == 'pull_request' && github.base_ref || github.ref_name }}
 
       - name: Collect metrics
         id: collect-metrics
