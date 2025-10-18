@@ -20,11 +20,13 @@ As codebases mature, teams need to track custom, internal metrics specific to th
 
 ## **🛠️ How Unentropy Works**
 
-Unentropy operates entirely within a GitHub workflow by following a simple three-step cycle:
+Unentropy operates entirely within a GitHub workflow using a three-action architecture that separates concerns for better maintainability:
 
-1. **Fetch:** The Unentropy GitHub Action **downloads** the existing, historical metrics database from the latest successful run (saved as a GitHub Artifact).
-2. **Collect & Update:** It executes your custom metric collection scripts, gathers the new data points (along with the current Git SHA and timestamp), and securely adds the new row to the database file.
-3. **Report & Persist:** It generates a simple, **static HTML trend report** (with charts) and then **uploads both the updated database file and the report file** back as GitHub Artifacts, making them immediately available for download and review.
+1. **Find Database:** The `find-database` action **locates and downloads** the existing metrics database from the latest successful workflow run, handling all GitHub API interactions.
+2. **Collect Metrics:** The `collect-metrics` action executes your custom metric collection scripts, gathers new data points (with Git SHA and timestamp), and adds them to the database.
+3. **Generate Report:** The `generate-report` action creates a **static HTML trend report** with charts from the collected data.
+
+Each action has a single responsibility and can be used independently or together in a workflow. The database and report are uploaded as GitHub Artifacts, making them immediately available for download and review.
 
 This allows teams to see trends, spot entropy spikes, and visualize codebase health over time, all without maintaining a single external server.
 
@@ -46,11 +48,62 @@ _(These are the selected technologies for the initial implementation, chosen for
 | **Data Visualization** | **Chart.js**                             | Used to generate simple, static charts embedded in an HTML file for easy artifact viewing.                                     |
 | **Packaging**          | **GitHub Action (JavaScript/Container)** | The core delivery mechanism, providing a single, clean step for users' workflows.                                              |
 
-## **🚀 Getting Started (Planned Usage)**
+## **🚀 Getting Started**
 
-1. **Add the Action:** Include the unentropy/action@v1 step in your existing CI workflow.
-2. **Configure Metrics:** Create an unentropy.yml file to define which scripts to run to generate your metrics (e.g., loc_script: ./scripts/count_loc.sh).
-3. **Review Reports:** After the CI run, download the generated unentropy-report.html artifact to see the latest trends and track your progress against codebase entropy\!
+### Basic Three-Action Workflow
+
+Add the three Unentropy actions to your existing CI workflow:
+
+```yaml
+- name: Find latest database
+  id: find-database
+  uses: ./.github/actions/find-database
+  with:
+    database-artifact: "unentropy-metrics"
+    database-path: "./unentropy-metrics.db"
+
+- name: Collect metrics
+  id: collect-metrics
+  uses: ./.github/actions/collect-metrics
+  with:
+    config-path: "./unentropy.json"
+    database-path: "./unentropy-metrics.db"
+
+- name: Generate report
+  id: generate-report
+  uses: ./.github/actions/generate-report
+  with:
+    database-path: "./unentropy-metrics.db"
+    output-path: "./unentropy-report.html"
+```
+
+### Configuration
+
+Create an `unentropy.json` file to define your metrics:
+
+```json
+{
+  "metrics": [
+    {
+      "name": "test_coverage",
+      "command": "bun test --coverage",
+      "parser": "regex",
+      "pattern": "Coverage: (\\d+\\.\\d+)%",
+      "unit": "%"
+    },
+    {
+      "name": "lines_of_code",
+      "command": "find src/ -name '*.ts' | wc -l",
+      "parser": "raw",
+      "unit": "LOC"
+    }
+  ]
+}
+```
+
+### Review Reports
+
+After the CI run, download the `unentropy-report.html` artifact to see the latest trends and track your progress against codebase entropy!
 
 ## **🔍 Self-Monitoring Example**
 
@@ -74,10 +127,13 @@ The `unentropy.json` file in this repository tracks:
 
 Every push and pull request to this repository automatically:
 
-1. **Collects** the two metrics above using the defined commands
-2. **Stores** the data in a SQLite database persisted as a GitHub Artifact
-3. **Generates** an HTML report showing trends over time
-4. **Uploads** both the updated database and report as artifacts
+1. **Finds** the latest metrics database from previous successful runs
+2. **Collects** the two metrics above using the defined commands
+3. **Stores** the data in a SQLite database persisted as a GitHub Artifact
+4. **Generates** an HTML report showing trends over time
+5. **Uploads** both the updated database and report as artifacts
+
+See the [`.github/workflows/metrics.yml`](.github/workflows/metrics.yml) file for the complete three-action workflow implementation.
 
 You can see the latest reports by:
 

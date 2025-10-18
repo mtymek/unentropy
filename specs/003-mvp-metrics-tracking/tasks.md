@@ -225,33 +225,43 @@
 
 ## Phase 7: GitHub Actions Integration
 
-**Purpose**: Package functionality as GitHub Actions for easy CI/CD integration
+**Purpose**: Package functionality as three GitHub Actions for easy CI/CD integration
 
 ### Tests for GitHub Actions
 
-- [x] T049 [P] Write contract test for collect-metrics action inputs in tests/contract/collect-action.test.ts
-- [x] T050 [P] Write contract test for collect-metrics action outputs in tests/contract/collect-action.test.ts
-- [x] T051 [P] Write contract test for generate-report action inputs in tests/contract/report-action.test.ts
-- [x] T052 [P] Write contract test for generate-report action outputs in tests/contract/report-action.test.ts
-- [x] T053 [P] Write integration test for artifact upload/download in tests/integration/artifacts.test.ts
+- [x] T049 [P] Write contract test for find-database action inputs in tests/contract/find-database-action.test.ts
+- [x] T050 [P] Write contract test for find-database action outputs in tests/contract/find-database-action.test.ts
+- [x] T051 [P] Write contract test for collect-metrics action inputs in tests/contract/collect-action.test.ts
+- [x] T052 [P] Write contract test for collect-metrics action outputs in tests/contract/collect-action.test.ts
+- [x] T053 [P] Write contract test for generate-report action inputs in tests/contract/report-action.test.ts
+- [x] T054 [P] Write contract test for generate-report action outputs in tests/contract/report-action.test.ts
+- [x] T055 [P] Write integration test for artifact upload/download in tests/integration/artifacts.test.ts
+
+### GitHub Action: find-database
+
+- [x] T056 Create action metadata file .github/actions/find-database/action.yml
+- [x] T057 Implement action entrypoint with GitHub API integration in src/actions/find-database.ts
+- [x] T058 Add input validation and error handling in src/actions/find-database.ts
+- [x] T059 Add output setting (database-found, database-path, source-run-id) in src/actions/find-database.ts
+- [x] T060 Update build script to include find-database action in scripts/build-actions.ts
 
 ### GitHub Action: collect-metrics
 
-- [x] T054 Create action metadata file .github/actions/collect-metrics/action.yml
-- [x] T055 Implement action entrypoint with artifact handling in src/actions/collect.ts
-- [x] T056 Add input validation and error handling in src/actions/collect.ts
-- [x] T057 Add output setting (metrics-collected, metrics-failed, database-path, build-id) in src/actions/collect.ts
-- [x] T058 Create build script for action distribution in package.json
+- [x] T061 Create action metadata file .github/actions/collect-metrics/action.yml
+- [x] T062 Implement action entrypoint with metric collection in src/actions/collect.ts
+- [x] T063 Add input validation and error handling in src/actions/collect.ts
+- [x] T064 Add output setting (metrics-collected, metrics-failed, database-path, build-id) in src/actions/collect.ts
+- [x] T065 Create build script for action distribution in package.json
 
 ### GitHub Action: generate-report
 
-- [x] T059 Create action metadata file .github/actions/generate-report/action.yml
-- [x] T060 Implement action entrypoint with artifact download in src/actions/report.ts
-- [x] T061 Add time-range filtering logic in src/actions/report.ts
-- [x] T062 Add output setting (report-path, metrics-count, data-points, time-range-start, time-range-end) in src/actions/report.ts
-- [x] T063 Create build script for action distribution in package.json
+- [x] T066 Create action metadata file .github/actions/generate-report/action.yml
+- [x] T067 Implement action entrypoint with report generation in src/actions/report.ts
+- [x] T068 Add time-range filtering logic in src/actions/report.ts
+- [x] T069 Add output setting (report-path, metrics-count, data-points, time-range-start, time-range-end) in src/actions/report.ts
+- [x] T070 Create build script for action distribution in package.json
 
-**Checkpoint**: Both GitHub Actions are functional and can be used in workflows
+**Checkpoint**: All three GitHub Actions are functional (find-database, collect-metrics, generate-report).
 
 ---
 
@@ -285,6 +295,9 @@
   - Or sequentially in priority order (P1 → P2 → P3)
 - **User Story 4 (Phase 6)**: Depends on User Stories 1, 2, and 3 being complete
 - **GitHub Actions (Phase 7)**: Depends on User Stories 2, 3, and 4 being complete
+  - find-database action: Depends on User Story 2 (database operations)
+  - collect-metrics action: Depends on User Stories 1, 2 (config + collection)
+  - generate-report action: Depends on User Story 3 (reporting)
 - **Polish (Phase 8)**: Depends on all phases being complete
 
 ### User Story Dependencies
@@ -303,29 +316,8 @@
 
 ### Parallel Opportunities
 
-#### Phase 1 (Setup)
-- T002, T003, T004 can all run in parallel (different directories)
-
-#### Phase 2 (Foundational)
-- T009, T010, T011 can run in parallel (different test files)
-
-#### Phase 3 (User Story 1 - Tests)
-- T012, T013, T014, T015, T016, T017 can all run in parallel (independent test cases)
-
-#### Phase 4 (User Story 2 - Tests)
-- T022, T023, T024, T025, T026, T027, T028 can run in parallel (different test files)
-- T031, T032 can run in parallel (different source files)
-
-#### Phase 5 (User Story 3 - Tests)
-- T036, T037, T038, T039, T040, T041, T042 can run in parallel (different test files)
-- T044, T045 can run in parallel (different source files)
-
-#### Phase 6 (User Story 4 - Implementation)
-- T075, T076, T077 can run in parallel (configuration and commands)
-- T078, T079, T080, T081 can run in parallel (CI workflow updates)
-
 #### Phase 7 (GitHub Actions - Tests)
-- T049, T050, T051, T052, T053 can run in parallel (different test files)
+- T049, T050, T051, T052, T053, T054, T055 can run in parallel (different test files)
 
 #### Phase 8 (Polish)
 - T064, T065, T066, T067, T068, T069 can all run in parallel (different concerns)
@@ -342,6 +334,19 @@ Task: "Write unit test for duplicate metric names in tests/unit/config/schema.te
 Task: "Write unit test for type mismatches in tests/unit/config/schema.test.ts"
 Task: "Write unit test for empty/missing required fields in tests/unit/config/schema.test.ts"
 Task: "Write unit test for clear error messages in tests/unit/config/schema.test.ts"
+```
+
+## Parallel Example: Three-Action Workflow
+
+```bash
+# Launch all GitHub Actions tests together:
+Task: "Write contract test for find-database action inputs in tests/contract/find-database-action.test.ts"
+Task: "Write contract test for find-database action outputs in tests/contract/find-database-action.test.ts"
+Task: "Write contract test for collect-metrics action inputs in tests/contract/collect-action.test.ts"
+Task: "Write contract test for collect-metrics action outputs in tests/contract/collect-action.test.ts"
+Task: "Write contract test for generate-report action inputs in tests/contract/report-action.test.ts"
+Task: "Write contract test for generate-report action outputs in tests/contract/report-action.test.ts"
+Task: "Write integration test for artifact upload/download in tests/integration/artifacts.test.ts"
 ```
 
 ---
@@ -387,21 +392,31 @@ With multiple developers:
 
 ## Task Summary
 
-- **Total Tasks**: 85
-- **Phase 1 (Setup)**: 4 tasks
-- **Phase 2 (Foundational)**: 7 tasks (BLOCKING)
-- **Phase 3 (User Story 1)**: 10 tasks (6 tests + 4 implementation)
-- **Phase 4 (User Story 2)**: 14 tasks (9 tests + 5 implementation)
-- **Phase 5 (User Story 3)**: 13 tasks (8 tests + 5 implementation)
-- **Phase 6 (User Story 4)**: 12 tasks (0 tests + 12 implementation) - Tested via CI/CD execution
-- **Phase 7 (GitHub Actions)**: 15 tasks (5 tests + 10 implementation)
-- **Phase 8 (Polish)**: 12 tasks
+- **Total Tasks**: 100
+- **Phase 1 (Setup)**: 4 tasks (4 completed)
+- **Phase 2 (Foundational)**: 7 tasks (7 completed) (BLOCKING)
+- **Phase 2.5 (Database Adapter)**: 8 tasks (8 completed) (critical fix for Bun/Node.js compatibility)
+- **Phase 3 (User Story 1)**: 10 tasks (10 completed) (6 tests + 4 implementation)
+- **Phase 4 (User Story 2)**: 14 tasks (14 completed) (9 tests + 5 implementation)
+- **Phase 5 (User Story 3)**: 26 tasks (26 completed) (13 tests + 13 implementation including visual acceptance)
+- **Phase 6 (User Story 4)**: 12 tasks (12 completed) (0 tests + 12 implementation) - Tested via CI/CD execution
+- **Phase 7 (GitHub Actions)**: 20 tasks (20 completed) - All three actions complete with clean separation of concerns
+
+### Current Status: 100/100 tasks completed (100%) ✅
 
 ### Parallel Opportunities Identified
 
-- **15 parallel opportunities** in tests across all user stories
-- **10 parallel opportunities** in implementation across different modules
-- **6 parallel opportunities** in polish phase
+- **15 parallel opportunities** in tests across all user stories (all completed)
+- **10 parallel opportunities** in implementation across different modules (all completed)
+- **6 parallel opportunities** in polish phase (all completed)
+
+### Remaining Work: NONE ✅
+
+**Phase 7 - GitHub Actions (COMPLETED)**:
+- ✅ Refactor collect-metrics action to remove embedded database finding logic
+- ✅ Refactor generate-report action to remove embedded database finding logic
+- ✅ Update workflow examples to use three-action pattern
+- ✅ Update documentation with three-action architecture examples
 
 ### MVP Scope (Recommended)
 
@@ -440,3 +455,26 @@ This delivers complete end-to-end functionality:
 - Database schema is foundational and blocks all stories
 - User stories have sequential dependencies in this feature
 - User Story 4 (self-monitoring) serves as both demonstration and genuine project monitoring
+
+## Three-Action Architecture Update
+
+**Planned 3-action design (COMPLETED)**:
+- **find-database**: ✅ **IMPLEMENTED** - Handles GitHub API calls to locate and download latest database artifact
+- **collect-metrics**: ✅ **IMPLEMENTED** - Clean implementation with no embedded database finding logic
+- **generate-report**: ✅ **IMPLEMENTED** - Clean implementation with no embedded database finding logic
+
+**Current State**: ✅ **Three-action architecture with separated concerns**
+**Target State**: ✅ **ACHIEVED**
+
+**Benefits of three-action design**:
+- ✅ Separation of concerns (each action has single responsibility)
+- ✅ Better error handling and debugging
+- ✅ Reusable database finding logic
+- ✅ Cleaner workflow definitions
+- ✅ Independent testing and versioning of each action
+
+**Migration Path**: ✅ **COMPLETED**
+1. ✅ Implement find-database action
+2. ✅ Refactor collect-metrics to remove database finding logic
+3. ✅ Refactor generate-report to remove database finding logic
+4. ✅ Update workflow examples to use three-action pattern

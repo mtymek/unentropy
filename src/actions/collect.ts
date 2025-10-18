@@ -129,6 +129,23 @@ async function run(): Promise<void> {
       core.setOutput("build-id", outputs.buildId.toString());
     }
 
+    // Write outputs to file for composite action output capture
+    const outputFile = process.argv[2];
+    if (outputFile) {
+      const fs = await import("fs");
+      const outputLines = [
+        `metrics-collected=${outputs.metricsCollected}`,
+        `metrics-failed=${outputs.metricsFailed}`,
+        `database-path=${outputs.databasePath}`,
+      ];
+
+      if (outputs.buildId !== undefined) {
+        outputLines.push(`build-id=${outputs.buildId}`);
+      }
+
+      await fs.promises.writeFile(outputFile, outputLines.join("\n"));
+    }
+
     // Handle continue-on-error logic
     if (collectionResult.failed > 0 && !inputs.continueOnError) {
       if (collectionResult.successful === 0) {

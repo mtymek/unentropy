@@ -336,6 +336,26 @@ async function run(): Promise<void> {
       core.setOutput("time-range-end", outputs.timeRangeEnd);
     }
 
+    // Write outputs to file for composite action output capture
+    const outputFile = process.argv[2];
+    if (outputFile) {
+      const fs = await import("fs");
+      const outputLines = [
+        `report-path=${outputs.reportPath}`,
+        `metrics-count=${outputs.metricsCount}`,
+        `data-points=${outputs.dataPoints}`,
+      ];
+
+      if (outputs.timeRangeStart) {
+        outputLines.push(`time-range-start=${outputs.timeRangeStart}`);
+      }
+      if (outputs.timeRangeEnd) {
+        outputLines.push(`time-range-end=${outputs.timeRangeEnd}`);
+      }
+
+      await fs.promises.writeFile(outputFile, outputLines.join("\n"));
+    }
+
     core.info("Action completed successfully");
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);

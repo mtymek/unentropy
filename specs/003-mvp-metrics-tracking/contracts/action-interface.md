@@ -6,11 +6,119 @@
 
 ## Overview
 
-This document defines the interface contracts for the two GitHub Actions provided by Unentropy:
-1. `collect-metrics` - Collects metrics during CI/CD runs
-2. `generate-report` - Generates HTML reports from collected data
+This document defines the interface contracts for the three GitHub Actions provided by Unentropy:
+1. `find-database` - Finds and downloads the latest database artifact
+2. `collect-metrics` - Collects metrics during CI/CD runs
+3. `generate-report` - Generates HTML reports from collected data
 
-## Action 1: collect-metrics
+---
+
+## Action 1: find-database
+
+### Purpose
+
+Search for and download the latest database artifact from previous successful workflow runs.
+
+### Action Metadata
+
+**Location**: `.github/actions/find-database/action.yml`
+
+```yaml
+name: 'Unentropy Find Database'
+description: 'Find and download the latest metrics database artifact'
+author: 'Unentropy Team'
+branding:
+  icon: 'download'
+  color: 'orange'
+```
+
+### Inputs
+
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `database-artifact` | string | No | `unentropy-metrics` | Name of artifact to search for |
+| `database-path` | string | No | `./unentropy-metrics.db` | Local path where database should be placed |
+| `branch-filter` | string | No | `${{ github.ref_name }}` | Branch to search for previous runs |
+
+**Input Specifications**:
+
+#### `database-artifact`
+- **Type**: Artifact name string
+- **Validation**: Must match pattern `^[a-zA-Z0-9_-]+$`
+- **Examples**:
+  - `unentropy-metrics` (default)
+  - `my-project-metrics`
+
+#### `database-path`
+- **Type**: File path string
+- **Validation**: Must be a valid file path
+- **Notes**: Directory created automatically if doesn't exist
+- **Examples**:
+  - `./unentropy-metrics.db` (default)
+  - `./metrics/data.db`
+
+#### `branch-filter`
+- **Type**: Branch name string
+- **Validation**: Valid Git branch name
+- **Behavior**: Only searches for runs on specified branch
+- **Examples**:
+  - `${{ github.ref_name }}` (default)
+  - `main`
+  - `develop`
+
+### Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| `database-found` | boolean | Whether a previous database was found and downloaded |
+| `database-path` | string | Path to the database file (may not exist if not found) |
+| `source-run-id` | string | ID of the workflow run where database was found |
+
+**Output Specifications**:
+
+#### `database-found`
+- **Type**: Boolean (as string)
+- **Values**: `"true"` or `"false"`
+- **Example**: `"true"`
+
+#### `database-path`
+- **Type**: File path string
+- **Example**: `"./unentropy-metrics.db"`
+
+#### `source-run-id`
+- **Type**: Integer (as string)
+- **Example**: `"123456789"`
+
+### Error Handling
+
+#### API Errors
+- **GitHub API failure**: Action fails with clear error message
+- **Rate limiting**: Action fails with retry suggestion
+- **Insufficient permissions**: Action fails with permission requirements
+
+#### Search Errors
+- **No previous runs**: Sets `database-found=false`, continues successfully
+- **No artifact found**: Sets `database-found=false`, continues successfully
+- **Download failure**: Action fails with network error details
+
+#### File System Errors
+- **Invalid path**: Action fails with path validation error
+- **Permission denied**: Action fails with file system error
+- **Disk space**: Action fails with disk space error
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success (database found and downloaded) |
+| 0 | Success (no database found, first run scenario) |
+| 1 | API failure |
+| 1 | File system error |
+| 1 | Invalid input |
+
+---
+
+## Action 2: collect-metrics
 
 ### Purpose
 
@@ -34,7 +142,6 @@ branding:
 | Name | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
 | `config-path` | string | No | `./unentropy.json` | Path to configuration file relative to repository root |
-| `database-artifact` | string | No | `unentropy-metrics` | Name of GitHub Actions artifact to store database |
 | `database-path` | string | No | `.unentropy/metrics.db` | Path where database file is stored locally |
 | `continue-on-error` | boolean | No | `true` | Continue workflow if metric collection fails |
 
@@ -47,14 +154,6 @@ branding:
   - `./unentropy.json` (default)
   - `./.unentropy/config.json`
   - `./config/metrics.json`
-
-#### `database-artifact`
-- **Type**: Artifact name string
-- **Validation**: Must match pattern `^[a-zA-Z0-9_-]+$`
-- **Examples**:
-  - `unentropy-metrics` (default)
-  - `my-project-metrics`
-  - `api-metrics`
 
 #### `database-path`
 - **Type**: File path string
@@ -136,11 +235,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Find latest database
+        uses: ./.github/actions/find-database
+        with:
+          database-artifact: 'my-metrics'
+          database-path: './my-metrics.db'
+      
       - name: Collect metrics
         uses: ./.github/actions/collect-metrics
         with:
           config-path: './unentropy.json'
-          database-artifact: 'my-metrics'
+          database-path: './my-metrics.db'
       
       - name: Show results
         run: |
@@ -161,11 +266,10 @@ jobs:
 - **Parse error**: Logged as warning, metric skipped
 - **Database error**: Action fails (data integrity)
 
-#### Artifact Errors
-- **Download failure**: Uses GitHub API to find previous successful workflow run, assumes first run if none found
-- **API failure**: Falls back to creating new database with warning
-- **Upload failure**: Action fails (data loss risk)
-- **Previous artifact not found**: Creates new database (first run scenario)
+#### Database Errors
+- **Database initialization failure**: Action fails with database error details
+- **Database corruption**: Action fails with integrity error
+- **Permission denied**: Action fails with file system error
 
 ### Exit Codes
 
@@ -179,7 +283,7 @@ jobs:
 
 ---
 
-## Action 2: generate-report
+## Action 3: generate-report
 
 ### Purpose
 
@@ -202,19 +306,20 @@ branding:
 
 | Name | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
-| `database-artifact` | string | No | `unentropy-metrics` | Name of artifact containing database |
+| `database-path` | string | No | `./unentropy-metrics.db` | Path to local database file |
 | `output-path` | string | No | `./unentropy-report.html` | Path for generated HTML report |
 | `time-range` | string | No | `all` | Time range filter (e.g., 'last-30-days', 'all') |
 | `title` | string | No | `'Metrics Report'` | Report title |
 
 **Input Specifications**:
 
-#### `database-artifact`
-- **Type**: Artifact name string
-- **Validation**: Must match pattern `^[a-zA-Z0-9_-]+$`
+#### `database-path`
+- **Type**: File path string
+- **Validation**: Must be a valid file path
+- **Notes**: File must exist and be readable
 - **Examples**:
-  - `unentropy-metrics` (default)
-  - `my-project-metrics`
+  - `./unentropy-metrics.db` (default)
+  - `./metrics/data.db`
 
 #### `output-path`
 - **Type**: File path string
@@ -287,11 +392,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Find latest database
+        uses: ./.github/actions/find-database
+        with:
+          database-artifact: 'my-metrics'
+          database-path: './my-metrics.db'
+      
       - name: Generate report
         id: report
         uses: ./.github/actions/generate-report
         with:
-          database-artifact: 'my-metrics'
+          database-path: './my-metrics.db'
           output-path: './metrics-report.html'
           time-range: 'last-30-days'
           title: 'Monthly Metrics Report'
@@ -311,10 +422,10 @@ jobs:
 
 ### Error Handling
 
-#### Artifact Errors
-- **Artifact not found**: Action fails with clear error message
-- **Download failure**: Action fails with network error
-- **Empty artifact**: Action fails with "no database file" error
+#### Database Errors
+- **Database not found**: Action fails with clear error message
+- **Database corruption**: Action fails with integrity check error
+- **Permission denied**: Action fails with file system error
 
 #### Data Errors
 - **Empty database**: Generates report with "no data" message
@@ -358,11 +469,21 @@ jobs:
       - run: npm run build
       - run: npm test
       
+      - name: Find latest database
+        uses: ./.github/actions/find-database
+        with:
+          database-artifact: 'unentropy-metrics'
+          database-path: './unentropy-metrics.db'
+      
       - name: Collect metrics
         uses: ./.github/actions/collect-metrics
+        with:
+          database-path: './unentropy-metrics.db'
       
       - name: Generate report
         uses: ./.github/actions/generate-report
+        with:
+          database-path: './unentropy-metrics.db'
       
       - uses: actions/upload-artifact@v4
         with:
@@ -383,7 +504,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: npm ci && npm test
+      
+      - name: Find latest database
+        uses: ./.github/actions/find-database
+        with:
+          database-artifact: 'unentropy-metrics'
+          database-path: './unentropy-metrics.db'
+      
       - uses: ./.github/actions/collect-metrics
+        with:
+          database-path: './unentropy-metrics.db'
 
 ---
 # .github/workflows/generate-report.yml
@@ -398,55 +528,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Find latest database
+        uses: ./.github/actions/find-database
+        with:
+          database-artifact: 'unentropy-metrics'
+          database-path: './unentropy-metrics.db'
+      
       - uses: ./.github/actions/generate-report
         with:
+          database-path: './unentropy-metrics.db'
           time-range: 'last-7-days'
       - uses: actions/upload-artifact@v4
         with:
           name: weekly-report
           path: ./unentropy-report.html
-```
-
-### Multi-Project Setup
-
-```yaml
-name: Multi-Project Metrics
-on: [push]
-
-jobs:
-  api-metrics:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: cd api && npm ci && npm test
-      - uses: ./.github/actions/collect-metrics
-        with:
-          config-path: './api/unentropy.json'
-          database-artifact: 'api-metrics'
-  
-  frontend-metrics:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: cd frontend && npm ci && npm test
-      - uses: ./.github/actions/collect-metrics
-        with:
-          config-path: './frontend/unentropy.json'
-          database-artifact: 'frontend-metrics'
-  
-  combined-report:
-    needs: [api-metrics, frontend-metrics]
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        project: [api, frontend]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/generate-report
-        with:
-          database-artifact: '${{ matrix.project }}-metrics'
-          output-path: './${{ matrix.project }}-report.html'
-          title: '${{ matrix.project }} Metrics'
 ```
 
 ---

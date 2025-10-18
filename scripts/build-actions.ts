@@ -55,10 +55,22 @@ const main = async () => {
       "report.node.js"
     );
 
+    await buildAction(
+      "./src/actions/find-database.node.ts",
+      "./.github/actions/find-database/dist",
+      "find-database.node.js"
+    );
+
     // Build for direct workflow usage
     await buildAction("./src/actions/collect.node.ts", "./dist/actions", "collect.node.js");
 
     await buildAction("./src/actions/report.node.ts", "./dist/actions", "report.node.js");
+
+    await buildAction(
+      "./src/actions/find-database.node.ts",
+      "./dist/actions",
+      "find-database.node.js"
+    );
 
     console.log("\n✓ All actions built successfully");
   } catch (error) {
