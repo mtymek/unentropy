@@ -30,7 +30,13 @@ interface Artifact {
 function parseInputs(): ActionInputs {
   const databaseArtifact = core.getInput("database-artifact") || "unentropy-metrics";
   const databasePath = core.getInput("database-path") || "./unentropy-metrics.db";
-  const branchFilter = core.getInput("branch-filter") || process.env.GITHUB_REF_NAME || "main";
+  const branchFilterInput = core.getInput("branch-filter");
+  const branchFilter = branchFilterInput || process.env.GITHUB_REF_NAME || "main";
+
+  // Debug output
+  core.info(`Debug - branch-filter input: '${branchFilterInput}'`);
+  core.info(`Debug - GITHUB_REF_NAME: '${process.env.GITHUB_REF_NAME}'`);
+  core.info(`Debug - final branchFilter: '${branchFilter}'`);
 
   // Validate inputs
   if (!/^[a-zA-Z0-9_-]+$/.test(databaseArtifact)) {
