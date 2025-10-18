@@ -13,6 +13,6 @@
       "description": "Total lines of TypeScript code in src/ directory",
       "command": "find src/ -name '*.ts' -not -path '*/node_modules/*' | xargs wc -l | tail -1 | awk '{print $1}' || echo '0'",
       "unit": "LOC"
-    },
+    }
   ]
 }
