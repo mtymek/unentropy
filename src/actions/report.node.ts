@@ -277,9 +277,20 @@ async function run(): Promise<void> {
       throw new Error(
         `Report generation failed: ${error instanceof Error ? error.message : String(error)}`
       );
-    } finally {
-      db.close();
     }
+
+    // Calculate outputs BEFORE closing database
+    const timeRangeBounds = getTimeRangeBounds(timeRangeFilter, db);
+    const filteredValues = filteredMetricNames.flatMap((metricName) => {
+      try {
+        return db.getMetricTimeSeries(metricName);
+      } catch {
+        return [];
+      }
+    });
+
+    // Close database after all operations are done
+    db.close();
 
     // Write report to file
     try {
@@ -290,16 +301,6 @@ async function run(): Promise<void> {
         `Output file error: ${error instanceof Error ? error.message : String(error)}`
       );
     }
-
-    // Calculate outputs
-    const timeRangeBounds = getTimeRangeBounds(timeRangeFilter, db);
-    const filteredValues = filteredMetricNames.flatMap((metricName) => {
-      try {
-        return db.getMetricTimeSeries(metricName);
-      } catch {
-        return [];
-      }
-    });
 
     const outputs: ActionOutputs = {
       reportPath: inputs.outputPath,
