@@ -50,7 +50,6 @@ jobs:
           continue-on-error: "true"
 
       - name: Upload updated database
-        if: steps.collect-metrics.outputs.metrics-collected > 0
         uses: actions/upload-artifact@v4
         with:
           name: unentropy-metrics
@@ -66,7 +65,6 @@ jobs:
           title: "Metrics Report - ${{ github.repository }}"
 
       - name: Upload report
-        if: steps.find-database.outputs.database-found == 'true' || steps.collect-metrics.outputs.metrics-collected > 0
         uses: actions/upload-artifact@v4
         with:
           name: metrics-report
