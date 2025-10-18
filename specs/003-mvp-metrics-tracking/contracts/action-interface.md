@@ -128,10 +128,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: '20'
+          bun-version: '1.2'
       
       - name: Install dependencies
         run: npm ci
@@ -473,10 +473,10 @@ Actions follow semantic versioning:
 
 ### Compatibility Matrix
 
-| Action Version | Config Schema | Database Schema | Node.js |
-|----------------|---------------|-----------------|---------|
-| v1.0.x | 1.0.0 | 1.0.0 | 20.x |
-| v1.1.x | 1.0.0, 1.1.0 | 1.0.0, 1.1.0 | 20.x |
+| Action Version | Config Schema | Database Schema | Bun Runtime |
+|----------------|---------------|-----------------|-------------|
+| v1.0.x | 1.0.0 | 1.0.0 | 1.2.x |
+| v1.1.x | 1.0.0, 1.1.0 | 1.0.0, 1.1.0 | 1.2.x |
 
 ---
 
@@ -518,7 +518,7 @@ No additional permissions needed (no secrets, no network access).
 
 - Metric commands run in isolated shell
 - No user input is passed to commands (only config file)
-- Commands timeout after 60 seconds
+- Commands timeout after 60 seconds using Bun's reliable process termination
 
 ---
 

@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn } from "bun";
 
 export interface CommandResult {
   success: boolean;
@@ -16,57 +16,72 @@ export async function runCommand(
 ): Promise<CommandResult> {
   const startTime = Date.now();
 
-  return new Promise((resolve) => {
-    const child = spawn(command, {
-      shell: true,
+  try {
+    // Use Bun.spawn with shell command execution
+    const proc = spawn(["sh", "-c", command], {
       env: { ...process.env, ...env },
-      timeout: timeoutMs,
+      stdout: "pipe",
+      stderr: "pipe",
     });
 
-    let stdout = "";
-    let stderr = "";
-    let timedOut = false;
-
-    child.stdout?.on("data", (data) => {
-      stdout += data.toString();
+    // Set up timeout using Bun's built-in timeout mechanism
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("Command timed out")), timeoutMs);
     });
 
-    child.stderr?.on("data", (data) => {
-      stderr += data.toString();
-    });
+    // Read stdout and stderr
+    const outputPromise = (async () => {
+      let stdout = "";
+      let stderr = "";
 
-    const timeoutHandle = setTimeout(() => {
-      timedOut = true;
-      child.kill("SIGTERM");
-      setTimeout(() => child.kill("SIGKILL"), 1000);
-    }, timeoutMs);
+      if (proc.stdout) {
+        const reader = proc.stdout.getReader();
+        const decoder = new TextDecoder();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          stdout += decoder.decode(value);
+        }
+      }
 
-    child.on("close", (code) => {
-      clearTimeout(timeoutHandle);
-      const durationMs = Date.now() - startTime;
+      if (proc.stderr) {
+        const reader = proc.stderr.getReader();
+        const decoder = new TextDecoder();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          stderr += decoder.decode(value);
+        }
+      }
 
-      resolve({
-        success: code === 0 && !timedOut,
-        stdout,
-        stderr,
-        exitCode: code ?? -1,
-        timedOut,
-        durationMs,
-      });
-    });
+      return { stdout, stderr, exitCode: await proc.exited };
+    })();
 
-    child.on("error", (error) => {
-      clearTimeout(timeoutHandle);
-      const durationMs = Date.now() - startTime;
+    // Race between command completion and timeout
+    const { stdout, stderr, exitCode } = await Promise.race([outputPromise, timeoutPromise]);
 
-      resolve({
-        success: false,
-        stdout,
-        stderr: stderr + error.message,
-        exitCode: -1,
-        timedOut,
-        durationMs,
-      });
-    });
-  });
+    const durationMs = Date.now() - startTime;
+    const timedOut = exitCode === null && (stderr.includes("Command timed out") || stdout === "");
+
+    return {
+      success: exitCode === 0 && !timedOut,
+      stdout,
+      stderr,
+      exitCode: exitCode ?? -1,
+      timedOut,
+      durationMs,
+    };
+  } catch (error) {
+    const durationMs = Date.now() - startTime;
+    const timedOut = error instanceof Error && error.message === "Command timed out";
+
+    return {
+      success: false,
+      stdout: "",
+      stderr: error instanceof Error ? error.message : String(error),
+      exitCode: -1,
+      timedOut,
+      durationMs,
+    };
+  }
 }

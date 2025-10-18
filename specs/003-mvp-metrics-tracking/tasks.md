@@ -116,7 +116,7 @@
 ### Implementation for User Story 2
 
 - [x] T031 [P] [US2] Implement build context extraction in src/collector/context.ts
-- [x] T032 [P] [US2] Implement command execution with timeout in src/collector/runner.ts
+- [x] T032 [P] [US2] Implement command execution with timeout using Bun.spawn() in src/collector/runner.ts
 - [x] T033 [US2] Implement metric value parser (numeric/label) in src/collector/collector.ts
 - [x] T034 [US2] Implement main collection orchestration with retry logic in src/collector/collector.ts
 - [x] T035 [US2] Implement error handling for partial metric failures in src/collector/collector.ts

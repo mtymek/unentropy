@@ -136,10 +136,10 @@ This document captures the research findings and technical decisions for impleme
 - Built-in metric calculators: Too opinionated, scope creep
 
 **Implementation Notes**:
-- Execute commands using Node.js `child_process.execSync`
+- Execute commands using Bun's native `Bun.spawn()` API for improved timeout handling and CI reliability
 - Pass build context as environment variables (COMMIT_SHA, BRANCH, etc.)
 - Parse stdout for metric value (numeric or string)
-- Timeout after 60 seconds to prevent hanging
+- Timeout after 60 seconds to prevent hanging using Bun's built-in timeout mechanism
 - Capture stderr for error logging
 
 ### 7. Configuration File Schema Design

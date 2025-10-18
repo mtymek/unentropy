@@ -11,18 +11,18 @@ Build a serverless metrics tracking system that allows developers to define cust
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.x / Node.js 20.x (matches existing project setup)  
+**Language/Version**: TypeScript 5.x / Bun 1.2.x (matches existing project setup and constitution requirements)  
 **Primary Dependencies**: 
-- `better-sqlite3` for database operations (Node.js/GitHub Actions)
-- `bun:sqlite` for database operations (Bun local development)
+- `bun:sqlite` for database operations (Bun native)
+- `better-sqlite3` for database operations (Node.js/GitHub Actions compatibility)
 - Database adapter layer for runtime environment detection
 - `@actions/core` and `@actions/github` for GitHub Actions integration
 - Chart.js (via CDN) for HTML report visualizations
 - `zod` for configuration validation
 
 **Storage**: SQLite database file stored as GitHub Actions artifact (persisted across workflow runs)  
-**Testing**: Existing test setup (npm test with unit and integration tests)  
-**Target Platform**: GitHub Actions runners (Ubuntu latest, Node.js 20.x)  
+**Testing**: Existing test setup (bun test with unit and integration tests)  
+**Target Platform**: GitHub Actions runners (Ubuntu latest, Bun 1.2.x)  
 **Project Type**: Single project (CLI tool / library with GitHub Action wrapper)  
 **Performance Goals**: 
 - Configuration validation: <100ms for typical configs
@@ -52,7 +52,7 @@ Build a serverless metrics tracking system that allows developers to define cust
 
 ### ✅ II. Technology Stack Consistency
 **Status**: PASS  
-**Justification**: Using existing Node.js/TypeScript stack. SQLite for storage (as specified). Chart.js for visualization (as specified in dependencies). Consistent with project setup.
+**Justification**: Using Bun runtime with TypeScript as required by constitution. SQLite for storage (as specified). Chart.js for visualization (as specified in dependencies). Bun as package manager. Consistent with project setup and constitution requirements.
 
 ### ✅ III. Code Quality Standards
 **Status**: PASS  
@@ -78,14 +78,22 @@ Build a serverless metrics tracking system that allows developers to define cust
 
 ```
 specs/003-mvp-metrics-tracking/
+ ├── plan.md              # This file (/speckit.plan command output)
+ ├── research.md          # Phase 0 output (/speckit.plan command)
+ ├── data-model.md        # Phase 1 output (/speckit.plan command)
+ ├── quickstart.md        # Phase 1 output (/speckit.plan command)
+ ├── contracts/           # Phase 1 output (/speckit.plan command)
+ │   ├── config-schema.md       # unentropy.json schema
+ │   ├── database-schema.md     # SQLite table definitions
+ │   └── action-interface.md    # GitHub Action inputs/outputs
+ └── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
+```
+specs/[###-feature]/
 ├── plan.md              # This file (/speckit.plan command output)
 ├── research.md          # Phase 0 output (/speckit.plan command)
 ├── data-model.md        # Phase 1 output (/speckit.plan command)
 ├── quickstart.md        # Phase 1 output (/speckit.plan command)
 ├── contracts/           # Phase 1 output (/speckit.plan command)
-│   ├── config-schema.md       # unentropy.json schema
-│   ├── database-schema.md     # SQLite table definitions
-│   └── action-interface.md    # GitHub Action inputs/outputs
 └── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
 ```
 
@@ -93,57 +101,58 @@ specs/003-mvp-metrics-tracking/
 
 ```
 src/
-├── config/
-│   ├── schema.ts           # Zod schema for unentropy.json
-│   ├── loader.ts           # Config file reading and validation
-│   └── types.ts            # TypeScript types for configuration
-├── database/
-│   ├── adapters/
-│   │   ├── interface.ts    # Common database adapter interface
-│   │   ├── better-sqlite3.ts  # Node.js adapter (better-sqlite3)
-│   │   ├── bun-sqlite.ts   # Bun adapter (bun:sqlite)
-│   │   └── factory.ts      # Runtime environment detection
-│   ├── client.ts           # SQLite connection management (uses adapter)
-│   ├── migrations.ts       # Schema initialization
-│   ├── queries.ts          # Data access functions
-│   └── types.ts            # Database entity types
-├── collector/
-│   ├── runner.ts           # Execute metric collection commands
-│   ├── collector.ts        # Main collection orchestration
-│   └── context.ts          # Build context extraction (git SHA, etc.)
-├── reporter/
-│   ├── generator.ts        # HTML report generation
-│   ├── charts.ts           # Chart.js configuration builder
-│   └── templates.ts        # HTML templates
-├── actions/
-│   ├── collect.ts          # GitHub Action entrypoint for collection
-│   └── report.ts           # GitHub Action entrypoint for reporting
-└── index.ts                # Main library exports
+ ├── config/
+ │   ├── schema.ts           # Zod schema for unentropy.json
+ │   ├── loader.ts           # Config file reading and validation
+ │   └── types.ts            # TypeScript types for configuration
+ ├── database/
+ │   ├── adapters/
+ │   │   ├── interface.ts    # Common database adapter interface
+ │   │   ├── better-sqlite3.ts  # Node.js adapter (better-sqlite3)
+ │   │   ├── bun-sqlite.ts   # Bun adapter (bun:sqlite)
+ │   │   └── factory.ts      # Runtime environment detection
+ │   ├── client.ts           # SQLite connection management (uses adapter)
+ │   ├── migrations.ts       # Schema initialization
+ │   ├── queries.ts          # Data access functions
+ │   └── types.ts            # Database entity types
+ ├── collector/
+ │   ├── runner.ts           # Execute metric collection commands
+ │   ├── collector.ts        # Main collection orchestration
+ │   └── context.ts          # Build context extraction (git SHA, etc.)
+ ├── reporter/
+ │   ├── generator.ts        # HTML report generation
+ │   ├── charts.ts           # Chart.js configuration builder
+ │   └── templates.ts        # HTML templates
+ ├── actions/
+ │   ├── collect.ts          # GitHub Action entrypoint for collection
+ │   └── report.ts           # GitHub Action entrypoint for reporting
+ └── index.ts                # Main library exports
 
 tests/
-├── unit/
-│   ├── config/             # Configuration validation tests
-│   ├── database/           # Database operations tests
-│   ├── collector/          # Collection logic tests
-│   └── reporter/           # Report generation tests
-├── integration/
-│   ├── end-to-end.test.ts  # Full workflow tests
-│   └── fixtures/           # Test data and configs
-└── contract/
-    └── action.test.ts      # GitHub Action interface tests
+ ├── unit/
+ │   ├── config/             # Configuration validation tests
+ │   ├── database/           # Database operations tests
+ │   ├── collector/          # Collection logic tests
+ │   └── reporter/           # Report generation tests
+ ├── integration/
+ │   ├── end-to-end.test.ts  # Full workflow tests
+ │   └── fixtures/           # Test data and configs
+ └── contract/
+     └── action.test.ts      # GitHub Action interface tests
 
 .github/
-└── actions/
-    ├── collect-metrics/
-    │   ├── action.yml      # GitHub Action definition (collection)
-    │   └── dist/           # Compiled action code
-    └── generate-report/
-        ├── action.yml      # GitHub Action definition (reporting)
-        └── dist/           # Compiled action code
+ └── actions/
+     ├── collect-metrics/
+     │   ├── action.yml      # GitHub Action definition (collection)
+     │   └── dist/           # Compiled action code
+     └── generate-report/
+         ├── action.yml      # GitHub Action definition (reporting)
+         └── dist/           # Compiled action code
 ```
 
-**Structure Decision**: Using single project structure (Option 1) as this is a CLI tool/library with GitHub Action wrappers. All components are TypeScript/Node.js. Clear separation of concerns: config parsing, database operations, collection logic, and reporting are independent modules that can be tested separately.
+**Structure Decision**: Using single project structure as this is a CLI tool/library with GitHub Action wrappers. All components are TypeScript/Bun. Clear separation of concerns: config parsing, database operations, collection logic, and reporting are independent modules that can be tested separately.
 
 ## Complexity Tracking
 
 *No violations detected. All constitution checks passed.*
+
