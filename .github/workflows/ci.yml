@@ -1,8 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
 
 jobs:
@@ -36,3 +34,6 @@ jobs:
 
       - name: Build
         run: bun run build
+
+      - name: Build GitHub Actions
+        run: bun run build:actions

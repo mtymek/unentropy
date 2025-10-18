@@ -1,10 +1,14 @@
 import * as core from "@actions/core";
 import { promises as fs } from "fs";
 import { dirname } from "path";
+import { exec } from "child_process";
+import { promisify } from "util";
 import { loadConfig } from "../config/loader";
 import { collectMetrics } from "../collector/collector";
 import { DatabaseClient } from "../database/client";
 import { extractBuildContext } from "../collector/context";
+
+const execAsync = promisify(exec);
 
 interface ActionInputs {
   configPath: string;
@@ -59,19 +63,28 @@ function parseInputs(): ActionInputs {
 
 async function downloadArtifact(artifactName: string, targetPath: string): Promise<void> {
   try {
-    // Note: In a real implementation, this would use @actions/artifact
-    // For now, we'll simulate the download process
     core.info(`Attempting to download artifact: ${artifactName}`);
 
-    // Check if artifact exists (simulated)
-    // In real implementation: await artifactClient.downloadArtifact(artifactName, targetPath);
+    // Use GitHub CLI to download artifact
+    const artifactDir = dirname(targetPath);
+    await fs.mkdir(artifactDir, { recursive: true });
 
-    // For now, just ensure the directory exists
-    await fs.mkdir(dirname(targetPath), { recursive: true });
-    core.info(`Artifact download location prepared: ${targetPath}`);
-  } catch {
-    // First run or artifact not found is expected
-    core.info(`No existing artifact found (first run or expired): ${artifactName}`);
+    try {
+      await execAsync(`gh artifact download ${artifactName} --dir=${artifactDir}`, {
+        env: {
+          ...process.env,
+          GH_TOKEN: process.env.GITHUB_TOKEN,
+        },
+      });
+      core.info(`Artifact downloaded successfully: ${artifactName}`);
+    } catch {
+      // First run or artifact not found is expected
+      core.info(`No existing artifact found (first run or expired): ${artifactName}`);
+    }
+  } catch (error) {
+    core.warning(
+      `Artifact download failed: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -79,7 +92,13 @@ async function uploadArtifact(artifactName: string, filePath: string): Promise<v
   try {
     core.info(`Uploading artifact: ${artifactName} from ${filePath}`);
 
-    // In real implementation: await artifactClient.uploadArtifact(artifactName, [filePath]);
+    // Use GitHub CLI to upload artifact
+    await execAsync(`gh artifact upload ${artifactName} ${filePath}`, {
+      env: {
+        ...process.env,
+        GH_TOKEN: process.env.GITHUB_TOKEN,
+      },
+    });
 
     core.info(`Artifact uploaded successfully: ${artifactName}`);
   } catch (uploadError) {
@@ -111,9 +130,9 @@ async function run(): Promise<void> {
     try {
       config = await loadConfig(inputs.configPath);
       core.info(`Configuration loaded successfully with ${config.metrics.length} metrics`);
-    } catch (uploadError) {
+    } catch (configError) {
       throw new Error(
-        `Artifact upload failed: ${uploadError instanceof Error ? uploadError.message : String(uploadError)}`
+        `Configuration loading failed: ${configError instanceof Error ? configError.message : String(configError)}`
       );
     }
 
@@ -153,22 +172,9 @@ async function run(): Promise<void> {
         `Metrics collection failed: ${error instanceof Error ? error.message : String(error)}`
       );
     } finally {
-      db.close();
-    }
-
-    // Collect metrics
-    let result;
-    try {
-      result = await collectMetrics(config.metrics, buildId, inputs.databasePath);
-      core.info(
-        `Metrics collection completed: ${result.successful} collected, ${result.failed} failed`
-      );
-    } catch (error) {
-      throw new Error(
-        `Metrics collection failed: ${error instanceof Error ? error.message : String(error)}`
-      );
-    } finally {
-      db.close();
+      if (db) {
+        db.close();
+      }
     }
 
     // Upload updated database as artifact
@@ -187,19 +193,6 @@ async function run(): Promise<void> {
     core.setOutput("database-path", outputs.databasePath);
     if (outputs.buildId !== undefined) {
       core.setOutput("build-id", outputs.buildId.toString());
-    }
-
-    // Handle continue-on-error logic
-    if (collectionResult.failed > 0 && !inputs.continueOnError) {
-      if (collectionResult.successful === 0) {
-        core.setFailed("All metrics failed to collect");
-        process.exit(2);
-      } else {
-        core.setFailed(
-          `Some metrics failed to collect: ${collectionResult.failed} failed, ${collectionResult.successful} succeeded`
-        );
-        process.exit(2);
-      }
     }
 
     // Handle continue-on-error logic

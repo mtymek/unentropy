@@ -46,7 +46,7 @@ As a developer or team lead, I want to view my metrics over time in a simple HTM
 
 **Why this priority**: Visualization is the final piece that delivers insights, but requires both configuration and data collection to be working first. This is the user-facing output that justifies the system's existence.
 
-**Independent Test**: Can be fully tested by generating an HTML report from **test fixture data** (predefined unentropy.json configurations with dummy SQLite databases), verifying charts and trends display correctly through **manual visual review** against acceptance criteria, delivering value by providing actionable insights from collected data.
+**Independent Test**: Can be fully tested by generating an HTML report from ** fixture data** (predefined unentropy.json configurations with dummy SQLite databases), verifying charts and trends display correctly through **manual visual review** against acceptance criteria, delivering value by providing actionable insights from collected data.
 
 **Acceptance Scenarios**:
 
@@ -56,6 +56,23 @@ As a developer or team lead, I want to view my metrics over time in a simple HTM
 4. **Given** I have sparse data (few data points), **When** generating the report, **Then** the system still produces a valid report with available data and indicates where more data would improve insights
 5. **Given** I view the report on different devices, **When** the report is opened on mobile, tablet, or desktop, **Then** the layout adapts appropriately and remains readable
 6. **Given** I hover over data points on a chart, **When** interacting with the visualization, **Then** I see tooltips with exact values, timestamps, and relevant context
+
+---
+
+### User Story 4 - Unentropy Self-Monitoring (Priority: P4)
+
+As the Unentropy project maintainer, I want to use Unentropy to track its own code metrics (test coverage and lines of code), so I can demonstrate the tool's capabilities through "dogfooding" while monitoring the project's health.
+
+**Why this priority**: This serves as a demonstration of Unentropy's value proposition and provides a living example that potential users can reference. It validates the entire workflow while providing genuine project insights. This builds upon the core functionality and provides a real-world example.
+
+**Independent Test**: Can be fully tested by implementing the self-monitoring configuration in the Unentropy repository itself, verifying metric collection works in CI, and generating reports that show actual project trends over time.
+
+**Acceptance Scenarios**:
+
+1. **Given** I have the Unentropy repository with working metric collection, **When** I create an `unentropy.json` configuration with test coverage and LoC metrics, **Then** the system tracks these metrics on each commit
+2. **Given** I have self-monitoring configured, **When** I run the CI pipeline, **Then** test coverage percentage and source code lines are collected and stored
+3. **Given** I have collected self-monitoring data over multiple commits, **When** I generate a report, **Then** I can visualize how test coverage and code size change over time
+4. **Given** a potential user wants to see Unentropy in action, **When** they view the project's generated reports, **Then** they see a real example of the tool's capabilities
 
 ---
 
@@ -118,6 +135,31 @@ As a developer or team lead, I want to view my metrics over time in a simple HTM
 - **Build Context**: Represents the CI/CD execution context, including commit SHA, branch name, build number, and timestamp
 - **Report**: Represents generated HTML output, including all metrics, time range, and visualization data
 
+### Self-Monitoring Example Configuration
+
+The Unentropy project will include a reference `unentropy.json` configuration that tracks:
+
+```json
+{
+  "metrics": [
+    {
+      "name": "test_coverage",
+      "type": "percentage",
+      "description": "Test coverage percentage for the codebase",
+      "command": "bun test --coverage | grep 'Lines' | awk '{print $2}' | sed 's/%//'"
+    },
+    {
+      "name": "lines_of_code", 
+      "type": "numeric",
+      "description": "Total lines of code in src/ directory",
+      "command": "find src/ -name '*.ts' -not -path '*/node_modules/*' | xargs wc -l | tail -1 | awk '{print $1}'"
+    }
+  ]
+}
+```
+
+This configuration serves as both a working example and genuine project monitoring.
+
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
@@ -162,3 +204,5 @@ As a developer or team lead, I want to view my metrics over time in a simple HTM
 - Basic HTML report generation with time-series charts
 - Single repository tracking
 - Commit-level granularity for metrics
+- Self-monitoring implementation for Unentropy project (test coverage + LoC)
+- Reference configuration and workflow for demonstration purposes

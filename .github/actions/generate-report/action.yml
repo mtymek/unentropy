@@ -6,8 +6,12 @@ branding:
   color: "green"
 
 inputs:
+  database-path:
+    description: "Path to local database file"
+    required: false
+    default: "./unentropy-metrics.db"
   database-artifact:
-    description: "Name of artifact containing database"
+    description: "Name of artifact containing database (fallback if database-path doesn't exist)"
     required: false
     default: "unentropy-metrics"
   output-path:
@@ -36,5 +40,14 @@ outputs:
     description: "ISO 8601 timestamp of newest data point"
 
 runs:
-  using: "node20"
-  main: "dist/report.js"
+  using: "composite"
+  steps:
+    - name: Run report generation
+      shell: bash
+      run: node "${{ github.action_path }}/dist/report.node.js"
+      env:
+        INPUT_DATABASE_PATH: ${{ inputs.database-path }}
+        INPUT_DATABASE_ARTIFACT: ${{ inputs.database-artifact }}
+        INPUT_OUTPUT_PATH: ${{ inputs.output-path }}
+        INPUT_TIME_RANGE: ${{ inputs.time-range }}
+        INPUT_TITLE: ${{ inputs.title }}
