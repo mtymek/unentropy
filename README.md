@@ -39,8 +39,6 @@ This allows teams to see trends, spot entropy spikes, and visualize codebase hea
 
 ## **🏗️ Tech Stack**
 
-_(These are the selected technologies for the initial implementation, chosen for simplicity and GitHub Action compatibility. We welcome community input on these choices\!)_
-
 | Component              | Chosen Technology                        | Why?                                                                                                                           |
 | :--------------------- | :--------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------- |
 | **Tooling Language**   | **Node.js / TypeScript**                 | Native support for GitHub Actions, high performance, and robust tooling ecosystem.                                             |
