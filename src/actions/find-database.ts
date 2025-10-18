@@ -203,11 +203,20 @@ async function setOutputs(outputs: ActionOutputs): Promise<void> {
     core.setOutput("source-run-id", outputs.sourceRunId.toString());
   }
 
-  // Also set environment variables for composite action output capture
-  process.env.DATABASE_FOUND = outputs.databaseFound.toString();
-  process.env.DATABASE_PATH = outputs.databasePath;
-  if (outputs.sourceRunId) {
-    process.env.SOURCE_RUN_ID = outputs.sourceRunId.toString();
+  // Write outputs to file for composite action output capture
+  const outputFile = process.argv[2];
+  if (outputFile) {
+    const fs = await import("fs");
+    const outputLines = [
+      `database-found=${outputs.databaseFound}`,
+      `database-path=${outputs.databasePath}`,
+    ];
+
+    if (outputs.sourceRunId) {
+      outputLines.push(`source-run-id=${outputs.sourceRunId}`);
+    }
+
+    await fs.promises.writeFile(outputFile, outputLines.join("\n"));
   }
 }
 
