@@ -51,12 +51,15 @@ jobs:
           INPUT_DATABASE_PATH: "./unentropy-metrics.db"
           INPUT_CONTINUE_ON_ERROR: "false"
 
+      - name: Create report directory
+        run: mkdir -p report
+
       - name: Generate metrics report
         id: generate-report
         run: node "./dist/actions/report.node.js"
         env:
           INPUT_DATABASE_PATH: "./unentropy-metrics.db"
-          INPUT_OUTPUT_PATH: "./unentropy-report.html"
+          INPUT_OUTPUT_PATH: "./report/unentropy-report.html"
           INPUT_TIME_RANGE: "all"
           INPUT_TITLE: "Unentropy Project Metrics"
 
@@ -64,7 +67,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: metrics-report
-          path: ./unentropy-report.html
+          path: ./report/
           retention-days: 90
 
       - name: Save metrics database for next run
@@ -79,7 +82,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./
-          publish_file: ./unentropy-report.html
+          publish_dir: ./report
           destination_dir: ./
-          keep_files: true
+          keep_files: false
+          force_orphan: true
