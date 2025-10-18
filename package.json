@@ -23,7 +23,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "generate-fixtures": "bun run scripts/generate-fixtures.ts",
-    "visual-review": "bun run scripts/generate-fixtures.ts && xdg-open tests/fixtures/visual-review/minimal/report.html && xdg-open tests/fixtures/visual-review/full-featured/report.html && xdg-open tests/fixtures/visual-review/sparse-data/report.html && xdg-open tests/fixtures/visual-review/edge-cases/report.html"
+    "visual-review": "bun run scripts/generate-fixtures.ts && bun run scripts/open-reports.ts"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
