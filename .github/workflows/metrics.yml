@@ -42,13 +42,20 @@ jobs:
       - name: Build GitHub Actions
         run: bun run build:actions
 
+      - name: Find latest database
+        id: find-database
+        uses: ./.github/actions/find-database
+        with:
+          database-artifact: "unentropy-metrics"
+          database-path: "./unentropy-metrics.db"
+          branch-filter: "${{ github.ref_name }}"
+
       - name: Collect metrics
         id: collect-metrics
         uses: ./.github/actions/collect-metrics
         with:
           config-path: "./unentropy.json"
           database-path: "./unentropy-metrics.db"
-          database-artifact: "unentropy-metrics"
           continue-on-error: false
 
       - name: Create report directory
@@ -59,7 +66,6 @@ jobs:
         uses: ./.github/actions/generate-report
         with:
           database-path: "./unentropy-metrics.db"
-          database-artifact: "unentropy-metrics"
           output-path: "./report/unentropy-report.html"
           time-range: "all"
           title: "Unentropy Project Metrics"

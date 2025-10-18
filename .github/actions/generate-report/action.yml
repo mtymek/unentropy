@@ -7,13 +7,8 @@ branding:
 
 inputs:
   database-path:
-    description: "Path to local database file"
-    required: false
-    default: "./unentropy-metrics.db"
-  database-artifact:
-    description: "Name of artifact containing database (fallback if database-path doesn't exist)"
-    required: false
-    default: "unentropy-metrics"
+    description: "Path to local database file (should be provided by find-database action)"
+    required: true
   output-path:
     description: "Output path for generated HTML report"
     required: false
@@ -46,69 +41,11 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Download database artifact
-      id: download-artifact
-      run: |
-        # Check if database file already exists
-        if [ -f "${{ inputs.database-path }}" ]; then
-          echo "Database file already exists locally"
-          echo "database-found=true" >> $GITHUB_OUTPUT
-        else
-          # Extract directory from database path
-          DB_DIR=$(dirname "${{ inputs.database-path }}")
-          DB_FILE=$(basename "${{ inputs.database-path }}")
-          
-          # Create directory if it doesn't exist
-          mkdir -p "$DB_DIR"
-          
-          # Find the most recent successful workflow run
-          echo "Searching for database artifact..."
-          
-          RUN_ID=$(gh api repos/${{ github.repository }}/actions/runs \
-            --jq '.workflow_runs[] | select(.status == "completed" and .conclusion == "success") | .id' | head -1)
-          
-          if [ -n "$RUN_ID" ]; then
-            echo "Found successful run: $RUN_ID"
-            
-            # Get the artifact ID for the database
-            ARTIFACT_ID=$(gh api repos/${{ github.repository }}/actions/runs/$RUN_ID/artifacts \
-              --jq '.artifacts[] | select(.name == "${{ inputs.database-artifact }}") | .id')
-            
-            if [ -n "$ARTIFACT_ID" ]; then
-              echo "Downloading database artifact: $ARTIFACT_ID"
-              cd "$DB_DIR"
-              gh api repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_ID/zip > database.zip
-              
-              # Extract the database
-              unzip -o database.zip
-              rm database.zip
-              
-              if [ -f "$DB_FILE" ]; then
-                echo "Successfully downloaded database"
-                echo "database-found=true" >> $GITHUB_OUTPUT
-              else
-                echo "No database file found in artifact"
-                echo "database-found=false" >> $GITHUB_OUTPUT
-              fi
-            else
-              echo "No database artifact found"
-              echo "database-found=false" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "No successful workflow run found"
-            echo "database-found=false" >> $GITHUB_OUTPUT
-          fi
-        fi
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
-      shell: bash
-
     - name: Run report generation
       shell: bash
       run: node "${{ github.action_path }}/dist/report.node.js"
       env:
         INPUT_DATABASE_PATH: ${{ inputs.database-path }}
-        INPUT_DATABASE_ARTIFACT: ${{ inputs.database-artifact }}
         INPUT_OUTPUT_PATH: ${{ inputs.output-path }}
         INPUT_TIME_RANGE: ${{ inputs.time-range }}
         INPUT_TITLE: ${{ inputs.title }}

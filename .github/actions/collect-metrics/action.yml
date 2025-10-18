@@ -10,14 +10,9 @@ inputs:
     description: "Path to unentropy.json configuration file"
     required: false
     default: "./unentropy.json"
-  database-artifact:
-    description: "Name of GitHub Actions artifact to store database"
-    required: false
-    default: "unentropy-metrics"
   database-path:
-    description: "Path where database file is stored locally"
-    required: false
-    default: ".unentropy/metrics.db"
+    description: "Path where database file is stored locally (should be provided by find-database action)"
+    required: true
   continue-on-error:
     description: "Continue workflow if metric collection fails"
     required: false
@@ -36,62 +31,10 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Download previous database artifact
-      id: download-artifact
-      run: |
-        # Extract directory from database path
-        DB_DIR=$(dirname "${{ inputs.database-path }}")
-        DB_FILE=$(basename "${{ inputs.database-path }}")
-
-        # Create directory if it doesn't exist
-        mkdir -p "$DB_DIR"
-
-        # Find the most recent successful workflow run
-        echo "Searching for previous successful workflow run..."
-
-        RUN_ID=$(gh api repos/${{ github.repository }}/actions/runs \
-          --jq '.workflow_runs[] | select(.status == "completed" and .conclusion == "success" and .head_branch == "${{ github.ref_name }}") | .id' | head -1)
-
-        if [ -n "$RUN_ID" ]; then
-          echo "Found previous successful run: $RUN_ID"
-          
-          # Get the artifact ID for the database
-          ARTIFACT_ID=$(gh api repos/${{ github.repository }}/actions/runs/$RUN_ID/artifacts \
-            --jq '.artifacts[] | select(.name == "${{ inputs.database-artifact }}") | .id')
-          
-          if [ -n "$ARTIFACT_ID" ]; then
-            echo "Downloading database artifact: $ARTIFACT_ID"
-            cd "$DB_DIR"
-            gh api repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_ID/zip > database.zip
-            
-            # Extract the database
-            unzip -o database.zip
-            rm database.zip
-            
-            if [ -f "$DB_FILE" ]; then
-              echo "Successfully downloaded previous database"
-              echo "database-found=true" >> $GITHUB_OUTPUT
-            else
-              echo "No database file found in artifact"
-              echo "database-found=false" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "No database artifact found in previous run"
-            echo "database-found=false" >> $GITHUB_OUTPUT
-          fi
-        else
-          echo "No previous successful run found (first run)"
-          echo "database-found=false" >> $GITHUB_OUTPUT
-        fi
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
-      shell: bash
-
     - name: Run metrics collection
       shell: bash
       run: node "${{ github.action_path }}/dist/collect.node.js"
       env:
         INPUT_CONFIG_PATH: ${{ inputs.config-path }}
-        INPUT_DATABASE_ARTIFACT: ${{ inputs.database-artifact }}
         INPUT_DATABASE_PATH: ${{ inputs.database-path }}
         INPUT_CONTINUE_ON_ERROR: ${{ inputs.continue-on-error }}
