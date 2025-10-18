@@ -172,8 +172,8 @@
 - [x] T048j [US3] Create test fixture: edge cases (special chars, extreme values) in tests/fixtures/visual-review/edge-cases/
 - [x] T048k [US3] Implement fixture generation script (generate-fixture command) in scripts/generate-fixture.ts
 - [x] T048l [US3] Generate HTML reports from all 4 test fixtures
-- [ ] T048m [US3] Manual visual review: Complete all checklist items from contracts/visual-acceptance-criteria.md
-- [ ] T048n [US3] Document review findings and capture screenshots for documentation
+- [x] T048m [US3] Manual visual review: Complete all checklist items from contracts/visual-acceptance-criteria.md
+- [x] T048n [US3] Document review findings and capture screenshots for documentation
 
 **Checkpoint**: HTML reports can be generated from collected data and viewed in browser
 
