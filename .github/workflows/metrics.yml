@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  actions: read # Required to access workflow runs and artifacts
   pages: write
   id-token: write
 
@@ -42,31 +43,69 @@ jobs:
         run: bun run build:actions
 
       - name: Download previous metrics database
-        uses: actions/download-artifact@v4
-        with:
-          name: unentropy-metrics
-          path: ./
-        continue-on-error: true
+        id: download-db
+        run: |
+          # Find the most recent successful workflow run
+          echo "Searching for previous successful workflow run..."
+
+          RUN_ID=$(gh api repos/${{ github.repository }}/actions/runs \
+            --jq '.workflow_runs[] | select(.status == "completed" and .conclusion == "success" and .head_branch == "main") | .id' | head -1)
+
+          if [ -n "$RUN_ID" ]; then
+            echo "Found previous successful run: $RUN_ID"
+            
+            # Get the artifact ID for the database
+            ARTIFACT_ID=$(gh api repos/${{ github.repository }}/runs/$RUN_ID/artifacts \
+              --jq '.artifacts[] | select(.name == "unentropy-metrics") | .id')
+            
+            if [ -n "$ARTIFACT_ID" ]; then
+              echo "Downloading database artifact: $ARTIFACT_ID"
+              gh api repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_ID/zip \
+                --output database.zip
+              
+              # Extract the database
+              unzip -o database.zip
+              rm database.zip
+              
+              if [ -f "unentropy-metrics.db" ]; then
+                echo "Successfully downloaded previous database"
+                echo "database-found=true" >> $GITHUB_OUTPUT
+              else
+                echo "No database file found in artifact"
+                echo "database-found=false" >> $GITHUB_OUTPUT
+              fi
+            else
+              echo "No database artifact found in previous run"
+              echo "database-found=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "No previous successful run found (first run)"
+            echo "database-found=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Collect metrics
         id: collect-metrics
-        run: node "./dist/actions/collect.node.js"
-        env:
-          INPUT_CONFIG_PATH: "./unentropy.json"
-          INPUT_DATABASE_PATH: "./unentropy-metrics.db"
-          INPUT_CONTINUE_ON_ERROR: "false"
+        uses: ./.github/actions/collect-metrics
+        with:
+          config-path: "./unentropy.json"
+          database-path: "./unentropy-metrics.db"
+          database-artifact: "unentropy-metrics"
+          continue-on-error: false
 
       - name: Create report directory
         run: mkdir -p report
 
       - name: Generate metrics report
         id: generate-report
-        run: node "./dist/actions/report.node.js"
-        env:
-          INPUT_DATABASE_PATH: "./unentropy-metrics.db"
-          INPUT_OUTPUT_PATH: "./report/unentropy-report.html"
-          INPUT_TIME_RANGE: "all"
-          INPUT_TITLE: "Unentropy Project Metrics"
+        uses: ./.github/actions/generate-report
+        with:
+          database-path: "./unentropy-metrics.db"
+          database-artifact: "unentropy-metrics"
+          output-path: "./report/unentropy-report.html"
+          time-range: "all"
+          title: "Unentropy Project Metrics"
 
       - name: Save metrics database for next run
         uses: actions/upload-artifact@v4
@@ -74,6 +113,7 @@ jobs:
           name: unentropy-metrics
           path: ./unentropy-metrics.db
           retention-days: 365
+        if: always() && (steps.collect-metrics.outcome == 'success' || steps.download-db.outputs.database-found == 'true')
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

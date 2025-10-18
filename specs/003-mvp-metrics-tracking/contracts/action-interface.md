@@ -162,8 +162,10 @@ jobs:
 - **Database error**: Action fails (data integrity)
 
 #### Artifact Errors
-- **Download failure**: Assumes first run, creates new database
+- **Download failure**: Uses GitHub API to find previous successful workflow run, assumes first run if none found
+- **API failure**: Falls back to creating new database with warning
 - **Upload failure**: Action fails (data loss risk)
+- **Previous artifact not found**: Creates new database (first run scenario)
 
 ### Exit Codes
 

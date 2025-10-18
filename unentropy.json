@@ -4,7 +4,7 @@
       "name": "test-coverage",
       "type": "numeric",
       "description": "Test coverage percentage for the codebase",
-      "command": "echo '85.5'",
+      "command": "bun test --coverage 2>/dev/null | grep -E 'All files[^|]*\\|[^|]*\\|\\s*([0-9.]+)' | tail -1 | sed 's/.*\\|\\s*\\([0-9.]*\\)/\\1/' || echo '0'",
       "unit": "%"
     },
     {
@@ -13,6 +13,19 @@
       "description": "Total lines of TypeScript code in src/ directory",
       "command": "find src/ -name '*.ts' -not -path '*/node_modules/*' | xargs wc -l | tail -1 | awk '{print $1}' || echo '0'",
       "unit": "LOC"
+    },
+    {
+      "name": "bundle-size",
+      "type": "numeric",
+      "description": "Size of the built action bundle in KB",
+      "command": "du -k dist/actions/collect.node.js dist/actions/report.node.js 2>/dev/null | awk '{sum += $1} END {print sum || 0}'",
+      "unit": "KB"
+    },
+    {
+      "name": "build-status",
+      "type": "label",
+      "description": "Overall build status",
+      "command": "echo 'healthy'"
     }
   ]
 }

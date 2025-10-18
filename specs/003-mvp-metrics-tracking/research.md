@@ -53,27 +53,45 @@ This document captures the research findings and technical decisions for impleme
 - Export inferred TypeScript types for use throughout codebase
 - Provide custom error formatter for user-friendly messages
 
-### 3. GitHub Actions Artifact Storage
+### 3. GitHub Actions Artifact Storage - UPDATED
 
-**Decision**: Store SQLite database as GitHub Actions artifact with download/merge pattern
+**Decision**: Store SQLite database as GitHub Actions artifact with API-based download/merge pattern
 
-**Rationale**:
-- Artifacts persist across workflow runs (requirement FR-011)
+**Critical Issue Identified**: Each GitHub Actions workflow run has isolated artifacts - new workflows cannot access artifacts from previous runs without explicit API calls.
+
+**Updated Rationale**:
+- Artifacts persist across workflow runs but require API access (requirement FR-011)
 - Built-in versioning and retention policies
 - No repository bloat (database not committed)
 - Supports concurrent workflows with merge strategy
+- API-based approach ensures database continuity across workflow executions
 
 **Alternatives Considered**:
 - Git LFS: Rejected due to repository bloat and merge conflicts
 - Commit to repository: Rejected due to binary file conflicts
 - External storage (S3, etc.): Violates serverless constraint
 - GitHub releases: Not designed for frequent updates
+- Simple artifact download: Rejected due to workflow isolation
 
-**Implementation Notes**:
-- Action downloads previous artifact at start of run
-- Merges new data into existing database (upsert pattern)
-- Uploads updated database as new artifact
-- Use artifact naming with repository context to avoid collisions
+**Updated Implementation Notes**:
+- Use GitHub REST API to find most recent successful workflow run
+- Download database artifact from that specific run using API
+- Merge new data into existing database (upsert pattern)
+- Upload updated database as new artifact
+- Handle cases where no previous artifact exists (first run)
+- Implement error handling for API failures and missing artifacts
+- Use workflow_run event for triggering report generation after collection
+
+**API Implementation Strategy**:
+```bash
+# Find latest successful workflow run
+RUN_ID=$(gh api repos/:owner/:repo/actions/runs \
+  --jq '.workflow_runs[] | select(.status == "completed" and .conclusion == "success") | .[0].id')
+
+# Download database artifact
+gh api repos/:owner/:repo/actions/artifacts/$ARTIFACT_ID/zip \
+  --output database.zip
+```
 
 ### 4. Concurrent Write Handling
 

@@ -37,11 +37,56 @@ runs:
   using: "composite"
   steps:
     - name: Download previous database artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: ${{ inputs.database-artifact }}
-        path: ${{ inputs.database-path }}
-      continue-on-error: true
+      id: download-artifact
+      run: |
+        # Extract directory from database path
+        DB_DIR=$(dirname "${{ inputs.database-path }}")
+        DB_FILE=$(basename "${{ inputs.database-path }}")
+
+        # Create directory if it doesn't exist
+        mkdir -p "$DB_DIR"
+
+        # Find the most recent successful workflow run
+        echo "Searching for previous successful workflow run..."
+
+        RUN_ID=$(gh api repos/${{ github.repository }}/actions/runs \
+          --jq '.workflow_runs[] | select(.status == "completed" and .conclusion == "success" and .head_branch == "${{ github.ref_name }}") | .id' | head -1)
+
+        if [ -n "$RUN_ID" ]; then
+          echo "Found previous successful run: $RUN_ID"
+          
+          # Get the artifact ID for the database
+          ARTIFACT_ID=$(gh api repos/${{ github.repository }}/runs/$RUN_ID/artifacts \
+            --jq '.artifacts[] | select(.name == "${{ inputs.database-artifact }}") | .id')
+          
+          if [ -n "$ARTIFACT_ID" ]; then
+            echo "Downloading database artifact: $ARTIFACT_ID"
+            cd "$DB_DIR"
+            gh api repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_ID/zip \
+              --output database.zip
+            
+            # Extract the database
+            unzip -o database.zip
+            rm database.zip
+            
+            if [ -f "$DB_FILE" ]; then
+              echo "Successfully downloaded previous database"
+              echo "database-found=true" >> $GITHUB_OUTPUT
+            else
+              echo "No database file found in artifact"
+              echo "database-found=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "No database artifact found in previous run"
+            echo "database-found=false" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "No previous successful run found (first run)"
+          echo "database-found=false" >> $GITHUB_OUTPUT
+        fi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      shell: bash
 
     - name: Run metrics collection
       shell: bash
@@ -58,3 +103,4 @@ runs:
         name: ${{ inputs.database-artifact }}
         path: ${{ inputs.database-path }}
         retention-days: 365
+      if: always() && (steps.download-artifact.outputs.database-found == 'true' || success())
