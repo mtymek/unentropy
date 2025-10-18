@@ -30,16 +30,16 @@ outputs:
 runs:
   using: "composite"
   steps:
-- name: Find and download database
+    - name: Find and download database
       id: find-db
       shell: bash
       run: |
         # Create temp file for outputs
         OUTPUT_FILE=$(mktemp)
-        
+
         # Run the Node.js script with output file
         node "${{ github.action_path }}/dist/find-database.node.js" "$OUTPUT_FILE"
-        
+
         # Read outputs from file and set them
         if [ -f "$OUTPUT_FILE" ]; then
           while IFS='=' read -r key value; do

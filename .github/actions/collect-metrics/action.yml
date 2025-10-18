@@ -31,16 +31,16 @@ outputs:
 runs:
   using: "composite"
   steps:
-- name: Run metrics collection
+    - name: Run metrics collection
       id: collect
       shell: bash
       run: |
         # Create temp file for outputs
         OUTPUT_FILE=$(mktemp)
-        
+
         # Run the Node.js script with output file
         node "${{ github.action_path }}/dist/collect.node.js" "$OUTPUT_FILE"
-        
+
         # Read outputs from file and set them
         if [ -f "$OUTPUT_FILE" ]; then
           while IFS='=' read -r key value; do
