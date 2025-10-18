@@ -1,0 +1,74 @@
+# Example workflow demonstrating the three-action architecture
+name: Three-Action Example
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2"
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Find latest database
+        id: find-database
+        uses: ./.github/actions/find-database
+        with:
+          database-artifact: "unentropy-metrics"
+          database-path: "./unentropy-metrics.db"
+          branch-filter: "${{ github.ref_name }}"
+
+      - name: Collect metrics
+        id: collect-metrics
+        uses: ./.github/actions/collect-metrics
+        with:
+          config-path: "./unentropy.json"
+          database-path: "./unentropy-metrics.db"
+          continue-on-error: "true"
+
+      - name: Upload updated database
+        if: steps.collect-metrics.outputs.metrics-collected > 0
+        uses: actions/upload-artifact@v4
+        with:
+          name: unentropy-metrics
+          path: ./unentropy-metrics.db
+          retention-days: 30
+
+      - name: Generate report
+        id: generate-report
+        uses: ./.github/actions/generate-report
+        with:
+          database-path: "./unentropy-metrics.db"
+          output-path: "./unentropy-report.html"
+          title: "Metrics Report - ${{ github.repository }}"
+
+      - name: Upload report
+        if: steps.find-database.outputs.database-found == 'true' || steps.collect-metrics.outputs.metrics-collected > 0
+        uses: actions/upload-artifact@v4
+        with:
+          name: metrics-report
+          path: ./unentropy-report.html
+          retention-days: 30
+
+      - name: Report summary
+        run: |
+          echo "## 📊 Metrics Collection Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Database Found**: ${{ steps.find-database.outputs.database-found }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Source Run ID**: ${{ steps.find-database.outputs.source-run-id }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Metrics Collected**: ${{ steps.collect-metrics.outputs.metrics-collected }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Metrics Failed**: ${{ steps.collect-metrics.outputs.metrics-failed }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Report Generated**: ${{ steps.generate-report.outputs.report-path }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Data Points**: ${{ steps.generate-report.outputs.data-points }}" >> $GITHUB_STEP_SUMMARY

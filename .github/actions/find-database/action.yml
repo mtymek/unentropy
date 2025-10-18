@@ -1,0 +1,39 @@
+name: "Unentropy Find Database"
+description: "Find and download the latest metrics database artifact"
+author: "Unentropy Team"
+branding:
+  icon: "download"
+  color: "orange"
+
+inputs:
+  database-artifact:
+    description: "Name of artifact to search for"
+    required: false
+    default: "unentropy-metrics"
+  database-path:
+    description: "Local path where database should be placed"
+    required: false
+    default: "./unentropy-metrics.db"
+  branch-filter:
+    description: "Branch to search for previous runs"
+    required: false
+    default: "${{ github.ref_name }}"
+
+outputs:
+  database-found:
+    description: "Whether a previous database was found and downloaded"
+  database-path:
+    description: "Path to the database file (may not exist if not found)"
+  source-run-id:
+    description: "ID of the workflow run where database was found"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Find and download database
+      shell: bash
+      run: node "${{ github.action_path }}/dist/find-database.node.js"
+      env:
+        INPUT_DATABASE_ARTIFACT: ${{ inputs.database-artifact }}
+        INPUT_DATABASE_PATH: ${{ inputs.database-path }}
+        INPUT_BRANCH_FILTER: ${{ inputs.branch-filter }}
