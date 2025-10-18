@@ -8,7 +8,6 @@ import { extractBuildContext } from "../collector/context";
 
 interface ActionInputs {
   configPath: string;
-  databaseArtifact: string;
   databasePath: string;
   continueOnError: boolean;
 }
@@ -22,19 +21,12 @@ interface ActionOutputs {
 
 function parseInputs(): ActionInputs {
   const configPath = core.getInput("config-path") || "./unentropy.json";
-  const databaseArtifact = core.getInput("database-artifact") || "unentropy-metrics";
-  const databasePath = core.getInput("database-path") || ".unentropy/metrics.db";
+  const databasePath = core.getInput("database-path") || "./unentropy-metrics.db";
   const continueOnErrorInput = core.getInput("continue-on-error") || "true";
 
   // Validate inputs
   if (!configPath.endsWith(".json")) {
     throw new Error(`Invalid config-path: must be a JSON file. Got: ${configPath}`);
-  }
-
-  if (!/^[a-zA-Z0-9_-]+$/.test(databaseArtifact)) {
-    throw new Error(
-      `Invalid database-artifact: must match pattern ^[a-zA-Z0-9_-]+$. Got: ${databaseArtifact}`
-    );
   }
 
   if (!databasePath.endsWith(".db") && !databasePath.endsWith(".sqlite")) {
@@ -51,7 +43,6 @@ function parseInputs(): ActionInputs {
 
   return {
     configPath,
-    databaseArtifact,
     databasePath,
     continueOnError,
   };

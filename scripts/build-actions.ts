@@ -42,6 +42,7 @@ const buildAction = async (entrypoint: string, outdir: string, outfile: string):
 
 const main = async () => {
   try {
+    // Build for composite actions (legacy)
     await buildAction(
       "./src/actions/collect.node.ts",
       "./.github/actions/collect-metrics/dist",
@@ -53,6 +54,11 @@ const main = async () => {
       "./.github/actions/generate-report/dist",
       "report.node.js"
     );
+
+    // Build for direct workflow usage
+    await buildAction("./src/actions/collect.node.ts", "./dist/actions", "collect.node.js");
+
+    await buildAction("./src/actions/report.node.ts", "./dist/actions", "report.node.js");
 
     console.log("\n✓ All actions built successfully");
   } catch (error) {

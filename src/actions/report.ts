@@ -6,7 +6,6 @@ import { generateReport } from "../reporter/generator";
 
 interface ActionInputs {
   databasePath: string;
-  databaseArtifact: string;
   outputPath: string;
   timeRange: string;
   title: string;
@@ -27,17 +26,9 @@ interface TimeRangeFilter {
 
 function parseInputs(): ActionInputs {
   const databasePath = core.getInput("database-path") || "./unentropy-metrics.db";
-  const databaseArtifact = core.getInput("database-artifact") || "unentropy-metrics";
   const outputPath = core.getInput("output-path") || "./unentropy-report.html";
   const timeRange = core.getInput("time-range") || "all";
   const title = core.getInput("title") || "Metrics Report";
-
-  // Validate inputs
-  if (!/^[a-zA-Z0-9_-]+$/.test(databaseArtifact)) {
-    throw new Error(
-      `Invalid database-artifact: must match pattern ^[a-zA-Z0-9_-]+$. Got: ${databaseArtifact}`
-    );
-  }
 
   if (!outputPath.endsWith(".html")) {
     throw new Error(`Invalid output-path: must end with .html. Got: ${outputPath}`);
@@ -57,7 +48,6 @@ function parseInputs(): ActionInputs {
 
   return {
     databasePath,
-    databaseArtifact,
     outputPath,
     timeRange,
     title,

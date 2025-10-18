@@ -45,19 +45,20 @@ jobs:
 
       - name: Collect metrics
         id: collect-metrics
-        uses: ./.github/actions/collect-metrics
-        with:
-          config-path: "./unentropy.json"
-          database-path: "./unentropy-metrics.db"
-          continue-on-error: false
+        run: node "./dist/actions/collect.node.js"
+        env:
+          INPUT_CONFIG_PATH: "./unentropy.json"
+          INPUT_DATABASE_PATH: "./unentropy-metrics.db"
+          INPUT_CONTINUE_ON_ERROR: "false"
 
       - name: Generate metrics report
         id: generate-report
-        uses: ./.github/actions/generate-report
-        with:
-          database-path: "./unentropy-metrics.db"
-          output-path: "./unentropy-report.html"
-          title: "Unentropy Project Metrics"
+        run: node "./dist/actions/report.node.js"
+        env:
+          INPUT_DATABASE_PATH: "./unentropy-metrics.db"
+          INPUT_OUTPUT_PATH: "./unentropy-report.html"
+          INPUT_TIME_RANGE: "all"
+          INPUT_TITLE: "Unentropy Project Metrics"
 
       - name: Upload metrics report
         uses: actions/upload-artifact@v4
