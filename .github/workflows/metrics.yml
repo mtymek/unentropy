@@ -14,7 +14,7 @@ on:
 permissions:
   contents: read
   actions: read # Required to access workflow runs and artifacts
-#  pages: write
+  pages: write
   id-token: write
 
 jobs:
