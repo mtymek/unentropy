@@ -85,7 +85,7 @@ runs:
           echo "database-found=false" >> $GITHUB_OUTPUT
         fi
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ github.token }}
       shell: bash
 
     - name: Run metrics collection
