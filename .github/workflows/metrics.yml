@@ -42,59 +42,6 @@ jobs:
       - name: Build GitHub Actions
         run: bun run build:actions
 
-      - name: Download previous metrics database
-        id: download-db
-        run: |
-          # Find the most recent successful workflow run
-          echo "🔍 Searching for previous successful workflow run..."
-
-          RUN_ID=$(gh api repos/${{ github.repository }}/actions/runs \
-            --jq '.workflow_runs[] | select(.status == "completed" and .conclusion == "success" and .head_branch == "main") | .id' | head -1)
-
-          if [ -n "$RUN_ID" ]; then
-            echo "✅ Found previous successful run: $RUN_ID"
-            
-            # Get artifacts from that run (FIXED: added /actions/ to URL)
-            ARTIFACTS_JSON=$(gh api repos/${{ github.repository }}/actions/runs/$RUN_ID/artifacts)
-            
-            # Extract artifact ID for our database
-            ARTIFACT_ID=$(echo "$ARTIFACTS_JSON" | jq -r '.artifacts[] | select(.name == "unentropy-metrics") | .id')
-            
-            if [ -n "$ARTIFACT_ID" ] && [ "$ARTIFACT_ID" != "null" ]; then
-              echo "📦 Found database artifact: $ARTIFACT_ID"
-              
-              # Download the artifact (FIXED: correct API URL)
-              echo "⬇️ Downloading database artifact..."
-              gh api repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_ID/zip > database.zip
-              
-              if [ $? -eq 0 ]; then
-                # Extract the database
-                echo "📂 Extracting database..."
-                unzip -o database.zip
-                rm database.zip
-                
-                if [ -f "unentropy-metrics.db" ]; then
-                  echo "✅ Successfully downloaded and extracted previous database"
-                  echo "database-found=true" >> $GITHUB_OUTPUT
-                else
-                  echo "❌ No database file found in artifact"
-                  echo "database-found=false" >> $GITHUB_OUTPUT
-                fi
-              else
-                echo "❌ Failed to download artifact"
-                echo "database-found=false" >> $GITHUB_OUTPUT
-              fi
-            else
-              echo "❌ No 'unentropy-metrics' artifact found in previous run"
-              echo "database-found=false" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "ℹ️ No previous successful run found (first run scenario)"
-            echo "database-found=false" >> $GITHUB_OUTPUT
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Collect metrics
         id: collect-metrics
         uses: ./.github/actions/collect-metrics
@@ -123,7 +70,7 @@ jobs:
           name: unentropy-metrics
           path: ./unentropy-metrics.db
           retention-days: 365
-        if: always() && (steps.collect-metrics.outcome == 'success' || steps.download-db.outputs.database-found == 'true')
+        if: always() && steps.collect-metrics.outcome == 'success'
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
