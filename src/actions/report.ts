@@ -1,14 +1,11 @@
 import * as core from "@actions/core";
 import { promises as fs } from "fs";
 import { dirname } from "path";
-import { exec } from "child_process";
-import { promisify } from "util";
 import { DatabaseClient } from "../database/client";
 import { generateReport } from "../reporter/generator";
 
-const execAsync = promisify(exec);
-
 interface ActionInputs {
+  databasePath: string;
   databaseArtifact: string;
   outputPath: string;
   timeRange: string;
@@ -29,6 +26,7 @@ interface TimeRangeFilter {
 }
 
 function parseInputs(): ActionInputs {
+  const databasePath = core.getInput("database-path") || "./unentropy-metrics.db";
   const databaseArtifact = core.getInput("database-artifact") || "unentropy-metrics";
   const outputPath = core.getInput("output-path") || "./unentropy-report.html";
   const timeRange = core.getInput("time-range") || "all";
@@ -58,6 +56,7 @@ function parseInputs(): ActionInputs {
   }
 
   return {
+    databasePath,
     databaseArtifact,
     outputPath,
     timeRange,
@@ -84,33 +83,6 @@ function parseTimeRange(timeRange: string): TimeRangeFilter {
     type: match[2] as "days" | "weeks" | "months",
     value,
   };
-}
-
-async function downloadArtifact(artifactName: string, targetPath: string): Promise<void> {
-  try {
-    core.info(`Attempting to download artifact: ${artifactName}`);
-
-    // Use GitHub CLI to download artifact
-    const artifactDir = dirname(targetPath);
-    await fs.mkdir(artifactDir, { recursive: true });
-
-    try {
-      await execAsync(`gh artifact download ${artifactName} --dir=${artifactDir}`, {
-        env: {
-          ...process.env,
-          GH_TOKEN: process.env.GITHUB_TOKEN,
-        },
-      });
-      core.info(`Artifact downloaded successfully: ${artifactName}`);
-    } catch {
-      // First run or artifact not found is expected
-      core.info(`No existing artifact found (first run or expired): ${artifactName}`);
-    }
-  } catch (error) {
-    core.warning(
-      `Artifact download failed: ${error instanceof Error ? error.message : String(error)}`
-    );
-  }
 }
 
 async function ensureOutputDirectory(outputPath: string): Promise<void> {
@@ -222,9 +194,8 @@ async function run(): Promise<void> {
     // Ensure output directory exists
     await ensureOutputDirectory(inputs.outputPath);
 
-    // Download database artifact
-    const tempDbPath = `${inputs.outputPath}.db`;
-    await downloadArtifact(inputs.databaseArtifact, tempDbPath);
+    // Database is already downloaded by the action workflow
+    const tempDbPath = inputs.databasePath;
 
     // Initialize database
     let db;

@@ -1,14 +1,10 @@
 import * as core from "@actions/core";
 import { promises as fs } from "fs";
 import { dirname } from "path";
-import { exec } from "child_process";
-import { promisify } from "util";
 import { loadConfig } from "../config/loader";
 import { collectMetrics } from "../collector/collector";
 import { DatabaseClient } from "../database/client";
 import { extractBuildContext } from "../collector/context";
-
-const execAsync = promisify(exec);
 
 interface ActionInputs {
   configPath: string;
@@ -61,53 +57,6 @@ function parseInputs(): ActionInputs {
   };
 }
 
-async function downloadArtifact(artifactName: string, targetPath: string): Promise<void> {
-  try {
-    core.info(`Attempting to download artifact: ${artifactName}`);
-
-    // Use GitHub CLI to download artifact
-    const artifactDir = dirname(targetPath);
-    await fs.mkdir(artifactDir, { recursive: true });
-
-    try {
-      await execAsync(`gh artifact download ${artifactName} --dir=${artifactDir}`, {
-        env: {
-          ...process.env,
-          GH_TOKEN: process.env.GITHUB_TOKEN,
-        },
-      });
-      core.info(`Artifact downloaded successfully: ${artifactName}`);
-    } catch {
-      // First run or artifact not found is expected
-      core.info(`No existing artifact found (first run or expired): ${artifactName}`);
-    }
-  } catch (error) {
-    core.warning(
-      `Artifact download failed: ${error instanceof Error ? error.message : String(error)}`
-    );
-  }
-}
-
-async function uploadArtifact(artifactName: string, filePath: string): Promise<void> {
-  try {
-    core.info(`Uploading artifact: ${artifactName} from ${filePath}`);
-
-    // Use GitHub CLI to upload artifact
-    await execAsync(`gh artifact upload ${artifactName} ${filePath}`, {
-      env: {
-        ...process.env,
-        GH_TOKEN: process.env.GITHUB_TOKEN,
-      },
-    });
-
-    core.info(`Artifact uploaded successfully: ${artifactName}`);
-  } catch (uploadError) {
-    throw new Error(
-      `Artifact upload failed: ${uploadError instanceof Error ? uploadError.message : String(uploadError)}`
-    );
-  }
-}
-
 async function ensureDatabaseDirectory(databasePath: string): Promise<void> {
   const dbDir = dirname(databasePath);
   await fs.mkdir(dbDir, { recursive: true });
@@ -121,9 +70,6 @@ async function run(): Promise<void> {
 
     // Ensure database directory exists
     await ensureDatabaseDirectory(inputs.databasePath);
-
-    // Download existing artifact (if any)
-    await downloadArtifact(inputs.databaseArtifact, inputs.databasePath);
 
     // Load configuration
     let config;
@@ -176,9 +122,6 @@ async function run(): Promise<void> {
         db.close();
       }
     }
-
-    // Upload updated database as artifact
-    await uploadArtifact(inputs.databaseArtifact, inputs.databasePath);
 
     // Set outputs
     const outputs: ActionOutputs = {

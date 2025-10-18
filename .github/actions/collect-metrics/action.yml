@@ -36,6 +36,13 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Download previous database artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.database-artifact }}
+        path: ${{ inputs.database-path }}
+      continue-on-error: true
+
     - name: Run metrics collection
       shell: bash
       run: node "${{ github.action_path }}/dist/collect.node.js"
@@ -44,3 +51,10 @@ runs:
         INPUT_DATABASE_ARTIFACT: ${{ inputs.database-artifact }}
         INPUT_DATABASE_PATH: ${{ inputs.database-path }}
         INPUT_CONTINUE_ON_ERROR: ${{ inputs.continue-on-error }}
+
+    - name: Upload database artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.database-artifact }}
+        path: ${{ inputs.database-path }}
+        retention-days: 365

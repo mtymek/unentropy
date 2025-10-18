@@ -42,6 +42,13 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Download database artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.database-artifact }}
+        path: ${{ inputs.database-path }}
+      continue-on-error: true
+
     - name: Run report generation
       shell: bash
       run: node "${{ github.action_path }}/dist/report.node.js"
