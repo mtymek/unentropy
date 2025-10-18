@@ -1,0 +1,94 @@
+name: Metrics
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      force_run:
+        description: "Force metrics collection even if no changes"
+        required: false
+        default: "false"
+        type: boolean
+
+jobs:
+  metrics:
+    name: Collect and Report Metrics
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Get full history for accurate metrics
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build
+        run: bun run build
+
+      - name: Build GitHub Actions
+        run: bun run build:actions
+
+      - name: Download previous metrics database
+        uses: actions/download-artifact@v4
+        with:
+          name: unentropy-metrics-db
+          path: ./unentropy-data/
+        continue-on-error: true
+
+      - name: Setup database path
+        run: |
+          if [ -f "./unentropy-data/metrics.db" ]; then
+            echo "Found previous database, using it"
+            mv ./unentropy-data/metrics.db ./unentropy-metrics.db
+          else
+            echo "No previous database found, starting fresh"
+            touch ./unentropy-metrics.db
+          fi
+
+      - name: Collect metrics
+        id: collect-metrics
+        uses: ./.github/actions/collect-metrics
+        with:
+          config-path: "./unentropy.json"
+          database-path: "./unentropy-metrics.db"
+          continue-on-error: false
+
+      - name: Generate metrics report
+        id: generate-report
+        uses: ./.github/actions/generate-report
+        with:
+          database-path: "./unentropy-metrics.db"
+          output-path: "./unentropy-report.html"
+          title: "Unentropy Project Metrics"
+
+      - name: Upload metrics report
+        uses: actions/upload-artifact@v4
+        with:
+          name: metrics-report
+          path: ./unentropy-report.html
+          retention-days: 90
+
+      - name: Save metrics database for next run
+        uses: actions/upload-artifact@v4
+        with:
+          name: unentropy-metrics-db
+          path: ./unentropy-metrics.db
+          retention-days: 365
+
+      - name: Deploy to GitHub Pages (if report generated)
+        if: steps.generate-report.outputs.report-path != ''
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
+          publish_file: ./unentropy-report.html
+          destination_dir: ./
+          keep_files: true

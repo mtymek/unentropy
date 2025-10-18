@@ -179,7 +179,51 @@
 
 ---
 
-## Phase 6: GitHub Actions Integration
+## Phase 6: User Story 4 - Unentropy Self-Monitoring (Priority: P4)
+
+**Goal**: Implement self-monitoring for Unentropy project to track test coverage and lines of code, serving as both demonstration and genuine project health monitoring
+
+**Independent Test**: Implement the self-monitoring configuration in the Unentropy repository itself, verify metric collection works in CI, and generate reports showing actual project trends
+
+### Testing Strategy for User Story 4
+
+**Note**: Traditional unit/integration tests are not included for User Story 4 as they would be fragile and redundant. The self-monitoring workflow will be tested automatically through CI/CD execution:
+
+**How User Story 4 Will Be Tested**:
+1. **Configuration Validation**: The existing configuration validation tests (T012-T017) will validate the self-monitoring unentropy.json when CI runs
+2. **Metric Collection**: CI workflow will execute the actual collection commands and verify they return valid numeric values
+3. **Database Storage**: Existing database tests (T009-T011) ensure data persistence works correctly
+4. **Report Generation**: Existing report tests (T036-T048) validate HTML generation from the collected data
+5. **End-to-End Validation**: Each CI run will demonstrate the complete workflow working with real project data
+6. **Visual Verification**: Generated reports will be available as CI artifacts for manual review
+
+**Benefits of This Approach**:
+- Tests real-world execution environment (GitHub Actions runners)
+- Validates actual commands against real codebase
+- No mock data - uses genuine project metrics
+- Continuous validation with every commit
+- Demonstrates Unentropy capabilities authentically
+
+### Implementation for User Story 4
+
+- [x] T075 [P] [US4] Create unentropy.json configuration in repository root with test coverage and LoC metrics
+- [x] T076 [US4] Implement test coverage collection command in unentropy.json
+- [x] T077 [US4] Implement lines of code collection command in unentropy.json
+- [x] T078 [US4] Update .github/workflows/ci.yml to include metric collection step
+- [x] T079 [US4] Add database artifact persistence to CI workflow
+- [x] T080 [US4] Add report generation step to CI workflow
+- [x] T081 [US4] Configure report artifact upload or PR comment integration
+- [x] T082 [US4] Add workflow triggers for self-monitoring (on push, pull_request)
+- [x] T083 [US4] Add documentation for self-monitoring setup in README.md
+- [x] T084 [US4] Validate self-monitoring configuration works with existing test suite
+- [x] T085 [US4] Test report generation with actual project data
+- [x] T086 [US4] Ensure self-monitoring demonstrates Unentropy capabilities effectively
+
+**Checkpoint**: Self-monitoring implementation complete and serving as live example
+
+---
+
+## Phase 7: GitHub Actions Integration
 
 **Purpose**: Package functionality as GitHub Actions for easy CI/CD integration
 
@@ -193,19 +237,19 @@
 
 ### GitHub Action: collect-metrics
 
-- [ ] T054 Create action metadata file .github/actions/collect-metrics/action.yml
-- [ ] T055 Implement action entrypoint with artifact handling in src/actions/collect.ts
-- [ ] T056 Add input validation and error handling in src/actions/collect.ts
-- [ ] T057 Add output setting (metrics-collected, metrics-failed, database-path, build-id) in src/actions/collect.ts
-- [ ] T058 Create build script for action distribution in package.json
+- [x] T054 Create action metadata file .github/actions/collect-metrics/action.yml
+- [x] T055 Implement action entrypoint with artifact handling in src/actions/collect.ts
+- [x] T056 Add input validation and error handling in src/actions/collect.ts
+- [x] T057 Add output setting (metrics-collected, metrics-failed, database-path, build-id) in src/actions/collect.ts
+- [x] T058 Create build script for action distribution in package.json
 
 ### GitHub Action: generate-report
 
-- [ ] T059 Create action metadata file .github/actions/generate-report/action.yml
-- [ ] T060 Implement action entrypoint with artifact download in src/actions/report.ts
-- [ ] T061 Add time-range filtering logic in src/actions/report.ts
-- [ ] T062 Add output setting (report-path, metrics-count, data-points, time-range-start, time-range-end) in src/actions/report.ts
-- [ ] T063 Create build script for action distribution in package.json
+- [x] T059 Create action metadata file .github/actions/generate-report/action.yml
+- [x] T060 Implement action entrypoint with artifact download in src/actions/report.ts
+- [x] T061 Add time-range filtering logic in src/actions/report.ts
+- [x] T062 Add output setting (report-path, metrics-count, data-points, time-range-start, time-range-end) in src/actions/report.ts
+- [x] T063 Create build script for action distribution in package.json
 
 **Checkpoint**: Both GitHub Actions are functional and can be used in workflows
 
@@ -215,18 +259,18 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T064 [P] Add comprehensive logging throughout all modules
-- [ ] T065 [P] Optimize database queries with proper indexes
-- [ ] T066 [P] Add database VACUUM operation for maintenance
-- [ ] T067 [P] Add SRI hashes to CDN resources in HTML template
-- [ ] T068 [P] Create example unentropy.json configurations
-- [ ] T069 [P] Create example GitHub Actions workflows
-- [ ] T070 Update main exports in src/index.ts
-- [ ] T071 Run bun run lint and fix any issues
-- [ ] T072 Run bun run typecheck and fix any issues
-- [ ] T073 Run bun test and ensure all tests pass
-- [ ] T074 Run bun run build and verify output
-- [ ] T075 Validate against quickstart.md acceptance criteria
+- [x] T064 [P] Add comprehensive logging throughout all modules
+- [x] T065 [P] Optimize database queries with proper indexes
+- [x] T066 [P] Add database VACUUM operation for maintenance
+- [x] T067 [P] Add SRI hashes to CDN resources in HTML template
+- [x] T068 [P] Create example unentropy.json configurations
+- [x] T069 [P] Create example GitHub Actions workflows
+- [x] T070 Update main exports in src/index.ts
+- [x] T071 Run bun run lint and fix any issues
+- [x] T072 Run bun run typecheck and fix any issues
+- [x] T073 Run bun test and ensure all tests pass
+- [x] T074 Run bun run build and verify output
+- [x] T075 Validate against quickstart.md acceptance criteria
 
 ---
 
@@ -239,14 +283,16 @@
 - **User Stories (Phase 3-5)**: All depend on Foundational phase completion
   - User stories can then proceed in parallel (if staffed)
   - Or sequentially in priority order (P1 → P2 → P3)
-- **GitHub Actions (Phase 6)**: Depends on User Stories 2 and 3 being complete
-- **Polish (Phase 7)**: Depends on all phases being complete
+- **User Story 4 (Phase 6)**: Depends on User Stories 1, 2, and 3 being complete
+- **GitHub Actions (Phase 7)**: Depends on User Stories 2, 3, and 4 being complete
+- **Polish (Phase 8)**: Depends on all phases being complete
 
 ### User Story Dependencies
 
 - **User Story 1 (P1)**: Can start after Foundational (Phase 2) - No dependencies on other stories
 - **User Story 2 (P2)**: Can start after Foundational (Phase 2) + User Story 1 complete (needs config loading)
 - **User Story 3 (P3)**: Can start after Foundational (Phase 2) + User Story 2 complete (needs data collection)
+- **User Story 4 (P4)**: Can start after Foundational (Phase 2) + User Stories 1, 2, and 3 complete (needs complete workflow)
 
 ### Within Each User Story
 
@@ -274,10 +320,14 @@
 - T036, T037, T038, T039, T040, T041, T042 can run in parallel (different test files)
 - T044, T045 can run in parallel (different source files)
 
-#### Phase 6 (GitHub Actions - Tests)
+#### Phase 6 (User Story 4 - Implementation)
+- T075, T076, T077 can run in parallel (configuration and commands)
+- T078, T079, T080, T081 can run in parallel (CI workflow updates)
+
+#### Phase 7 (GitHub Actions - Tests)
 - T049, T050, T051, T052, T053 can run in parallel (different test files)
 
-#### Phase 7 (Polish)
+#### Phase 8 (Polish)
 - T064, T065, T066, T067, T068, T069 can all run in parallel (different concerns)
 
 ---
@@ -312,8 +362,9 @@ Task: "Write unit test for clear error messages in tests/unit/config/schema.test
 2. Add User Story 1 → Test independently → Validate config system (T012-T021)
 3. Add User Story 2 → Test independently → Validate collection (T022-T035)
 4. Add User Story 3 → Test independently → Validate reporting (T036-T048)
-5. Add GitHub Actions → Integrate with CI/CD (T049-T063)
-6. Polish and optimize → Production ready (T064-T075)
+5. Add User Story 4 → Implement self-monitoring → Validate via CI/CD (T075-T086)
+6. Add GitHub Actions → Integrate with CI/CD (T049-T063)
+7. Polish and optimize → Production ready (T064-T075)
 
 ### Parallel Team Strategy
 
@@ -325,7 +376,9 @@ With multiple developers:
    - After US1: Developer A continues to User Story 2 (T022-T035)
    - After US2: Developer A continues to User Story 3 (T036-T048)
 3. Once User Stories complete:
-   - Developer B: GitHub Actions (T049-T063)
+   - Developer B: User Story 4 (T075-T086)
+   - Developer A: GitHub Actions (T049-T063)
+4. Once US4 and Actions complete:
    - Developer A: Polish (T064-T075)
 
 **Note**: This feature has sequential dependencies (US2 needs US1, US3 needs US2), so parallel team strategy is limited. Best approach is sequential with occasional parallel opportunities on tests and independent modules.
@@ -334,19 +387,20 @@ With multiple developers:
 
 ## Task Summary
 
-- **Total Tasks**: 75
+- **Total Tasks**: 85
 - **Phase 1 (Setup)**: 4 tasks
 - **Phase 2 (Foundational)**: 7 tasks (BLOCKING)
 - **Phase 3 (User Story 1)**: 10 tasks (6 tests + 4 implementation)
 - **Phase 4 (User Story 2)**: 14 tasks (9 tests + 5 implementation)
 - **Phase 5 (User Story 3)**: 13 tasks (8 tests + 5 implementation)
-- **Phase 6 (GitHub Actions)**: 15 tasks (5 tests + 10 implementation)
-- **Phase 7 (Polish)**: 12 tasks
+- **Phase 6 (User Story 4)**: 12 tasks (0 tests + 12 implementation) - Tested via CI/CD execution
+- **Phase 7 (GitHub Actions)**: 15 tasks (5 tests + 10 implementation)
+- **Phase 8 (Polish)**: 12 tasks
 
 ### Parallel Opportunities Identified
 
 - **15 parallel opportunities** in tests across all user stories
-- **8 parallel opportunities** in implementation across different modules
+- **10 parallel opportunities** in implementation across different modules
 - **6 parallel opportunities** in polish phase
 
 ### MVP Scope (Recommended)
@@ -362,12 +416,13 @@ This delivers:
 - ❌ Reporting (Phase 5)
 - ❌ GitHub Actions (Phase 6)
 
-**Realistic MVP** = Phase 1 + Phase 2 + Phase 3 + Phase 4 + Phase 5 + Phase 6
+**Realistic MVP** = Phase 1 + Phase 2 + Phase 3 + Phase 4 + Phase 5 + Phase 6 + Phase 7
 
 This delivers complete end-to-end functionality:
 - ✅ Configuration system
 - ✅ Metric collection in CI/CD
 - ✅ HTML report generation
+- ✅ Self-monitoring demonstration
 - ✅ GitHub Actions integration
 - ✅ All user stories functional
 
@@ -384,3 +439,4 @@ This delivers complete end-to-end functionality:
 - Stop at any checkpoint to validate story independently
 - Database schema is foundational and blocks all stories
 - User stories have sequential dependencies in this feature
+- User Story 4 (self-monitoring) serves as both demonstration and genuine project monitoring

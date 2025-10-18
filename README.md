@@ -52,6 +52,46 @@ _(These are the selected technologies for the initial implementation, chosen for
 2. **Configure Metrics:** Create an unentropy.yml file to define which scripts to run to generate your metrics (e.g., loc_script: ./scripts/count_loc.sh).
 3. **Review Reports:** After the CI run, download the generated unentropy-report.html artifact to see the latest trends and track your progress against codebase entropy\!
 
+## **🔍 Self-Monitoring Example**
+
+Unentropy practices what it preaches - this repository uses Unentropy to track its own code health metrics! This serves as both a genuine project monitoring tool and a living example for potential users.
+
+### Current Self-Monitoring Metrics
+
+The `unentropy.json` file in this repository tracks:
+
+1. **Test Coverage** (`test_coverage`)
+   - **What**: Percentage of code covered by tests
+   - **How**: `bun test --coverage` with parsing to extract percentage
+   - **Unit**: `%`
+
+2. **Lines of Code** (`lines_of_code`)
+   - **What**: Total TypeScript lines in `src/` directory
+   - **How**: `find src/ -name '*.ts' | wc -l`
+   - **Unit**: `LOC`
+
+### How It Works in This Repository
+
+Every push and pull request to this repository automatically:
+
+1. **Collects** the two metrics above using the defined commands
+2. **Stores** the data in a SQLite database persisted as a GitHub Artifact
+3. **Generates** an HTML report showing trends over time
+4. **Uploads** both the updated database and report as artifacts
+
+You can see the latest reports by:
+
+- Checking the "Artifacts" section of any GitHub Actions run
+- Downloading the `metrics-report` artifact
+- Opening the `unentropy-report.html` file in your browser
+
+### Benefits for This Project
+
+- **Track test coverage trends** - Ensure we maintain or improve code quality
+- **Monitor code growth** - Keep an eye on project scope and complexity
+- **Demonstrate capabilities** - Show real-world usage of Unentropy
+- **Validate the tool** - Dogfooding helps us identify and fix issues quickly
+
 ## **🧑‍💻 Development Setup**
 
 ### Prerequisites

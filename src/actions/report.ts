@@ -1,8 +1,12 @@
 import * as core from "@actions/core";
 import { promises as fs } from "fs";
 import { dirname } from "path";
+import { exec } from "child_process";
+import { promisify } from "util";
 import { DatabaseClient } from "../database/client";
 import { generateReport } from "../reporter/generator";
+
+const execAsync = promisify(exec);
 
 interface ActionInputs {
   databaseArtifact: string;
@@ -86,13 +90,24 @@ async function downloadArtifact(artifactName: string, targetPath: string): Promi
   try {
     core.info(`Attempting to download artifact: ${artifactName}`);
 
-    // In real implementation: await artifactClient.downloadArtifact(artifactName, targetPath);
+    // Use GitHub CLI to download artifact
+    const artifactDir = dirname(targetPath);
+    await fs.mkdir(artifactDir, { recursive: true });
 
-    // For now, just ensure the directory exists
-    await fs.mkdir(dirname(targetPath), { recursive: true });
-    core.info(`Artifact download location prepared: ${targetPath}`);
+    try {
+      await execAsync(`gh artifact download ${artifactName} --dir=${artifactDir}`, {
+        env: {
+          ...process.env,
+          GH_TOKEN: process.env.GITHUB_TOKEN,
+        },
+      });
+      core.info(`Artifact downloaded successfully: ${artifactName}`);
+    } catch {
+      // First run or artifact not found is expected
+      core.info(`No existing artifact found (first run or expired): ${artifactName}`);
+    }
   } catch (error) {
-    throw new Error(
+    core.warning(
       `Artifact download failed: ${error instanceof Error ? error.message : String(error)}`
     );
   }

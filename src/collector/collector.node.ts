@@ -127,6 +127,7 @@ export async function collectMetrics(
           build_id: buildId,
           value_numeric: parseResult.numericValue,
           collected_at: new Date().toISOString(),
+          collection_duration_ms: commandResult.durationMs,
         });
       } else if (metric.type === "label" && parseResult.labelValue !== undefined) {
         queries.insertMetricValue({
@@ -134,6 +135,7 @@ export async function collectMetrics(
           build_id: buildId,
           value_label: parseResult.labelValue,
           collected_at: new Date().toISOString(),
+          collection_duration_ms: commandResult.durationMs,
         });
       }
 
