@@ -24,14 +24,17 @@ The project already uses several toolkit packages (`@actions/core`, `@actions/gi
 - Built-in authentication and error handling
 - Automatic rate limit handling
 
-### 3. **Use @actions/artifact for Artifact Operations** (DONE)
+### 3. **Use @actions/artifact for Artifact Operations** (PARTIAL - Composite Actions Limitation)
 
 **Current**: Manual artifact download with `fetch()` + `unzip` commands
 **Toolkit Solution**: Use `@actions/artifact` package
 
-- Replace manual download/extraction with `artifact.downloadArtifact()`
-- Built-in retry logic and error handling
-- No external `unzip` dependency
+**Note**: @actions/artifact doesn't work in composite actions due to missing ACTIONS_RUNTIME_TOKEN
+
+- Reverted to manual download for find-database.ts (composite action)
+- Can still use @actions/artifact in JavaScript actions
+- Built-in retry logic and error handling (where applicable)
+- No external `unzip` dependency (where applicable)
 
 ### 4. **Simplify Input Handling** (DONE)
 
