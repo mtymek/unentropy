@@ -1,4 +1,4 @@
-import { spawn } from "bun";
+import { exec } from "@actions/exec";
 
 export interface CommandResult {
   success: boolean;
@@ -12,56 +12,39 @@ export interface CommandResult {
 export async function runCommand(
   command: string,
   env: Record<string, string>,
-  timeoutMs = 60000
+  timeoutMs = 60000,
+  silent = false
 ): Promise<CommandResult> {
   const startTime = Date.now();
+  let stdout = "";
+  let stderr = "";
 
   try {
-    // Use Bun.spawn with shell command execution
-    const proc = spawn(["sh", "-c", command], {
-      env: { ...process.env, ...env },
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-
-    // Set up timeout using Bun's built-in timeout mechanism
+    // Create a timeout promise
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error("Command timed out")), timeoutMs);
     });
 
-    // Read stdout and stderr
-    const outputPromise = (async () => {
-      let stdout = "";
-      let stderr = "";
+    // Create the execution promise
+    const execPromise = exec("sh", ["-c", command], {
+      env: { ...(process.env as Record<string, string>), ...env },
+      ignoreReturnCode: true,
+      silent,
+      listeners: {
+        stdout: (data: Buffer) => {
+          stdout += data.toString();
+        },
+        stderr: (data: Buffer) => {
+          stderr += data.toString();
+        },
+      },
+    });
 
-      if (proc.stdout) {
-        const reader = proc.stdout.getReader();
-        const decoder = new TextDecoder();
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          stdout += decoder.decode(value);
-        }
-      }
-
-      if (proc.stderr) {
-        const reader = proc.stderr.getReader();
-        const decoder = new TextDecoder();
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          stderr += decoder.decode(value);
-        }
-      }
-
-      return { stdout, stderr, exitCode: await proc.exited };
-    })();
-
-    // Race between command completion and timeout
-    const { stdout, stderr, exitCode } = await Promise.race([outputPromise, timeoutPromise]);
+    // Race between execution and timeout
+    const exitCode = await Promise.race([execPromise, timeoutPromise]);
 
     const durationMs = Date.now() - startTime;
-    const timedOut = exitCode === null && (stderr.includes("Command timed out") || stdout === "");
+    const timedOut = false;
 
     return {
       success: exitCode === 0 && !timedOut,
@@ -73,12 +56,13 @@ export async function runCommand(
     };
   } catch (error) {
     const durationMs = Date.now() - startTime;
-    const timedOut = error instanceof Error && error.message === "Command timed out";
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const timedOut = errorMessage.includes("timed out");
 
     return {
       success: false,
-      stdout: "",
-      stderr: error instanceof Error ? error.message : String(error),
+      stdout,
+      stderr: errorMessage,
       exitCode: -1,
       timedOut,
       durationMs,

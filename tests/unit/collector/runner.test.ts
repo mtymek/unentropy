@@ -3,7 +3,7 @@ import { runCommand } from "../../../src/collector/runner";
 
 describe("runCommand", () => {
   test("executes command and returns stdout", async () => {
-    const result = await runCommand('echo "test output"', {});
+    const result = await runCommand('echo "test output"', {}, 60000, true);
 
     expect(result.success).toBe(true);
     expect(result.stdout.trim()).toBe("test output");
@@ -14,7 +14,7 @@ describe("runCommand", () => {
   });
 
   test("captures stderr when command writes to stderr", async () => {
-    const result = await runCommand('echo "error message" >&2', {});
+    const result = await runCommand('echo "error message" >&2', {}, 60000, true);
 
     expect(result.success).toBe(true);
     expect(result.stdout).toBe("");
@@ -23,7 +23,7 @@ describe("runCommand", () => {
   });
 
   test("captures both stdout and stderr", async () => {
-    const result = await runCommand('echo "output" && echo "error" >&2', {});
+    const result = await runCommand('echo "output" && echo "error" >&2', {}, 60000, true);
 
     expect(result.success).toBe(true);
     expect(result.stdout.trim()).toBe("output");
@@ -32,7 +32,7 @@ describe("runCommand", () => {
   });
 
   test("returns failure when command exits with non-zero code", async () => {
-    const result = await runCommand("exit 1", {});
+    const result = await runCommand("exit 1", {}, 60000, true);
 
     expect(result.success).toBe(false);
     expect(result.exitCode).toBe(1);
@@ -40,7 +40,7 @@ describe("runCommand", () => {
   });
 
   test("handles command timeout", async () => {
-    const result = await runCommand("sleep 10", {}, 100);
+    const result = await runCommand("sleep 10", {}, 100, true);
 
     expect(result.success).toBe(false);
     expect(result.timedOut).toBe(true);
@@ -49,7 +49,7 @@ describe("runCommand", () => {
 
   test("uses default timeout of 60000ms", async () => {
     const start = Date.now();
-    const result = await runCommand('echo "quick"', {});
+    const result = await runCommand('echo "quick"', {}, 60000, true);
     const elapsed = Date.now() - start;
 
     expect(result.success).toBe(true);
@@ -57,19 +57,29 @@ describe("runCommand", () => {
   });
 
   test("passes environment variables to command", async () => {
-    const result = await runCommand("echo $CUSTOM_VAR", {
-      CUSTOM_VAR: "custom-value",
-    });
+    const result = await runCommand(
+      "echo $CUSTOM_VAR",
+      {
+        CUSTOM_VAR: "custom-value",
+      },
+      60000,
+      true
+    );
 
     expect(result.success).toBe(true);
     expect(result.stdout.trim()).toBe("custom-value");
   });
 
   test("passes multiple environment variables to command", async () => {
-    const result = await runCommand('echo "$VAR1-$VAR2"', {
-      VAR1: "first",
-      VAR2: "second",
-    });
+    const result = await runCommand(
+      'echo "$VAR1-$VAR2"',
+      {
+        VAR1: "first",
+        VAR2: "second",
+      },
+      60000,
+      true
+    );
 
     expect(result.success).toBe(true);
     expect(result.stdout.trim()).toBe("first-second");
@@ -78,9 +88,14 @@ describe("runCommand", () => {
   test("environment variables override existing ones", async () => {
     process.env.TEST_VAR = "original";
 
-    const result = await runCommand("echo $TEST_VAR", {
-      TEST_VAR: "overridden",
-    });
+    const result = await runCommand(
+      "echo $TEST_VAR",
+      {
+        TEST_VAR: "overridden",
+      },
+      60000,
+      true
+    );
 
     expect(result.success).toBe(true);
     expect(result.stdout.trim()).toBe("overridden");
@@ -89,7 +104,7 @@ describe("runCommand", () => {
   });
 
   test("measures command duration accurately", async () => {
-    const result = await runCommand("sleep 0.1", {});
+    const result = await runCommand("sleep 0.1", {}, 60000, true);
 
     expect(result.success).toBe(true);
     expect(result.durationMs).toBeGreaterThanOrEqual(100);
@@ -97,14 +112,14 @@ describe("runCommand", () => {
   });
 
   test("handles command with special characters in output", async () => {
-    const result = await runCommand('echo "test\nwith\nnewlines"', {});
+    const result = await runCommand('echo "test\nwith\nnewlines"', {}, 60000, true);
 
     expect(result.success).toBe(true);
     expect(result.stdout).toContain("\n");
   });
 
   test("handles empty command output", async () => {
-    const result = await runCommand("true", {});
+    const result = await runCommand("true", {}, 60000, true);
 
     expect(result.success).toBe(true);
     expect(result.stdout).toBe("");
@@ -113,14 +128,14 @@ describe("runCommand", () => {
   });
 
   test("handles command that does not exist", async () => {
-    const result = await runCommand("nonexistent-command-xyz", {});
+    const result = await runCommand("nonexistent-command-xyz", {}, 60000, true);
 
     expect(result.success).toBe(false);
     expect(result.exitCode).not.toBe(0);
   });
 
   test("handles very long output", async () => {
-    const result = await runCommand("seq 1 1000", {});
+    const result = await runCommand("seq 1 1000", {}, 60000, true);
 
     expect(result.success).toBe(true);
     expect(result.stdout.split("\n").length).toBeGreaterThan(1000);
