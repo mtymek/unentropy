@@ -298,8 +298,6 @@ async function run(): Promise<void> {
       throw new Error(
         `Report generation failed: ${error instanceof Error ? error.message : String(error)}`
       );
-    } finally {
-      db.close();
     }
 
     // Write report to file
@@ -359,6 +357,9 @@ async function run(): Promise<void> {
 
       await fs.writeFile(outputFile, outputLines.join("\n"));
     }
+
+    // Close database connection after all operations are complete
+    db.close();
 
     core.info("Action completed successfully");
   } catch (error) {
