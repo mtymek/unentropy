@@ -1,4 +1,4 @@
-import { runCommand } from "./runner.node";
+import { runCommand } from "./runner";
 import type { MetricConfig } from "../config/schema";
 import { DatabaseClient } from "../database/client";
 import { DatabaseQueries } from "../database/queries";

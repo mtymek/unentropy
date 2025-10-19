@@ -223,9 +223,8 @@ async function setOutputs(outputs: ActionOutputs): Promise<void> {
   }
 
   // Write outputs to file for composite action output capture
-  const outputFile = process.argv[2];
+  const outputFile = process.env.GITHUB_ACTIONS === "true" ? process.argv[2] : null;
   if (outputFile) {
-    const fs = await import("fs");
     const outputLines = [
       `database-found=${outputs.databaseFound}`,
       `database-path=${outputs.databasePath}`,
@@ -235,7 +234,7 @@ async function setOutputs(outputs: ActionOutputs): Promise<void> {
       outputLines.push(`source-run-id=${outputs.sourceRunId}`);
     }
 
-    await fs.promises.writeFile(outputFile, outputLines.join("\n"));
+    await fs.writeFile(outputFile, outputLines.join("\n"));
   }
 }
 
@@ -333,9 +332,15 @@ async function run(): Promise<void> {
 export { run };
 
 // Run the action
-if (require.main === module) {
-  run().catch((error) => {
-    core.setFailed(`Unhandled error: ${error}`);
-    process.exit(1);
-  });
+async function main() {
+  const isGitHubActions = process.env.GITHUB_ACTIONS === "true";
+
+  if (isGitHubActions || import.meta.main || require.main === module) {
+    run().catch((error) => {
+      core.setFailed(`Unhandled error: ${error}`);
+      process.exit(1);
+    });
+  }
 }
+
+main();

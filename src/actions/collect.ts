@@ -2,7 +2,6 @@ import * as core from "@actions/core";
 import { promises as fs } from "fs";
 import { dirname } from "path";
 import { loadConfig } from "../config/loader";
-import { collectMetrics } from "../collector/collector";
 import { DatabaseClient } from "../database/client";
 import { extractBuildContext } from "../collector/context";
 
@@ -16,7 +15,7 @@ interface ActionOutputs {
   metricsCollected: number;
   metricsFailed: number;
   databasePath: string;
-  buildId?: number;
+  buildId?: string;
 }
 
 function parseInputs(): ActionInputs {
@@ -26,20 +25,14 @@ function parseInputs(): ActionInputs {
 
   // Validate inputs
   if (!configPath.endsWith(".json")) {
-    throw new Error(`Invalid config-path: must be a JSON file. Got: ${configPath}`);
+    throw new Error(`Invalid config-path: must end with .json. Got: ${configPath}`);
   }
 
   if (!databasePath.endsWith(".db") && !databasePath.endsWith(".sqlite")) {
     throw new Error(`Invalid database-path: must end with .db or .sqlite. Got: ${databasePath}`);
   }
 
-  const continueOnError = ["true", "false"].includes(continueOnErrorInput)
-    ? continueOnErrorInput === "true"
-    : (() => {
-        throw new Error(
-          `Invalid continue-on-error: must be 'true' or 'false'. Got: ${continueOnErrorInput}`
-        );
-      })();
+  const continueOnError = continueOnErrorInput.toLowerCase() === "true";
 
   return {
     configPath,
@@ -97,10 +90,19 @@ async function run(): Promise<void> {
       throw new Error(`Database error: ${error instanceof Error ? error.message : String(error)}`);
     }
 
-    // Collect metrics
+    // Collect metrics using dynamic import based on runtime
     let collectionResult;
     try {
-      collectionResult = await collectMetrics(config.metrics, buildId, inputs.databasePath);
+      const isGitHubActions = process.env.GITHUB_ACTIONS === "true";
+      const collectorModule = isGitHubActions
+        ? await import("../collector/collector.node")
+        : await import("../collector/collector");
+
+      collectionResult = await collectorModule.collectMetrics(
+        config.metrics,
+        buildId,
+        inputs.databasePath
+      );
       core.info(
         `Metrics collection completed: ${collectionResult.successful} collected, ${collectionResult.failed} failed`
       );
@@ -119,7 +121,7 @@ async function run(): Promise<void> {
       metricsCollected: collectionResult.successful,
       metricsFailed: collectionResult.failed,
       databasePath: inputs.databasePath,
-      buildId: buildId,
+      buildId: buildId.toString(),
     };
 
     core.setOutput("metrics-collected", outputs.metricsCollected.toString());
@@ -130,9 +132,8 @@ async function run(): Promise<void> {
     }
 
     // Write outputs to file for composite action output capture
-    const outputFile = process.argv[2];
+    const outputFile = process.env.GITHUB_ACTIONS === "true" ? process.argv[2] : null;
     if (outputFile) {
-      const fs = await import("fs");
       const outputLines = [
         `metrics-collected=${outputs.metricsCollected}`,
         `metrics-failed=${outputs.metricsFailed}`,
@@ -143,7 +144,7 @@ async function run(): Promise<void> {
         outputLines.push(`build-id=${outputs.buildId}`);
       }
 
-      await fs.promises.writeFile(outputFile, outputLines.join("\n"));
+      await fs.writeFile(outputFile, outputLines.join("\n"));
     }
 
     // Handle continue-on-error logic
@@ -168,11 +169,17 @@ async function run(): Promise<void> {
 }
 
 // Run the action
-if (import.meta.main) {
-  run().catch((error) => {
-    core.error(`Unhandled error: ${error instanceof Error ? error.message : String(error)}`);
-    process.exit(1);
-  });
+async function main() {
+  const isGitHubActions = process.env.GITHUB_ACTIONS === "true";
+
+  if (isGitHubActions || import.meta.main || require.main === module) {
+    run().catch((error) => {
+      core.error(`Unhandled error: ${error instanceof Error ? error.message : String(error)}`);
+      process.exit(1);
+    });
+  }
 }
+
+main();
 
 export { run };

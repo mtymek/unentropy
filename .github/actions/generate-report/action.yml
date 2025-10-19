@@ -49,7 +49,7 @@ runs:
         OUTPUT_FILE=$(mktemp)
 
         # Run the Node.js script with output file
-        node "${{ github.action_path }}/dist/report.node.js" "$OUTPUT_FILE"
+        node "${{ github.action_path }}/dist/report.js" "$OUTPUT_FILE"
 
         # Read outputs from file and set them
         if [ -f "$OUTPUT_FILE" ]; then

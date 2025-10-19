@@ -2,8 +2,6 @@
 
 **Unentropy: CI/CD Codebase Health Tracking, Decoupled.**
 
-_(The tendency of a complex codebase to increase in disorder is known as "code entropy." Unentropy aims to reverse that trend.)_
-
 ## **💡 What is Unentropy?**
 
 **Unentropy** is an open-source tool designed to help engineering teams maintain and improve mid-sized to large, long-living codebases by relentlessly tracking **custom code metrics** right where the changes happen: in the Continuous Integration (CI) pipeline.

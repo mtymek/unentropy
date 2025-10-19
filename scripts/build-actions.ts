@@ -44,33 +44,29 @@ const main = async () => {
   try {
     // Build for composite actions (legacy)
     await buildAction(
-      "./src/actions/collect.node.ts",
+      "./src/actions/collect.ts",
       "./.github/actions/collect-metrics/dist",
-      "collect.node.js"
+      "collect.js"
     );
 
     await buildAction(
-      "./src/actions/report.node.ts",
+      "./src/actions/report.ts",
       "./.github/actions/generate-report/dist",
-      "report.node.js"
+      "report.js"
     );
 
     await buildAction(
-      "./src/actions/find-database.node.ts",
+      "./src/actions/find-database.ts",
       "./.github/actions/find-database/dist",
-      "find-database.node.js"
+      "find-database.js"
     );
 
     // Build for direct workflow usage
-    await buildAction("./src/actions/collect.node.ts", "./dist/actions", "collect.node.js");
+    await buildAction("./src/actions/collect.ts", "./dist/actions", "collect.js");
 
-    await buildAction("./src/actions/report.node.ts", "./dist/actions", "report.node.js");
+    await buildAction("./src/actions/report.ts", "./dist/actions", "report.js");
 
-    await buildAction(
-      "./src/actions/find-database.node.ts",
-      "./dist/actions",
-      "find-database.node.js"
-    );
+    await buildAction("./src/actions/find-database.ts", "./dist/actions", "find-database.js");
 
     console.log("\n✓ All actions built successfully");
   } catch (error) {

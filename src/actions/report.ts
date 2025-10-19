@@ -33,6 +33,11 @@ function parseInputs(): ActionInputs {
   const title = core.getInput("title") || "Metrics Report";
   const configPath = core.getInput("config-path") || "./unentropy.json";
 
+  // Validate inputs
+  if (!databasePath.endsWith(".db") && !databasePath.endsWith(".sqlite")) {
+    throw new Error(`Invalid database-path: must end with .db or .sqlite. Got: ${databasePath}`);
+  }
+
   if (!outputPath.endsWith(".html")) {
     throw new Error(`Invalid output-path: must end with .html. Got: ${outputPath}`);
   }
@@ -337,9 +342,8 @@ async function run(): Promise<void> {
     }
 
     // Write outputs to file for composite action output capture
-    const outputFile = process.argv[2];
+    const outputFile = process.env.GITHUB_ACTIONS === "true" ? process.argv[2] : null;
     if (outputFile) {
-      const fs = await import("fs");
       const outputLines = [
         `report-path=${outputs.reportPath}`,
         `metrics-count=${outputs.metricsCount}`,
@@ -353,7 +357,7 @@ async function run(): Promise<void> {
         outputLines.push(`time-range-end=${outputs.timeRangeEnd}`);
       }
 
-      await fs.promises.writeFile(outputFile, outputLines.join("\n"));
+      await fs.writeFile(outputFile, outputLines.join("\n"));
     }
 
     core.info("Action completed successfully");
@@ -365,11 +369,17 @@ async function run(): Promise<void> {
 }
 
 // Run the action
-if (import.meta.main) {
-  run().catch((error) => {
-    core.error(`Unhandled error: ${error instanceof Error ? error.message : String(error)}`);
-    process.exit(1);
-  });
+async function main() {
+  const isGitHubActions = process.env.GITHUB_ACTIONS === "true";
+
+  if (isGitHubActions || import.meta.main || require.main === module) {
+    run().catch((error) => {
+      core.error(`Unhandled error: ${error instanceof Error ? error.message : String(error)}`);
+      process.exit(1);
+    });
+  }
 }
+
+main();
 
 export { run };
