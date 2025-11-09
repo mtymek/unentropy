@@ -1,41 +1,50 @@
-<!-- Sync Impact Report
-Version change: N/A → 1.0.0 (Initial version)
-Modified principles: All principles added (I. Serverless Architecture, II. Technology Stack Consistency, III. Code Quality Standards, IV. Security Best Practices, V. Testing Discipline)
-Added sections: Additional Constraints, Development Workflow
-Removed sections: None
-Templates requiring updates: None (templates are generic and will reference updated constitution)
-Follow-up TODOs: RATIFICATION_DATE (original adoption date unknown)
--->
-
-# Unentropy Constitution
+# [PROJECT_NAME] Constitution
+<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
 
 ## Core Principles
 
-### I. Serverless Architecture
-All components must be serverless and operate within GitHub Actions workflows. No external servers or cloud services required for core functionality.
+### [PRINCIPLE_1_NAME]
+<!-- Example: I. Library-First -->
+[PRINCIPLE_1_DESCRIPTION]
+<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
 
-### II. Technology Stack Consistency
-Use Bun runtime with TypeScript for implementation, SQLite for data storage, and Chart.js for report generation. Use Bun as the package manager (NOT npm). Maintain consistency across the project.
+### [PRINCIPLE_2_NAME]
+<!-- Example: II. CLI Interface -->
+[PRINCIPLE_2_DESCRIPTION]
+<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
 
-### III. Code Quality Standards
-Enforce strict TypeScript types, use Prettier for formatting, and avoid unnecessary comments unless explicitly requested. Follow existing code conventions.
+### [PRINCIPLE_3_NAME]
+<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
+[PRINCIPLE_3_DESCRIPTION]
+<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
 
-### IV. Security Best Practices
-Never log or expose secrets and keys. Follow security guidelines to prevent vulnerabilities.
+### [PRINCIPLE_4_NAME]
+<!-- Example: IV. Integration Testing -->
+[PRINCIPLE_4_DESCRIPTION]
+<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
 
-### V. Testing Discipline
-Implement comprehensive tests including unit, integration, and contract tests. Run lint, typecheck, and tests in CI pipeline.
+### [PRINCIPLE_5_NAME]
+<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
+[PRINCIPLE_5_DESCRIPTION]
+<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
 
-## Additional Constraints
+## [SECTION_2_NAME]
+<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
 
-The project must remain lightweight and self-contained. No dependencies on external services beyond GitHub Actions. Ensure compatibility with CI/CD environments.
+[SECTION_2_CONTENT]
+<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
 
-## Development Workflow
+## [SECTION_3_NAME]
+<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
 
-All changes require code review. Run build, lint, typecheck, and tests before merging. Follow semantic versioning for releases.
+[SECTION_3_CONTENT]
+<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
 
 ## Governance
+<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-Amendments to this constitution require consensus from maintainers. Version increments follow semantic versioning rules. Compliance must be verified in all PRs.
+[GOVERNANCE_RULES]
+<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
 
-**Version**: 1.0.0 | **Ratified**: TODO(RATIFICATION_DATE): Original adoption date unknown | **Last Amended**: 2025-10-16
+**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
+<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
