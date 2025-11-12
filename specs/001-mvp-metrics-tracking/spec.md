@@ -107,7 +107,7 @@ As the Unentropy project maintainer, I want to use Unentropy to track its own co
 - **FR-006**: System MUST provide a GitHub Action that collects defined metrics during CI/CD pipeline execution
 - **FR-007**: System MUST store collected metrics with timestamps indicating when they were captured
 - **FR-008**: System MUST associate collected metrics with commit SHA and build metadata
-- **FR-009**: System MUST store metric data in a SQLite database file that is stored as GH action artifact
+- **FR-009**: System MUST store metric data in a SQLite database file
 - **FR-010**: System MUST handle partial failures gracefully (continue collecting other metrics if one fails)
 - **FR-011**: System MUST persist data across multiple pipeline runs without data loss
 - **FR-012**: System MUST support concurrent pipeline executions without database corruption
@@ -178,10 +178,9 @@ This configuration serves as both a working example and genuine project monitori
 
 - Projects using Unentropy already have GitHub Actions configured for CI/CD
 - Users have basic familiarity with JSON configuration file format
-- SQLite database file is stored in the repository or a persistent storage location accessible across pipeline runs
+- SQLite database file is stored in a persistent storage location accessible across pipeline runs
 - GitHub Actions environment has write permissions to the database location
 - Report generation occurs after data collection, either as part of the same pipeline or a separate scheduled job
-- Users view reports locally or via CI artifacts, not through a hosted web service
 - Metric collection scripts/commands are provided by the user and referenced in configuration (system invokes them but doesn't define them)
 - All pipeline runs occur on a single repository (no multi-repository aggregation in MVP)
 

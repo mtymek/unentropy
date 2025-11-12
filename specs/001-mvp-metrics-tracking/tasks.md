@@ -225,47 +225,39 @@
 
 ## Phase 7: GitHub Actions Integration
 
-**Purpose**: Package functionality as three GitHub Actions for easy CI/CD integration
+**Purpose**: Package functionality as GitHub Actions for easy CI/CD integration
+
+**Note**: The find-database action is documented separately in specs/002-find-database/tasks.md.
 
 ### Tests for GitHub Actions
 
-- [x] T049 [P] Write contract test for find-database action inputs in tests/contract/find-database-action.test.ts
-- [x] T050 [P] Write contract test for find-database action outputs in tests/contract/find-database-action.test.ts
-- [x] T051 [P] Write contract test for collect-metrics action inputs in tests/contract/collect-action.test.ts
-- [x] T052 [P] Write contract test for collect-metrics action outputs in tests/contract/collect-action.test.ts
-- [x] T053 [P] Write contract test for generate-report action inputs in tests/contract/report-action.test.ts
-- [x] T054 [P] Write contract test for generate-report action outputs in tests/contract/report-action.test.ts
-- [x] T055 [P] Write integration test for artifact upload/download in tests/integration/artifacts.test.ts
-
-### GitHub Action: find-database
-
-- [x] T056 Create action metadata file .github/actions/find-database/action.yml
-- [x] T057 Implement action entrypoint with GitHub API integration in src/actions/find-database.ts
-- [x] T058 Add input validation and error handling in src/actions/find-database.ts
-- [x] T059 Add output setting (database-found, database-path, source-run-id) in src/actions/find-database.ts
-- [x] T060 Update build script to include find-database action in scripts/build-actions.ts
+- [x] T049 [P] Write contract test for collect-metrics action inputs in tests/contract/collect-action.test.ts
+- [x] T050 [P] Write contract test for collect-metrics action outputs in tests/contract/collect-action.test.ts
+- [x] T051 [P] Write contract test for generate-report action inputs in tests/contract/report-action.test.ts
+- [x] T052 [P] Write contract test for generate-report action outputs in tests/contract/report-action.test.ts
+- [x] T053 [P] Write integration test for artifact upload/download in tests/integration/artifacts.test.ts
 
 ### GitHub Action: collect-metrics
 
-- [x] T061 Create action metadata file .github/actions/collect-metrics/action.yml
-- [x] T062 Implement action entrypoint with metric collection in src/actions/collect.ts
-- [x] T063 Add input validation and error handling in src/actions/collect.ts
-- [x] T064 Add output setting (metrics-collected, metrics-failed, database-path, build-id) in src/actions/collect.ts
-- [x] T065 Create build script for action distribution in package.json
+- [x] T054 Create action metadata file .github/actions/collect-metrics/action.yml
+- [x] T055 Implement action entrypoint with metric collection in src/actions/collect.ts
+- [x] T056 Add input validation and error handling in src/actions/collect.ts
+- [x] T057 Add output setting (metrics-collected, metrics-failed, database-path, build-id) in src/actions/collect.ts
+- [x] T058 Create build script for action distribution in package.json
 
 ### GitHub Action: generate-report
 
-- [x] T066 Create action metadata file .github/actions/generate-report/action.yml
-- [x] T067 Implement action entrypoint with report generation in src/actions/report.ts
-- [x] T068 Add time-range filtering logic in src/actions/report.ts
-- [x] T069 Add output setting (report-path, metrics-count, data-points, time-range-start, time-range-end) in src/actions/report.ts
-- [x] T070 Create build script for action distribution in package.json
+- [x] T059 Create action metadata file .github/actions/generate-report/action.yml
+- [x] T060 Implement action entrypoint with report generation in src/actions/report.ts
+- [x] T061 Add time-range filtering logic in src/actions/report.ts
+- [x] T062 Add output setting (report-path, metrics-count, data-points, time-range-start, time-range-end) in src/actions/report.ts
+- [x] T063 Create build script for action distribution in package.json
 
-**Checkpoint**: All three GitHub Actions are functional (find-database, collect-metrics, generate-report).
+**Checkpoint**: Both GitHub Actions are functional (collect-metrics, generate-report).
 
 ---
 
-## Phase 7: Polish & Cross-Cutting Concerns
+## Phase 8: Polish & Cross-Cutting Concerns
 
 **Purpose**: Improvements that affect multiple user stories
 
@@ -294,10 +286,10 @@
   - User stories can then proceed in parallel (if staffed)
   - Or sequentially in priority order (P1 → P2 → P3)
 - **User Story 4 (Phase 6)**: Depends on User Stories 1, 2, and 3 being complete
-- **GitHub Actions (Phase 7)**: Depends on User Stories 2, 3, and 4 being complete
-  - find-database action: Depends on User Story 2 (database operations)
+- **GitHub Actions (Phase 7)**: Depends on User Stories 2 and 3 being complete
   - collect-metrics action: Depends on User Stories 1, 2 (config + collection)
   - generate-report action: Depends on User Story 3 (reporting)
+  - find-database action: Documented in specs/002-find-database/
 - **Polish (Phase 8)**: Depends on all phases being complete
 
 ### User Story Dependencies
@@ -317,7 +309,7 @@
 ### Parallel Opportunities
 
 #### Phase 7 (GitHub Actions - Tests)
-- T049, T050, T051, T052, T053, T054, T055 can run in parallel (different test files)
+- T049, T050, T051, T052, T053 can run in parallel (different test files)
 
 #### Phase 8 (Polish)
 - T064, T065, T066, T067, T068, T069 can all run in parallel (different concerns)
@@ -336,18 +328,18 @@ Task: "Write unit test for empty/missing required fields in tests/unit/config/sc
 Task: "Write unit test for clear error messages in tests/unit/config/schema.test.ts"
 ```
 
-## Parallel Example: Three-Action Workflow
+## Parallel Example: GitHub Actions Workflow
 
 ```bash
 # Launch all GitHub Actions tests together:
-Task: "Write contract test for find-database action inputs in tests/contract/find-database-action.test.ts"
-Task: "Write contract test for find-database action outputs in tests/contract/find-database-action.test.ts"
 Task: "Write contract test for collect-metrics action inputs in tests/contract/collect-action.test.ts"
 Task: "Write contract test for collect-metrics action outputs in tests/contract/collect-action.test.ts"
 Task: "Write contract test for generate-report action inputs in tests/contract/report-action.test.ts"
 Task: "Write contract test for generate-report action outputs in tests/contract/report-action.test.ts"
 Task: "Write integration test for artifact upload/download in tests/integration/artifacts.test.ts"
 ```
+
+**Note**: The find-database action tests are documented in specs/002-find-database/tasks.md.
 
 ---
 
