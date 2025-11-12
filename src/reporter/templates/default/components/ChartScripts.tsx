@@ -1,4 +1,5 @@
 import type { MetricReportData } from "../../../types";
+import serialize from 'serialize-javascript';
 
 interface ChartScriptsProps {
   metrics: MetricReportData[];
@@ -11,7 +12,7 @@ export function ChartScripts({ metrics }: ChartScriptsProps) {
   }));
 
   const scriptContent = `
-    const chartsData = ${JSON.stringify(chartsData)};
+    const chartsData = ${serialize(chartsData)};
     chartsData.forEach(chartData => {
       const ctx = document.getElementById('chart-' + chartData.id);
       if (ctx) {
