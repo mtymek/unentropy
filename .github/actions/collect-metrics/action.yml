@@ -45,6 +45,8 @@ runs:
         # Create temp file for outputs
         OUTPUT_FILE=$(mktemp)
         
+        ls
+        
         # Run the Node.js script with output file
         node "${{ github.action_path }}/dist/collect.js" "$OUTPUT_FILE"
         echo "okish"
