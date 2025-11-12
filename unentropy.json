@@ -13,6 +13,13 @@
       "description": "Total lines of TypeScript code in src/ directory",
       "command": "find src/ -name '*.ts' -not -path '*/node_modules/*' | xargs wc -l | tail -1 | awk '{print $1}' || echo '0'",
       "unit": "LOC"
+    },
+    {
+      "name": "total-bundle-size",
+      "type": "numeric",
+      "description": "Total size of all compiled GitHub Actions",
+      "command": "find .github/actions/*/dist/*.js -type f 2>/dev/null | xargs wc -c 2>/dev/null | tail -1 | awk '{print $1}' || echo '0'",
+      "unit": "bytes"
     }
   ]
 }
