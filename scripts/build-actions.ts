@@ -4,23 +4,23 @@ import { build, type BunPlugin } from "bun";
 import { resolve, dirname } from "path";
 import { mkdir } from "fs/promises";
 
-const excludeBunSqlitePlugin: BunPlugin = {
-  name: "exclude-bun-sqlite",
-  setup(builder) {
-    builder.onLoad({ filter: /bun-sqlite\.ts$/ }, () => {
-      return {
-        contents: `
-export class BunSqliteAdapter {
-  constructor() {
-    throw new Error("BunSqliteAdapter is not available in Node.js runtime");
-  }
-}
-        `,
-        loader: "ts",
-      };
-    });
-  },
-};
+// const excludeBunSqlitePlugin: BunPlugin = {
+//   name: "exclude-bun-sqlite",
+//   setup(builder) {
+//     builder.onLoad({ filter: /bun-sqlite\.ts$/ }, () => {
+//       return {
+//         contents: `
+// export class BunSqliteAdapter {
+//   constructor() {
+//     throw new Error("BunSqliteAdapter is not available in Node.js runtime");
+//   }
+// }
+//         `,
+//         loader: "ts",
+//       };
+//     });
+//   },
+// };
 
 const buildAction = async (entrypoint: string, outdir: string, outfile: string): Promise<void> => {
   const outPath = resolve(outdir, outfile);
@@ -33,7 +33,7 @@ const buildAction = async (entrypoint: string, outdir: string, outfile: string):
     outdir,
     target: "node",
     naming: outfile,
-    plugins: [excludeBunSqlitePlugin],
+    // plugins: [excludeBunSqlitePlugin],
     external: ["better-sqlite3", "@actions/artifact"],
   });
 

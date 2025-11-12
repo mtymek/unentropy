@@ -43,7 +43,7 @@ runs:
         OUTPUT_FILE=$(mktemp)
         
         # Run the Node.js script with output file
-        node "${{ github.action_path }}/dist/collect.js" "$OUTPUT_FILE"
+        bun "${{ github.action_path }}/dist/collect.js" "$OUTPUT_FILE"
         echo "okish"
         # Read outputs from file and set them
         if [ -f "$OUTPUT_FILE" ]; then
