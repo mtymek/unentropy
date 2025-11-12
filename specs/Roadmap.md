@@ -3,10 +3,10 @@
 ## 0.1
 * [x] MVP
 * [x] Using GitHub action artifact for storing the metrics database
-* [ ] A single, convenient GH action that does it all - downloads db from GH artifact, runs analysis, uploads results to GH artifact
 * [x] JSX templating
-* [ ] Support for S3-compatible storage 
+* [ ] Support for S3-compatible storage (should it be a default?)
   * [ ] Storage configurable in the Unentropy config
+  * [ ] A single, convenient GH action that does it all - downloads db from S3, runs analysis, uploads results back 
 * [ ] Thresholds 
 
 ## 0.2
@@ -17,13 +17,21 @@
 
 ## 0.3
 * [ ] Quality gates / GH comments
-* [ ] Scaffolding: `npx unentropy init`, an interactive CLI that creates a basic Unentropy configuration based on the current projects.
+* [ ] "Main branch"
+* [ ] Branch comparison (e.g. this PR changes metrics by X%)
 
 ## 0.4
+* [ ] Scaffolding: `npx unentropy init`, an interactive CLI that creates a basic Unentropy configuration based on the current projects.
 * [ ] Public config schema 
 
-## Next
+## 0.5
+* [ ] Collectors and metrics gallery
+* [ ] Custom collectors and metrics / simple plugins
+
+## TBD
 * Support for more robust, cloud databases (Postgres, MySQL, ...)
+* Garbage collection from metrics database
 
 ## Long term ideas
 * Browsing the coverage report
+* Customizable templates
