@@ -1,4 +1,4 @@
-import type { MetricReportData } from "../../../templates";
+import type { MetricReportData } from "../../../types";
 import { StatsGrid } from "./StatsGrid";
 import { ChartCanvas } from "./ChartCanvas";
 import { SparseWarning } from "./SparseWarning";

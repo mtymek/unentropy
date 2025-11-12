@@ -1,4 +1,4 @@
-import type { ReportData } from "../../../templates";
+import type { ReportData } from "../../../types";
 import { Header } from "./Header";
 import { Footer } from "./Footer";
 import { MetricCard } from "./MetricCard";

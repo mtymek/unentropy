@@ -1,45 +1,17 @@
 import type { DatabaseClient } from "../database/client";
-import type { MetricType } from "../database/types";
-import type { UnentropyConfig } from "../config/schema";
 import { buildChartConfig } from "./charts";
-import {
-  generateHtmlReport,
-  type ReportData,
-  type ReportMetadata,
-  type MetricReportData,
-} from "./templates";
-
-export interface TimeSeriesDataPoint {
-  timestamp: string;
-  valueNumeric: number | null;
-  valueLabel: string | null;
-  commitSha: string;
-  branch: string;
-  runNumber: number;
-}
-
-export interface TimeSeriesData {
-  metricName: string;
-  metricType: MetricType;
-  unit: string | null;
-  description: string | null;
-  dataPoints: TimeSeriesDataPoint[];
-}
-
-export interface SummaryStats {
-  latest: number | null;
-  min: number | null;
-  max: number | null;
-  average: number | null;
-  trendDirection: "up" | "down" | "stable" | null;
-  trendPercent: number | null;
-}
-
-export interface GenerateReportOptions {
-  repository?: string;
-  metricNames?: string[];
-  config?: UnentropyConfig;
-}
+import render from "preact-render-to-string";
+import { h } from "preact";
+import { HtmlDocument } from "./templates/default/components";
+import type {
+  TimeSeriesData,
+  TimeSeriesDataPoint,
+  SummaryStats,
+  ReportMetadata,
+  MetricReportData,
+  ReportData,
+  GenerateReportOptions,
+} from "./types";
 
 export function getMetricTimeSeries(db: DatabaseClient, metricName: string): TimeSeriesData {
   const metricDef = db.getMetricDefinition(metricName);
@@ -235,5 +207,6 @@ export function generateReport(db: DatabaseClient, options: GenerateReportOption
     metrics,
   };
 
-  return generateHtmlReport(reportData);
+  const jsx = h(HtmlDocument, { data: reportData });
+  return "<!DOCTYPE html>" + render(jsx);
 }

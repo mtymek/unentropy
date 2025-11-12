@@ -39,6 +39,7 @@
     "@actions/core": "^1.11.1",
     "@actions/exec": "^1.1.1",
     "@actions/github": "^6.0.1",
+    "preact": "^10.27.2",
     "preact-render-to-string": "^6.6.3",
     "zod": "^4.1.12"
   }

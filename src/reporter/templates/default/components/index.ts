@@ -1,4 +1,3 @@
-export * from "./types";
 export { HtmlDocument } from "./HtmlDocument";
 export { Header } from "./Header";
 export { Footer } from "./Footer";

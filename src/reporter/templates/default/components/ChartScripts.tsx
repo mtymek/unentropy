@@ -1,4 +1,4 @@
-import type { MetricReportData } from "../../../templates";
+import type { MetricReportData } from "../../../types";
 
 interface ChartScriptsProps {
   metrics: MetricReportData[];

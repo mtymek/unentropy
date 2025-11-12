@@ -1,17 +1,8 @@
-import type { ReportMetadata } from "../../../templates";
+import type { ReportMetadata } from "../../../types";
+import { formatDate } from "./formatUtils";
 
 interface HeaderProps {
   metadata: ReportMetadata;
-}
-
-function formatDate(isoString: string): string {
-  return new Date(isoString).toLocaleString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 export function Header({ metadata }: HeaderProps) {

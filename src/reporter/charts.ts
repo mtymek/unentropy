@@ -1,4 +1,4 @@
-import type { TimeSeriesData } from "./generator";
+import type { TimeSeriesData } from "./types";
 
 export interface ChartDataPoint {
   commitSha: string;

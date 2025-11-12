@@ -1,6 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import { buildChartConfig } from "../../../src/reporter/charts";
-import type { TimeSeriesData } from "../../../src/reporter/generator";
+import type { TimeSeriesData } from "../../../src/reporter/types";
 
 describe("buildChartConfig - numeric metrics", () => {
   const numericData: TimeSeriesData = {
