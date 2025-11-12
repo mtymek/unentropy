@@ -27,6 +27,7 @@
 ## 0.5
 * [ ] Collectors and metrics gallery
 * [ ] Custom collectors and metrics / simple plugins
+* [ ] Heuristic alerts ("Your bundle suddenly increased in size by X%")
 
 ## TBD
 * Support for more robust, cloud databases (Postgres, MySQL, ...)
