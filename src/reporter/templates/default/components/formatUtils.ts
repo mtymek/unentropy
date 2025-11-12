@@ -11,9 +11,13 @@ export function getTrendColor(direction: "up" | "down" | "stable" | null): strin
   return "text-gray-600 dark:text-gray-400";
 }
 
-export function formatValue(value: number | null, unit: string | null): string {
+export function formatValue(
+  value: number | null,
+  unit: string | null,
+  showDecimals: boolean = true
+): string {
   if (value === null) return "N/A";
-  const formatted = value.toFixed(2);
+  const formatted = showDecimals ? value.toFixed(2) : value.toFixed(0);
   return unit ? `${formatted}${unit}` : formatted;
 }
 

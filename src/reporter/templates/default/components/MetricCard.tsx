@@ -17,7 +17,8 @@ export function MetricCard({ metric }: MetricCardProps) {
         )}
       </div>
 
-      <StatsGrid stats={metric.stats} />
+      {metric.chartConfig.type === "line" && <StatsGrid stats={metric.stats} />}
+      {metric.chartConfig.type === "bar" && <div class="h-20"></div>}
 
       <ChartCanvas
         id={metric.id}
