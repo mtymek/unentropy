@@ -31,21 +31,16 @@ outputs:
 runs:
   using: "composite"
   steps:
-#    - name: Setup Bun
-#      uses: oven-sh/setup-bun@v2
-#      with:
-#        bun-version: "1.2"
-#    - name: verify bun version
-#      shell: bash
-#      run: bun --version
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: "1.2"
     - name: Run metrics collection
       id: collect
       shell: bash
       run: |
         # Create temp file for outputs
         OUTPUT_FILE=$(mktemp)
-        
-        ls
         
         # Run the Node.js script with output file
         node "${{ github.action_path }}/dist/collect.js" "$OUTPUT_FILE"
