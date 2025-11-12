@@ -31,13 +31,13 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Setup Bun
-      uses: oven-sh/setup-bun@v2
-      with:
-        bun-version: "1.2"
-    - name: verify bun version
-      shell: bash
-      run: bun --version
+#    - name: Setup Bun
+#      uses: oven-sh/setup-bun@v2
+#      with:
+#        bun-version: "1.2"
+#    - name: verify bun version
+#      shell: bash
+#      run: bun --version
     - name: Run metrics collection
       id: collect
       shell: bash
@@ -48,7 +48,7 @@ runs:
         ls -l ${{ inputs.database-path }}
 
         # Run the Node.js script with output file
-        bun "${{ github.action_path }}/dist/collect.js" "$OUTPUT_FILE"
+        node "${{ github.action_path }}/dist/collect.js" "$OUTPUT_FILE"
         echo "okish"
         # Read outputs from file and set them
         if [ -f "$OUTPUT_FILE" ]; then
