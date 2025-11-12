@@ -41,6 +41,10 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: "1.2"
     - name: Run report generation
       id: report
       shell: bash
@@ -49,7 +53,7 @@ runs:
         OUTPUT_FILE=$(mktemp)
 
         # Run the Node.js script with output file
-        node "${{ github.action_path }}/dist/report.js" "$OUTPUT_FILE"
+        bun "${{ github.action_path }}/dist/report.js" "$OUTPUT_FILE"
 
         # Read outputs from file and set them
         if [ -f "$OUTPUT_FILE" ]; then
