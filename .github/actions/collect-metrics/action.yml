@@ -44,7 +44,6 @@ runs:
         
         # Run the Node.js script with output file
         bun "${{ github.action_path }}/dist/collect.js" "$OUTPUT_FILE"
-        echo "okish"
         # Read outputs from file and set them
         if [ -f "$OUTPUT_FILE" ]; then
           while IFS='=' read -r key value; do
