@@ -1,6 +1,6 @@
 # Feature Specification: Find Metrics Database in GitHub Artifacts
 
-**Feature Branch**: `002-find-database`  
+**Feature Branch**: `002-find-database-artifact`  
 **Created**: Wed Nov 12 2025  
 **Status**: Draft  
 **Input**: User description: "Extract the 'find metrics db in GH artifacts' specification from specs/001-mvp-metrics-tracking/spec.md. The original spec has grown too large, I want to split it."

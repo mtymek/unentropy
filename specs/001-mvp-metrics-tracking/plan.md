@@ -14,8 +14,6 @@ Build a serverless metrics tracking system that allows developers to define cust
 **Language/Version**: TypeScript 5.x / Bun 1.2.x (matches existing project setup and constitution requirements)  
 **Primary Dependencies**: 
 - `bun:sqlite` for database operations (Bun native)
-- `better-sqlite3` for database operations (Node.js/GitHub Actions compatibility)
-- Database adapter layer for runtime environment detection
 - `@actions/core` and `@actions/github` for GitHub Actions integration
 - Chart.js (via CDN) for HTML report visualizations
 - `zod` for configuration validation
@@ -35,8 +33,7 @@ Build a serverless metrics tracking system that allows developers to define cust
 - Single-file HTML output (no separate assets)
 - Database must handle concurrent writes from parallel jobs
 - Zero configuration for standard use cases
-- Must support both Bun (local development) and Node.js (GitHub Actions) environments
-- Database adapter must provide consistent API across both environments
+- Uses Bun runtime for both local development and GitHub Actions
 - Database persistence via GitHub Actions artifacts (no external storage)
 
 **Scale/Scope**: 
@@ -54,8 +51,8 @@ Build a serverless metrics tracking system that allows developers to define cust
 **Justification**: All components run within GitHub Actions. SQLite database stored as artifact (no external database service). HTML reports generated locally. No servers required.
 
 ### ✅ II. Technology Stack Consistency
-**Status**: PASS with Justification  
-**Justification**: Using Bun runtime with TypeScript as required by constitution. SQLite for storage (as specified). Chart.js for visualization (as specified in dependencies). Bun as package manager. **Exception**: better-sqlite3 included for Node.js/GitHub Actions compatibility - justified because GitHub Actions runners use Node.js environment while local development uses Bun. Database adapter pattern provides consistent API across both environments.
+**Status**: PASS  
+**Justification**: Using Bun runtime with TypeScript as required by constitution. SQLite for storage (as specified). Chart.js for visualization (as specified in dependencies). Bun as package manager. Bun runtime is used consistently for both local development and GitHub Actions.
 
 ### ✅ III. Code Quality Standards
 **Status**: PASS  
@@ -95,17 +92,16 @@ specs/003-mvp-metrics-tracking/
 ### Source Code (repository root)
 
 ```
-src/
+ src/
  ├── config/
  │   ├── schema.ts           # Zod schema for unentropy.json
  │   ├── loader.ts           # Config file reading and validation
  │   └── types.ts            # TypeScript types for configuration
  ├── database/
  │   ├── adapters/
- │   │   ├── interface.ts    # Common database adapter interface
- │   │   ├── better-sqlite3.ts  # Node.js adapter (better-sqlite3)
+ │   │   ├── interface.ts    # Database adapter interface (for future extensibility)
  │   │   ├── bun-sqlite.ts   # Bun adapter (bun:sqlite)
- │   │   └── factory.ts      # Runtime environment detection
+ │   │   └── factory.ts      # Adapter factory
  │   ├── client.ts           # SQLite connection management (uses adapter)
  │   ├── migrations.ts       # Schema initialization
  │   ├── queries.ts          # Data access functions
@@ -150,13 +146,6 @@ unentropy.json               # Self-monitoring configuration (test coverage + Lo
 ```
 
 **Structure Decision**: Using single project structure as this is a CLI tool/library with GitHub Action wrappers. All components are TypeScript/Bun. Clear separation of concerns: config parsing, database operations, collection logic, and reporting are independent modules that can be tested separately. Two-action architecture provides atomic operations: metric collection and report generation.
-
-## Complexity Tracking
-
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| better-sqlite3 dependency (Constitution II) | GitHub Actions runners use Node.js environment, not Bun. better-sqlite3 provides native SQLite bindings for Node.js with high performance and proper concurrency handling. | bun:sqlite only works in Bun environment. Using only bun:sqlite would prevent the tool from running in GitHub Actions, which is the primary CI/CD target platform. |
-| Database adapter pattern | Provides consistent API across Bun (local dev) and Node.js (GitHub Actions) environments while maintaining performance. | Conditional imports would complicate the codebase and make testing harder. Runtime detection with adapter pattern keeps the implementation clean and maintainable. |
 
 ## User Story 4 Implementation: Self-Monitoring
 

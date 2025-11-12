@@ -10,18 +10,19 @@ This document captures the research findings and technical decisions for impleme
 
 ## Key Technical Decisions
 
-### 1. Database Layer: SQLite with better-sqlite3
+### 1. Database Layer: SQLite with bun:sqlite
 
-**Decision**: Use `better-sqlite3` as the SQLite driver
+**Decision**: Use `bun:sqlite` as the SQLite driver
 
 **Rationale**:
-- Synchronous API simplifies error handling in GitHub Actions context
-- Better performance than node-sqlite3 (no async overhead for simple operations)
-- More reliable for concurrent access patterns with WAL mode
-- Smaller bundle size for GitHub Action distribution
-- Native C++ binding provides stability
+- Native Bun runtime integration provides optimal performance
+- Synchronous API simplifies error handling in both local development and GitHub Actions
+- Built-in support for WAL mode and concurrent access patterns
+- Zero external dependencies (part of Bun runtime)
+- Consistent API across all environments (local dev and CI/CD)
 
 **Alternatives Considered**:
+- `better-sqlite3`: Rejected due to native binding complexity and Bun compatibility issues
 - `node-sqlite3`: Rejected due to async-only API and callback hell
 - `sql.js`: Rejected due to WASM overhead and lack of native performance
 - External database: Violates serverless constraint
@@ -30,6 +31,7 @@ This document captures the research findings and technical decisions for impleme
 - Enable WAL (Write-Ahead Logging) mode for better concurrent write support
 - Use IMMEDIATE transactions to reduce lock contention
 - Implement retry logic with exponential backoff for SQLITE_BUSY errors
+- Database adapter pattern retained for future extensibility (e.g., Postgres support)
 
 ### 2. Configuration Validation: Zod
 
@@ -159,6 +161,7 @@ gh api repos/:owner/:repo/actions/artifacts/$ARTIFACT_ID/zip \
 - Parse stdout for metric value (numeric or string)
 - Timeout after 60 seconds to prevent hanging using Bun's built-in timeout mechanism
 - Capture stderr for error logging
+- Works consistently in both local development (Bun) and GitHub Actions (Bun) environments
 
 ### 7. Configuration File Schema Design
 

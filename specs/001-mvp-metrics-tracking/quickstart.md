@@ -326,8 +326,15 @@ outputs:
   metrics-failed:
     description: 'Number of metrics failed'
 runs:
-  using: 'node20'
-  main: 'dist/collect.js'
+  using: 'composite'
+  steps:
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: '1.2'
+    - name: Run metrics collection
+      shell: bash
+      run: bun "${{ github.action_path }}/dist/collect.js"
 ```
 
 **Tests** (`tests/contract/`):
@@ -582,8 +589,15 @@ outputs:
   report-path:
     description: 'Path to generated report'
 runs:
-  using: 'node20'
-  main: 'dist/report.js'
+  using: 'composite'
+  steps:
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: '1.2'
+    - name: Run report generation
+      shell: bash
+      run: bun "${{ github.action_path }}/dist/report.js"
 ```
 
 **Acceptance**: FR-013-FR-018, SC-003, SC-006
@@ -667,13 +681,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: '20'
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm test
+          bun-version: '1.2'
+      - run: bun install
+      - run: bun run build
+      - run: bun test
       - run: npm run build
 ```
 

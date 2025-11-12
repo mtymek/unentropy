@@ -187,7 +187,8 @@ This configuration serves as both a working example and genuine project monitori
 ## Dependencies *(mandatory)*
 
 - GitHub Actions infrastructure for workflow execution
-- SQLite support in the CI environment (standard in most CI runners)
+- Bun runtime for both local development and GitHub Actions
+- SQLite support via `bun:sqlite` (native to Bun runtime)
 - Chart.js v4.x via CDN (jsDelivr) for interactive visualizations
 - Tailwind CSS v3.x via CDN for responsive styling
 - Modern browser support (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+)

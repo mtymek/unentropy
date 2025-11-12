@@ -49,22 +49,21 @@
 
 ---
 
-## Phase 2.5: Database Adapter Layer (Blocking Fix)
+## Phase 2.5: Database Adapter Layer (Completed - Retained for Future Extensibility)
 
-**Purpose**: Enable database layer to work in both Bun (local development) and Node.js (GitHub Actions) environments
+**Purpose**: Enable database layer to work in Bun environment (retained for future extensibility)
 
-**Context**: better-sqlite3 native bindings don't work with Bun's incomplete N-API support. Both better-sqlite3 and bun:sqlite have highly compatible APIs, allowing a thin adapter layer.
+**Context**: Originally implemented to support both Bun (local development) and Node.js (GitHub Actions) environments. With the migration to Bun-only runtime, the adapter pattern is retained for future extensibility (e.g., Postgres support).
 
 - [x] T011a Define database adapter interface in src/database/adapters/interface.ts
-- [x] T011b [P] Implement better-sqlite3 adapter in src/database/adapters/better-sqlite3.ts
+- [x] T011b [P] ~~Implement better-sqlite3 adapter in src/database/adapters/better-sqlite3.ts~~ (DEPRECATED - Node.js no longer used)
 - [x] T011c [P] Implement bun:sqlite adapter in src/database/adapters/bun-sqlite.ts
 - [x] T011d Implement adapter factory with runtime detection in src/database/adapters/factory.ts
 - [x] T011e Refactor DatabaseClient to use adapter pattern in src/database/client.ts
-- [x] T011f Update database tests to work with both adapters in tests/unit/database/*.test.ts
+- [x] T011f Update database tests to work with bun:sqlite adapter in tests/unit/database/*.test.ts
 - [x] T011g Verify tests pass with Bun locally
-- [x] T011h Ensure CI tests still work with Node.js
 
-**Checkpoint**: Database layer works in both Bun and Node.js environments ✅
+**Checkpoint**: Database layer works with Bun runtime, adapter pattern retained for future extensibility ✅
 
 ---
 
@@ -387,7 +386,7 @@ With multiple developers:
 - **Total Tasks**: 100
 - **Phase 1 (Setup)**: 4 tasks (4 completed)
 - **Phase 2 (Foundational)**: 7 tasks (7 completed) (BLOCKING)
-- **Phase 2.5 (Database Adapter)**: 8 tasks (8 completed) (critical fix for Bun/Node.js compatibility)
+- **Phase 2.5 (Database Adapter)**: 8 tasks (8 completed) (not critical, but required for future extensibility)
 - **Phase 3 (User Story 1)**: 10 tasks (10 completed) (6 tests + 4 implementation)
 - **Phase 4 (User Story 2)**: 14 tasks (14 completed) (9 tests + 5 implementation)
 - **Phase 5 (User Story 3)**: 26 tasks (26 completed) (13 tests + 13 implementation including visual acceptance)

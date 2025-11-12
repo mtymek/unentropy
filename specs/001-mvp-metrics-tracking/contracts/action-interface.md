@@ -129,7 +129,7 @@ jobs:
           bun-version: '1.2'
       
       - name: Install dependencies
-        run: npm ci
+        run: bun install
       
       - name: Collect metrics
         id: collect
@@ -358,13 +358,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: '20'
+          bun-version: '1.2'
       
-      - run: npm ci
-      - run: npm run build
-      - run: npm test
+      - run: bun install
+      - run: bun run build
+      - run: bun test
       
       - name: Download previous database
         uses: actions/download-artifact@v4
@@ -408,7 +408,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: npm ci && npm test
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.2'
+      - run: bun install && bun test
       
       - name: Download previous database
         uses: actions/download-artifact@v4
@@ -441,6 +444,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.2'
       
       - name: Download database
         uses: actions/download-artifact@v4
