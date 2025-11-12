@@ -37,3 +37,10 @@ jobs:
 
       - name: Build GitHub Actions
         run: bun run build:actions
+
+      - name: Verify built actions
+        run: |
+          test -f .github/actions/collect-metrics/dist/collect.js
+          test -f .github/actions/find-database/dist/find-database.js
+          test -f .github/actions/generate-report/dist/report.js
+          echo "✓ All action bundles verified"

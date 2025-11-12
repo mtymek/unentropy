@@ -214,27 +214,11 @@ async function logDatabaseStats(databasePath: string): Promise<void> {
 }
 
 async function setOutputs(outputs: ActionOutputs): Promise<void> {
-  // Set outputs using core.setOutput (for logging)
   core.setOutput("database-found", outputs.databaseFound.toString());
   core.setOutput("database-path", outputs.databasePath);
 
   if (outputs.sourceRunId) {
     core.setOutput("source-run-id", outputs.sourceRunId.toString());
-  }
-
-  // Write outputs to file for composite action output capture
-  const outputFile = process.env.GITHUB_ACTIONS === "true" ? process.argv[2] : null;
-  if (outputFile) {
-    const outputLines = [
-      `database-found=${outputs.databaseFound}`,
-      `database-path=${outputs.databasePath}`,
-    ];
-
-    if (outputs.sourceRunId) {
-      outputLines.push(`source-run-id=${outputs.sourceRunId}`);
-    }
-
-    await fs.writeFile(outputFile, outputLines.join("\n"));
   }
 }
 
@@ -328,19 +312,10 @@ async function run(): Promise<void> {
   }
 }
 
-// Export for use in Node.js entrypoint
-export { run };
-
 // Run the action
-async function main() {
-  const isGitHubActions = process.env.GITHUB_ACTIONS === "true";
+run().catch((error) => {
+  core.setFailed(`Unhandled error: ${error}`);
+  process.exit(1);
+});
 
-  if (isGitHubActions || import.meta.main || require.main === module) {
-    run().catch((error) => {
-      core.setFailed(`Unhandled error: ${error}`);
-      process.exit(1);
-    });
-  }
-}
-
-main();
+export { run };

@@ -31,7 +31,7 @@ const buildAction = async (entrypoint: string, outdir: string, outfile: string):
   await build({
     entrypoints: [entrypoint],
     outdir,
-    target: "node",
+    target: "bun",
     naming: outfile,
     plugins: [excludeBunSqlitePlugin],
     external: ["better-sqlite3", "@actions/artifact"],
@@ -42,7 +42,7 @@ const buildAction = async (entrypoint: string, outdir: string, outfile: string):
 
 const main = async () => {
   try {
-    // Build for composite actions (legacy)
+    // Build for bun1 runtime actions
     await buildAction(
       "./src/actions/collect.ts",
       "./.github/actions/collect-metrics/dist",
@@ -60,13 +60,6 @@ const main = async () => {
       "./.github/actions/find-database/dist",
       "find-database.js"
     );
-
-    // Build for direct workflow usage
-    await buildAction("./src/actions/collect.ts", "./dist/actions", "collect.js");
-
-    await buildAction("./src/actions/report.ts", "./dist/actions", "report.js");
-
-    await buildAction("./src/actions/find-database.ts", "./dist/actions", "find-database.js");
 
     console.log("\n✓ All actions built successfully");
   } catch (error) {

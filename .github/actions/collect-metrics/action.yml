@@ -29,26 +29,5 @@ outputs:
     description: "Database ID of the build context record created"
 
 runs:
-  using: "composite"
-  steps:
-    - name: Run metrics collection
-      id: collect
-      shell: bash
-      run: |
-        # Create temp file for outputs
-        OUTPUT_FILE=$(mktemp)
-
-        # Run the Node.js script with output file
-        node "${{ github.action_path }}/dist/collect.js" "$OUTPUT_FILE"
-
-        # Read outputs from file and set them
-        if [ -f "$OUTPUT_FILE" ]; then
-          while IFS='=' read -r key value; do
-            echo "$key=$value" >> $GITHUB_OUTPUT
-          done < "$OUTPUT_FILE"
-          rm "$OUTPUT_FILE"
-        fi
-      env:
-        INPUT_CONFIG_PATH: ${{ inputs.config-path }}
-        INPUT_DATABASE_PATH: ${{ inputs.database-path }}
-        INPUT_CONTINUE_ON_ERROR: ${{ inputs.continue-on-error }}
+  using: bun1
+  main: dist/collect.js

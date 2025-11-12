@@ -37,14 +37,22 @@ This allows teams to see trends, spot entropy spikes, and visualize codebase hea
 
 ## **🏗️ Tech Stack**
 
-| Component              | Chosen Technology                        | Why?                                                                                                                           |
-| :--------------------- | :--------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------- |
-| **Tooling Language**   | **Node.js / TypeScript**                 | Native support for GitHub Actions, high performance, and robust tooling ecosystem.                                             |
-| **Data Storage**       | **SQLite**                               | The gold standard for lightweight, file-based, zero-config databases. Perfect for storing historical data in an artifact file. |
-| **Data Visualization** | **Chart.js**                             | Used to generate simple, static charts embedded in an HTML file for easy artifact viewing.                                     |
-| **Packaging**          | **GitHub Action (JavaScript/Container)** | The core delivery mechanism, providing a single, clean step for users' workflows.                                              |
+| Component              | Chosen Technology               | Why?                                                                                                                           |
+| :--------------------- | :------------------------------ | :----------------------------------------------------------------------------------------------------------------------------- |
+| **Tooling Language**   | **TypeScript (Bun Runtime)**    | Native support for GitHub Actions, high performance, and robust tooling ecosystem.                                             |
+| **Action Runtime**     | **Bun 1.x**                     | Fast, modern JavaScript runtime with native TypeScript support and optimized bundling for GitHub Actions.                      |
+| **Data Storage**       | **SQLite**                      | The gold standard for lightweight, file-based, zero-config databases. Perfect for storing historical data in an artifact file. |
+| **Data Visualization** | **Chart.js**                    | Used to generate simple, static charts embedded in an HTML file for easy artifact viewing.                                     |
+| **Packaging**          | **GitHub Action (Bun Runtime)** | The core delivery mechanism, providing a single, clean step for users' workflows.                                              |
 
 ## **🚀 Getting Started**
+
+### Prerequisites
+
+Unentropy actions require **GitHub Actions runners with Bun 1.x runtime support**. This is available on:
+
+- GitHub-hosted runners (ubuntu-latest, macos-latest, windows-latest)
+- Self-hosted runners with Bun installed
 
 ### Basic Three-Action Workflow
 

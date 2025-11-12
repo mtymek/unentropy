@@ -21,7 +21,7 @@ _Use read tool on need-to-know basis to reference `.specify/memory/constitution.
 
 ## Project Summary
 
-Unentropy is a serverless tool for tracking custom code metrics in CI/CD pipelines via GitHub Actions, using Node.js/TypeScript, SQLite, and Chart.js to generate trend reports without external servers.
+Unentropy is a serverless tool for tracking custom code metrics in CI/CD pipelines via GitHub Actions, using Bun/TypeScript, SQLite, and Chart.js to generate trend reports without external servers.
 
 ## Build/Lint/Test Commands
 
@@ -46,6 +46,9 @@ Unentropy is a serverless tool for tracking custom code metrics in CI/CD pipelin
 ## Additional Notes
 
 - Project uses Bun as the package manager and runtime
+- GitHub Actions use native Bun 1.x runtime (not Node.js composite)
+- Actions are bundled to .github/actions/\*/dist/ (committed to git)
+- Build script targets Bun runtime: `bun run build` creates action bundles
 - Project uses GitHub Actions for CI; no serverless setup needed
 - Follow security best practices; avoid logging secrets
 - Mimic existing code style from src/ and tests/ directories

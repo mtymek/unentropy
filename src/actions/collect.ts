@@ -131,22 +131,6 @@ async function run(): Promise<void> {
       core.setOutput("build-id", outputs.buildId.toString());
     }
 
-    // Write outputs to file for composite action output capture
-    const outputFile = process.env.GITHUB_ACTIONS === "true" ? process.argv[2] : null;
-    if (outputFile) {
-      const outputLines = [
-        `metrics-collected=${outputs.metricsCollected}`,
-        `metrics-failed=${outputs.metricsFailed}`,
-        `database-path=${outputs.databasePath}`,
-      ];
-
-      if (outputs.buildId !== undefined) {
-        outputLines.push(`build-id=${outputs.buildId}`);
-      }
-
-      await fs.writeFile(outputFile, outputLines.join("\n"));
-    }
-
     // Handle continue-on-error logic
     if (collectionResult.failed > 0 && !inputs.continueOnError) {
       if (collectionResult.successful === 0) {
@@ -169,17 +153,9 @@ async function run(): Promise<void> {
 }
 
 // Run the action
-async function main() {
-  const isGitHubActions = process.env.GITHUB_ACTIONS === "true";
-
-  if (isGitHubActions || import.meta.main || require.main === module) {
-    run().catch((error) => {
-      core.error(`Unhandled error: ${error instanceof Error ? error.message : String(error)}`);
-      process.exit(1);
-    });
-  }
-}
-
-main();
+run().catch((error) => {
+  core.error(`Unhandled error: ${error instanceof Error ? error.message : String(error)}`);
+  process.exit(1);
+});
 
 export { run };

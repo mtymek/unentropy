@@ -1,5 +1,6 @@
 node_modules/
 dist/
+!.github/actions/*/dist/
 *.log
 .DS_Store
 .env
