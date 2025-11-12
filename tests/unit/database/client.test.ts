@@ -22,6 +22,12 @@ describe("DatabaseClient", () => {
     expect(client.isOpen()).toBe(true);
   });
 
+  it("uses Bun adapter by default", () => {
+    const db = client.getConnection();
+    expect(db).toBeDefined();
+    expect(db.open).toBe(true);
+  });
+
   it("configures WAL mode", () => {
     const db = client.getConnection();
     const result = db.pragma("journal_mode", { simple: true });

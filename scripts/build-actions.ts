@@ -15,7 +15,7 @@ const buildAction = async (entrypoint: string, outdir: string, outfile: string):
     outdir,
     target: "node",
     naming: outfile,
-    external: ["better-sqlite3", "@actions/artifact"],
+    external: ["@actions/artifact"],
   });
 
   console.log(`✓ Built ${outfile}`);

@@ -27,7 +27,6 @@
     "visual-review": "bun run scripts/generate-fixtures.ts && bun run scripts/open-reports.ts"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
     "@types/bun": "latest",
     "eslint": "^9.0.0",
     "eslint-config-prettier": "^9.0.0",
@@ -40,7 +39,6 @@
     "@actions/core": "^1.11.1",
     "@actions/exec": "^1.1.1",
     "@actions/github": "^6.0.1",
-    "better-sqlite3": "^12.4.1",
     "zod": "^4.1.12"
   }
 }

@@ -13,6 +13,5 @@ export async function createAdapter(config: string | AdapterConfig): Promise<Dat
     return new BunSqliteAdapter(adapterConfig);
   }
 
-  const { BetterSqlite3Adapter } = await import("./better-sqlite3");
-  return new BetterSqlite3Adapter(adapterConfig);
+  throw new Error(`Unsupported runtime: ${runtime}`);
 }

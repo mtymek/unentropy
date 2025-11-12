@@ -5,7 +5,7 @@ import fs from "fs";
 
 const TEST_DB_PATH = "/tmp/test-integration-reporting.db";
 
-describe("Full reporting workflow integration", () => {
+describe("Full reporting workflow integration (Bun runtime)", () => {
   let db: DatabaseClient;
 
   beforeAll(async () => {

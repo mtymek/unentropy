@@ -5,7 +5,7 @@ import { collectMetrics } from "../../src/collector/collector";
 import { DatabaseClient } from "../../src/database/client";
 import type { MetricConfig } from "../../src/config/schema";
 
-describe("End-to-end collection workflow", () => {
+describe("End-to-end collection workflow (Bun runtime)", () => {
   const testDbPath = "/tmp/unentropy-integration-test.db";
   const originalEnv = process.env;
 

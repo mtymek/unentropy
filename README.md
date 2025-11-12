@@ -39,7 +39,7 @@ This allows teams to see trends, spot entropy spikes, and visualize codebase hea
 
 | Component              | Chosen Technology                        | Why?                                                                                                                           |
 | :--------------------- | :--------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------- |
-| **Tooling Language**   | **Node.js / TypeScript**                 | Native support for GitHub Actions, high performance, and robust tooling ecosystem.                                             |
+| **Tooling Language**   | **Bun / TypeScript**                     | Native support for GitHub Actions, high performance, and robust tooling ecosystem.                                             |
 | **Data Storage**       | **SQLite**                               | The gold standard for lightweight, file-based, zero-config databases. Perfect for storing historical data in an artifact file. |
 | **Data Visualization** | **Chart.js**                             | Used to generate simple, static charts embedded in an HTML file for easy artifact viewing.                                     |
 | **Packaging**          | **GitHub Action (JavaScript/Container)** | The core delivery mechanism, providing a single, clean step for users' workflows.                                              |
