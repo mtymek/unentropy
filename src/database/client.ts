@@ -26,7 +26,7 @@ export class DatabaseClient {
   }
 
   async initialize(): Promise<void> {
-    const { path, readonly = false, timeout = 5000, verbose = false } = this.config;
+    const { path, readonly = false, timeout = 5000, verbose = true } = this.config;
 
     this.adapter = await createAdapter({
       path,
