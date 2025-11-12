@@ -6,6 +6,7 @@ function detectRuntime(): "bun" | "node" {
 
 export async function createAdapter(config: string | AdapterConfig): Promise<DatabaseAdapter> {
   const runtime = detectRuntime();
+  console.log(`[${runtime}] Creating database adapter...`);
   const adapterConfig: AdapterConfig = typeof config === "string" ? { path: config } : config;
 
   if (runtime === "bun") {
