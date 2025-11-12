@@ -75,8 +75,7 @@ async function findLatestSuccessfulRun(
       owner,
       repo: repoName,
       branch,
-      status: "completed",
-      conclusion: "success",
+      status: "success",
       per_page: 10,
     });
 
