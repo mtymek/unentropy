@@ -41,11 +41,11 @@ description: "Task list for unified S3-compatible storage action implementation"
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
 - [ ] T005 Create S3Storage class with Bun native S3 client in src/storage/s3.ts
-- [ ] T006 [P] Implement storage configuration validation in src/config/storage-schema.ts
+- [ ] T006 [P] Implement storage configuration schema and merging in src/config/storage-schema.ts
 - [ ] T007 [P] Create track-metrics action context class in src/storage/context.ts
 - [ ] T008 [P] Implement workflow phase tracking in src/storage/workflow.ts
 - [ ] T009 Create error handling utilities for S3 operations in src/storage/errors.ts
-- [ ] T010 [P] Setup action input parsing and validation in src/actions/track-metrics-inputs.ts
+- [ ] T010 [P] Setup action input parsing, configuration merging, and validation in src/actions/track-metrics-inputs.ts
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -65,8 +65,8 @@ description: "Task list for unified S3-compatible storage action implementation"
 
 ### Implementation for User Story 1
 
-- [ ] T014 [P] [US1] Implement storage configuration schema in src/config/storage-schema.ts
-- [ ] T015 [US1] Create S3Storage constructor with credential validation in src/storage/s3.ts
+- [ ] T014 [P] [US1] Implement storage configuration schema with precedence rules in src/config/storage-schema.ts
+- [ ] T015 [US1] Create S3Storage constructor with merged configuration validation in src/storage/s3.ts
 - [ ] T016 [US1] Implement storage type detection and validation in src/storage/factory.ts
 - [ ] T017 [US1] Add configuration error handling with clear messages in src/storage/errors.ts
 - [ ] T018 [US1] Update track-metrics action to handle storage configuration in src/actions/track-metrics.ts
