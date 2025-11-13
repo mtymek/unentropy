@@ -77,7 +77,7 @@ Build a serverless metrics tracking system that allows developers to define cust
 ### Documentation (this feature)
 
 ```
-specs/003-mvp-metrics-tracking/
+specs/001-mvp-metrics-tracking/
  ├── plan.md              # This file (/speckit.plan command output)
  ├── research.md          # Phase 0 output (/speckit.plan command)
  ├── data-model.md        # Phase 1 output (/speckit.plan command)
@@ -113,7 +113,9 @@ specs/003-mvp-metrics-tracking/
  │   └── context.ts          # Build context extraction (git SHA, etc.)
  ├── reporter/
  │   ├── generator.ts        # HTML report generation
- │   ├── charts.ts           # Chart.js configuration builder
+ │   ├── charts.ts           # Chart.js configuration build**Primary Dependencies**: @aws-sdk/client-s3 (NEEDS CLARIFICATION: specific S3 SDK choice), existing Unentropy collector and reporter modules  
+**Storage**: SQLite database files stored in either GitHub Artifacts or S3-compatible storage  
+**Testing**: Bun test framework (per constitution), unit/integration/contract tests  er
  │   └── templates.ts        # HTML templates
   ├── actions/
   │   ├── collect.ts          # GitHub Action entrypoint for collection
