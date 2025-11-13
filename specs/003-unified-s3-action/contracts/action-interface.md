@@ -26,21 +26,21 @@ inputs:
     required: true
     default: 'artifact'
   
-  # S3 Configuration (required when storage-type='s3')
+  # S3 Configuration (overrides unentropy.json, required for credentials)
   s3-endpoint:
-    description: 'S3-compatible endpoint URL'
+    description: 'S3-compatible endpoint URL (overrides config file)'
     required: false
   s3-bucket:
-    description: 'S3 bucket name'
+    description: 'S3 bucket name (overrides config file)'
     required: false
   s3-region:
-    description: 'S3 region'
+    description: 'S3 region (overrides config file)'
     required: false
   s3-access-key-id:
-    description: 'S3 access key ID'
+    description: 'S3 access key ID (from GitHub Secrets, required for S3)'
     required: false
   s3-secret-access-key:
-    description: 'S3 secret access key'
+    description: 'S3 secret access key (from GitHub Secrets, required for S3)'
     required: false
   
   # Configuration File
@@ -133,12 +133,18 @@ async function run(): Promise<void> {
     // Parse inputs
     const inputs = parseActionInputs();
     
-    // Load configuration
-    const config = await loadConfiguration(inputs.configFile);
+    // Load configuration from file
+    const fileConfig = await loadConfiguration(inputs.configFile);
+    
+    // Merge configuration with precedence: Inputs > File
+    const mergedConfig = mergeConfiguration(fileConfig, inputs);
+    
+    // Validate merged configuration
+    validateMergedConfig(mergedConfig, inputs);
     
     // Create track-metrics context
     const trackMetricsContext = new TrackMetricsActionContext(
-      config.storage,
+      mergedConfig,
       inputs,
       process.env.GITHUB_TOKEN!
     );
@@ -151,7 +157,7 @@ async function run(): Promise<void> {
     
     // Handle result
     if (result.success) {
-      info(`✅ Unified metrics workflow completed successfully`);
+      info(`✅ Track-metrics workflow completed successfully`);
       info(`📊 Storage: ${result.databaseLocation}`);
       info(`📈 Metrics collected: ${result.phases.find(p => p.name === 'collect')?.metadata?.metricsCount || 0}`);
       if (result.reportUrl) {
@@ -181,6 +187,32 @@ function parseActionInputs(): ActionInputs {
     retryAttempts: parseInt(getInput('retry-attempts') || '3'),
     verbose: getInput('verbose') === 'true'
   };
+}
+
+function mergeConfiguration(configFile: StorageConfiguration, inputs: ActionInputs): MergedConfiguration {
+  // Configuration precedence: Action Inputs > Environment Variables > Config File
+  const merged: MergedConfiguration = {
+    storage: {
+      type: inputs.storageType || configFile.storage?.type || 'artifact'
+    },
+    database: {
+      key: inputs.databaseKey || configFile.database?.key || 'unentropy.db'
+    },
+    report: {
+      name: inputs.reportName || configFile.report?.name || 'unentropy-report.html'
+    }
+  };
+
+  // Merge S3 configuration with precedence
+  if (merged.storage.type === 's3') {
+    merged.storage.s3 = {
+      endpoint: inputs.s3Endpoint || configFile.storage?.s3?.endpoint,
+      bucket: inputs.s3Bucket || configFile.storage?.s3?.bucket,
+      region: inputs.s3Region || configFile.storage?.s3?.region
+    };
+  }
+
+  return merged;
 }
 
 function setActionOutputs(result: ActionResult): void {
@@ -218,26 +250,51 @@ interface ActionInputs {
   verbose: boolean;
 }
 
-function validateInputs(inputs: ActionInputs): void {
+interface MergedConfiguration {
+  storage: {
+    type: 'artifact' | 's3';
+    s3?: {
+      endpoint?: string;
+      bucket?: string;
+      region?: string;
+    };
+  };
+  database: {
+    key: string;
+  };
+  report: {
+    name: string;
+  };
+}
+
+function validateMergedConfig(config: MergedConfiguration, inputs: ActionInputs): void {
   // Validate storage type
-  if (!['artifact', 's3'].includes(inputs.storageType)) {
-    throw new Error(`Invalid storage-type: ${inputs.storageType}. Must be 'artifact' or 's3'`);
+  if (!['artifact', 's3'].includes(config.storage.type)) {
+    throw new Error(`Invalid storage-type: ${config.storage.type}. Must be 'artifact' or 's3'`);
   }
   
-  // Validate S3 parameters when S3 storage is selected
-  if (inputs.storageType === 's3') {
-    const requiredS3Params = ['s3Endpoint', 's3Bucket', 's3Region', 's3AccessKeyId', 's3SecretAccessKey'];
-    const missingParams = requiredS3Params.filter(param => !inputs[param as keyof ActionInputs]);
+  // Validate S3 configuration when S3 storage is selected
+  if (config.storage.type === 's3') {
+    // Credentials must come from action inputs (security requirement)
+    if (!inputs.s3AccessKeyId || !inputs.s3SecretAccessKey) {
+      throw new Error(`S3 credentials (access-key-id, secret-access-key) must be provided as action inputs from GitHub Secrets`);
+    }
     
-    if (missingParams.length > 0) {
-      throw new Error(`Missing required S3 parameters: ${missingParams.join(', ')}`);
+    // S3 settings can come from inputs or config file
+    const s3Config = config.storage.s3!;
+    if (!s3Config.endpoint || !s3Config.bucket || !s3Config.region) {
+      const missing = [];
+      if (!s3Config.endpoint) missing.push('endpoint');
+      if (!s3Config.bucket) missing.push('bucket');
+      if (!s3Config.region) missing.push('region');
+      throw new Error(`Missing required S3 configuration: ${missing.join(', ')}. Provide via action inputs or unentropy.json`);
     }
     
     // Validate S3 endpoint URL
     try {
-      new URL(inputs.s3Endpoint!);
+      new URL(s3Config.endpoint!);
     } catch {
-      throw new Error(`Invalid S3 endpoint URL: ${inputs.s3Endpoint}`);
+      throw new Error(`Invalid S3 endpoint URL: ${s3Config.endpoint}`);
     }
   }
   
@@ -251,6 +308,62 @@ function validateInputs(inputs: ActionInputs): void {
     throw new Error(`Retry attempts must be between 0 and 10`);
   }
 }
+```
+
+## Configuration Precedence
+
+The track-metrics action uses a hierarchical configuration system with the following precedence (highest to lowest):
+
+1. **Action Inputs** (highest priority)
+   - Override all other configuration sources
+   - Used for secrets and runtime-specific values
+   - Environment variables automatically expanded by GitHub Actions
+   - Example: `s3-bucket: ${{ secrets.S3_BUCKET }}`
+
+2. **Configuration File** (lowest priority)
+   - Provides defaults and documentation
+   - Contains non-sensitive configuration
+   - Example: `unentropy.json`
+
+### Configuration Split Strategy
+
+**Sensitive Data (Action Inputs from GitHub Secrets):**
+- S3 credentials (`s3-access-key-id`, `s3-secret-access-key`)
+- Runtime overrides for different environments
+
+**Non-Sensitive Data (Configuration File):**
+- Default S3 settings (`endpoint`, `region`, `bucket`)
+- Database configuration (`key`)
+- Report settings (`name`)
+- Metric collection rules
+
+### Example Configuration Flow
+
+```yaml
+# unentropy.json (defaults, non-sensitive)
+{
+  "storage": {
+    "type": "s3",
+    "s3": {
+      "endpoint": "https://s3.amazonaws.com",
+      "region": "us-east-1",
+      "bucket": "my-default-bucket"
+    }
+  },
+  "database": {
+    "key": "unentropy.db"
+  }
+}
+
+```yaml
+# GitHub Action (secrets + overrides)
+- uses: ./actions/track-metrics
+  with:
+    storage-type: 's3'
+    s3-bucket: ${{ secrets.S3_BUCKET }}  # Overrides config file
+    s3-access-key-id: ${{ secrets.S3_ACCESS_KEY_ID }}
+    s3-secret-access-key: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+    # endpoint, region come from config file
 ```
 
 ## Usage Examples
@@ -270,13 +383,13 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Collect Metrics
-         uses: ./actions/track-metrics
-         with:
-           storage-type: 'artifact'
+        uses: ./actions/track-metrics
+        with:
+          storage-type: 'artifact'
           config-file: 'unentropy.json'
 ```
 
-### S3 Storage Usage
+### S3 Storage Usage (Hybrid Configuration)
 
 ```yaml
 name: Metrics Collection with S3
@@ -290,18 +403,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-       - name: Collect Metrics
-         uses: ./actions/track-metrics
-         with:
-           storage-type: 's3'
-          s3-endpoint: ${{ secrets.S3_ENDPOINT }}
-          s3-bucket: ${{ secrets.S3_BUCKET }}
-          s3-region: ${{ secrets.S3_REGION }}
+      - name: Collect Metrics
+        uses: ./actions/track-metrics
+        with:
+          storage-type: 's3'
+           # S3 credentials from secrets (override config file)
           s3-access-key-id: ${{ secrets.S3_ACCESS_KEY_ID }}
           s3-secret-access-key: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+          # Optional: Override specific S3 settings from config file
+          s3-bucket: ${{ secrets.S3_BUCKET }}
+          # endpoint, region come from unentropy.json unless overridden here
 ```
 
-### Advanced Configuration
+### Advanced Configuration (Full Override)
 
 ```yaml
 name: Advanced Metrics Collection
@@ -321,11 +435,13 @@ jobs:
          id: metrics
         with:
           storage-type: 's3'
+          # All S3 settings from secrets (complete override)
           s3-endpoint: ${{ secrets.S3_ENDPOINT }}
           s3-bucket: ${{ secrets.S3_BUCKET }}
           s3-region: ${{ secrets.S3_REGION }}
           s3-access-key-id: ${{ secrets.S3_ACCESS_KEY_ID }}
           s3-secret-access-key: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+          # Runtime overrides
           database-key: 'production/unentropy.db'
           report-name: 'metrics-report-${{ github.sha }}.html'
           timeout: '600'
@@ -340,10 +456,10 @@ jobs:
           path: ${{ steps.metrics.outputs.report-url }}
 ```
 
-### Conditional Storage Selection
+### Environment-Based Configuration
 
 ```yaml
-name: Conditional Storage Metrics
+name: Environment-Based Metrics
 on:
   push:
     branches: [ main ]
@@ -357,12 +473,12 @@ jobs:
        - name: Collect Metrics
          uses: ./actions/track-metrics
          with:
+           # Use S3 for main branch, artifacts for others
            storage-type: ${{ github.ref == 'refs/heads/main' && 's3' || 'artifact' }}
-          s3-endpoint: ${{ secrets.S3_ENDPOINT }}
-          s3-bucket: ${{ secrets.S3_BUCKET }}
-          s3-region: ${{ secrets.S3_REGION }}
-          s3-access-key-id: ${{ secrets.S3_ACCESS_KEY_ID }}
-          s3-secret-access-key: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+           # Only provide S3 credentials when using S3
+           s3-access-key-id: ${{ github.ref == 'refs/heads/main' && secrets.S3_ACCESS_KEY_ID || '' }}
+           s3-secret-access-key: ${{ github.ref == 'refs/heads/main' && secrets.S3_SECRET_ACCESS_KEY || '' }}
+           # Other settings come from unentropy.json
 ```
 
 ## Error Handling
