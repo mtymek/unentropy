@@ -53,7 +53,7 @@ describe("Config Loader", () => {
   it("should throw error for invalid JSON", async () => {
     const configPath = path.join(fixturesDir, "invalid-json.json");
 
-    await expect(loadConfig(configPath)).rejects.toThrow("Invalid JSON");
+    await expect(loadConfig(configPath)).rejects.toThrow(SyntaxError);
   });
 
   it("should use default database config when not provided", async () => {

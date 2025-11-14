@@ -68,7 +68,7 @@ interface DatabaseConfig {
 
 | Field | Type | Required | Constraints | Description |
 |-------|------|----------|-------------|-------------|
-| `path` | string | No | Valid file path<br>Default: `.unentropy/metrics.db` | Custom location for SQLite database file. |
+| `path` | string | No | Valid file path<br>Default: `.unentropy-metrics.db` | Custom location for SQLite database file. |
 | `artifactName` | string | No | Pattern: `^[a-zA-Z0-9_-]+$`<br>Default: `unentropy-metrics` | Custom name for GitHub Actions artifact. |
 
 ## JSON Schema (for validators)
