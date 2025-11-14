@@ -10,8 +10,15 @@
     {
       "name": "lines-of-code",
       "type": "numeric",
-      "description": "Total lines of TypeScript/TSX code in src/ directory",
+      "description": "total lines of typescript/tsx code in src/ directory",
       "command": "find src/ -name '*.ts' -o -name '*.tsx' -not -path '*/node_modules/*' | xargs wc -l | tail -1 | awk '{print $1}' || echo '0'",
+      "unit": "loc"
+    },
+    {
+      "name": "lines-of-test-code",
+      "type": "numeric",
+      "description": "Total lines of TypeScript/TSX code in tests/ directory",
+      "command": "find tests/ -name '*.ts' -o -name '*.tsx' -not -path '*/node_modules/*' | xargs wc -l | tail -1 | awk '{print $1}' || echo '0'",
       "unit": "LOC"
     },
     {

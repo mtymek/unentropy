@@ -1,5 +1,5 @@
 import type { MetricReportData } from "../../../types";
-import serialize from 'serialize-javascript';
+import serialize from "serialize-javascript";
 
 interface ChartScriptsProps {
   metrics: MetricReportData[];

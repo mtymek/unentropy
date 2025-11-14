@@ -14,7 +14,7 @@ export function getTrendColor(direction: "up" | "down" | "stable" | null): strin
 export function formatValue(
   value: number | null,
   unit: string | null,
-  showDecimals: boolean = true
+  showDecimals = true
 ): string {
   if (value === null) return "N/A";
   const formatted = showDecimals ? value.toFixed(2) : value.toFixed(0);
