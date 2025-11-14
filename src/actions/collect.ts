@@ -55,20 +55,17 @@ async function run(): Promise<void> {
     await ensureDatabaseDirectory(inputs.databasePath);
 
     // Load configuration
-    let config;
-    config = await loadConfig(inputs.configPath);
+    const config = await loadConfig(inputs.configPath);
     core.info(`Configuration loaded successfully with ${config.metrics.length} metrics`);
 
     // Initialize database and get build context
-    let db;
-    let buildId;
-    db = new DatabaseClient({ path: inputs.databasePath });
+    const db = new DatabaseClient({ path: inputs.databasePath });
     await db.ready();
     core.info("Database initialized successfully");
 
     // Create build context
     const buildContext = extractBuildContext();
-    buildId = db.insertBuildContext({
+    const buildId = db.insertBuildContext({
         commit_sha: buildContext.commit_sha,
         branch: buildContext.branch,
         run_id: buildContext.run_id,
@@ -80,10 +77,9 @@ async function run(): Promise<void> {
     core.info(`Build context created with ID: ${buildId}`);
 
     // Collect metrics using dynamic import based on runtime
-    let collectionResult;
     const collectorModule = await import("../collector/collector");
 
-    collectionResult = await collectorModule.collectMetrics(
+    const collectionResult = await collectorModule.collectMetrics(
         config.metrics,
         buildId,
         inputs.databasePath
