@@ -5,19 +5,11 @@ import { collectMetrics } from "../../src/collector/collector";
 import { DatabaseClient } from "../../src/database/client";
 import type { MetricConfig } from "../../src/config/schema";
 
-describe("End-to-end collection workflow (Bun runtime)", () => {
+describe("End-to-end collection workflow", () => {
   const testDbPath = "/tmp/unentropy-integration-test.db";
   const originalEnv = process.env;
 
   beforeEach(async () => {
-    process.env = { ...originalEnv };
-    process.env.GITHUB_SHA = "abc123def456abc123def456abc123def456abcd";
-    process.env.GITHUB_REF = "refs/heads/test-branch";
-    process.env.GITHUB_RUN_ID = "999";
-    process.env.GITHUB_RUN_NUMBER = "1";
-    process.env.GITHUB_ACTOR = "test-user";
-    process.env.GITHUB_EVENT_NAME = "push";
-
     if (existsSync(testDbPath)) {
       await unlink(testDbPath);
     }
