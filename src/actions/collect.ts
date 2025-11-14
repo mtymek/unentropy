@@ -46,7 +46,7 @@ async function ensureDatabaseDirectory(databasePath: string): Promise<void> {
   await fs.mkdir(dbDir, { recursive: true });
 }
 
-async function run(): Promise<void> {
+export async function run(): Promise<void> {
   // Parse and validate inputs
   const inputs = parseInputs();
   core.info(`Starting metrics collection with config: ${inputs.configPath}`);
@@ -136,18 +136,6 @@ async function run(): Promise<void> {
   core.info("Action completed successfully");
 }
 
-// Run the action
-async function main() {
-  const isGitHubActions = process.env.GITHUB_ACTIONS === "true";
-
-  if (isGitHubActions || import.meta.main || require.main === module) {
-    run().catch((error) => {
-      core.error(`Unhandled error: ${error instanceof Error ? error.message : String(error)}`);
-      process.exit(1);
-    });
-  }
-}
-
-main();
-
-export { run };
+run().catch((error) => {
+  core.setFailed(`Unhandled error: ${error instanceof Error ? error.message : String(error)}`);
+});

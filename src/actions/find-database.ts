@@ -237,7 +237,7 @@ async function setOutputs(outputs: ActionOutputs): Promise<void> {
   }
 }
 
-async function run(): Promise<void> {
+export async function run(): Promise<void> {
   try {
     const inputs = parseInputs();
 
@@ -327,19 +327,6 @@ async function run(): Promise<void> {
   }
 }
 
-// Export for use in Node.js entrypoint
-export { run };
-
-// Run the action
-async function main() {
-  const isGitHubActions = process.env.GITHUB_ACTIONS === "true";
-
-  if (isGitHubActions || import.meta.main || require.main === module) {
-    run().catch((error) => {
-      core.setFailed(`Unhandled error: ${error}`);
-      process.exit(1);
-    });
-  }
-}
-
-main();
+run().catch((error) => {
+  core.setFailed(`Unhandled error: ${error}`);
+});

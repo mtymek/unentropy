@@ -184,203 +184,183 @@ function getTimeRangeBounds(
   };
 }
 
-async function run(): Promise<void> {
+export async function run(): Promise<void> {
+  // Parse and validate inputs
+  const inputs = parseInputs();
+  core.info(`Starting report generation with title: ${inputs.title}`);
+
+  // Load configuration
+  let config;
   try {
-    // Parse and validate inputs
-    const inputs = parseInputs();
-    core.info(`Starting report generation with title: ${inputs.title}`);
-
-    // Load configuration
-    let config;
-    try {
-      const resolvedConfigPath = resolve(inputs.configPath);
-      config = await loadConfig(resolvedConfigPath);
-      core.info(`Configuration loaded from: ${resolvedConfigPath}`);
-      core.info(`Found ${config.metrics.length} configured metrics`);
-    } catch (error) {
-      core.warning(
-        `Failed to load config from ${inputs.configPath}: ${error instanceof Error ? error.message : String(error)}`
-      );
-      core.warning("Report will include all metrics found in database");
-      config = undefined;
-    }
-
-    // Ensure output directory exists
-    await ensureOutputDirectory(inputs.outputPath);
-
-    // Database is already downloaded by the action workflow
-    const tempDbPath = inputs.databasePath;
-
-    // Initialize database
-    let db;
-    try {
-      db = new DatabaseClient({ path: tempDbPath });
-      await db.ready();
-      core.info("Database initialized successfully");
-    } catch (error) {
-      throw new Error(`Database error: ${error instanceof Error ? error.message : String(error)}`);
-    }
-
-    // Parse time range filter
-    const timeRangeFilter = parseTimeRange(inputs.timeRange);
-    core.info(`Using time range filter: ${JSON.stringify(timeRangeFilter)}`);
-
-    // Get all available metrics
-    const allMetrics = db.getAllMetricDefinitions();
-    if (allMetrics.length === 0) {
-      core.warning("No metrics found in database");
-
-      // Generate empty report
-      const emptyReport = generateReport(db, {
-        repository: process.env.GITHUB_REPOSITORY || "unknown/repository",
-        metricNames: [],
-        config,
-      });
-
-      await fs.writeFile(inputs.outputPath, emptyReport, "utf-8");
-
-      // Set outputs for empty report
-      core.setOutput("report-path", inputs.outputPath);
-      core.setOutput("metrics-count", "0");
-      core.setOutput("data-points", "0");
-
-      core.info("Empty report generated successfully");
-      return;
-    }
-
-    // Filter metrics by time range
-    const filteredMetricNames = filterMetricsByTimeRange(
-      allMetrics.map((m) => m.name),
-      timeRangeFilter,
-      db
+    const resolvedConfigPath = resolve(inputs.configPath);
+    config = await loadConfig(resolvedConfigPath);
+    core.info(`Configuration loaded from: ${resolvedConfigPath}`);
+    core.info(`Found ${config.metrics.length} configured metrics`);
+  } catch (error) {
+    core.warning(
+      `Failed to load config from ${inputs.configPath}: ${error instanceof Error ? error.message : String(error)}`
     );
+    core.warning("Report will include all metrics found in database");
+    config = undefined;
+  }
 
-    if (filteredMetricNames.length === 0) {
-      core.warning(`No metrics found in time range: ${inputs.timeRange}`);
+  // Ensure output directory exists
+  await ensureOutputDirectory(inputs.outputPath);
 
-      // Generate report with all metrics but note the time range
-      const report = generateReport(db, {
-        repository: process.env.GITHUB_REPOSITORY || "unknown/repository",
-        metricNames: allMetrics.map((m) => m.name),
-        config,
-      });
+  // Database is already downloaded by the action workflow
+  const tempDbPath = inputs.databasePath;
 
-      await fs.writeFile(inputs.outputPath, report, "utf-8");
+  // Initialize database
+  let db;
+  try {
+    db = new DatabaseClient({ path: tempDbPath });
+    await db.ready();
+    core.info("Database initialized successfully");
+  } catch (error) {
+    throw new Error(`Database error: ${error instanceof Error ? error.message : String(error)}`);
+  }
 
-      // Set outputs
-      const timeRangeBounds = getTimeRangeBounds(timeRangeFilter, db);
-      const allValues = db.getAllMetricValues();
+  // Parse time range filter
+  const timeRangeFilter = parseTimeRange(inputs.timeRange);
+  core.info(`Using time range filter: ${JSON.stringify(timeRangeFilter)}`);
 
-      core.setOutput("report-path", inputs.outputPath);
-      core.setOutput("metrics-count", allMetrics.length.toString());
-      core.setOutput("data-points", allValues.length.toString());
-      if (timeRangeBounds.start) {
-        core.setOutput("time-range-start", timeRangeBounds.start);
-      }
-      if (timeRangeBounds.end) {
-        core.setOutput("time-range-end", timeRangeBounds.end);
-      }
+  // Get all available metrics
+  const allMetrics = db.getAllMetricDefinitions();
+  if (allMetrics.length === 0) {
+    core.warning("No metrics found in database");
 
-      core.info("Report generated successfully (no data in specified time range)");
-      return;
-    }
-
-    // Generate report
-    let report;
-    try {
-      report = generateReport(db, {
-        repository: process.env.GITHUB_REPOSITORY || "unknown/repository",
-        metricNames: filteredMetricNames,
-        config,
-      });
-      core.info(`Report generated successfully with ${filteredMetricNames.length} metrics`);
-    } catch (error) {
-      throw new Error(
-        `Report generation failed: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
-
-    // Write report to file
-    try {
-      await fs.writeFile(inputs.outputPath, report, "utf-8");
-      core.info(`Report written to: ${inputs.outputPath}`);
-    } catch (error) {
-      throw new Error(
-        `Output file error: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
-
-    // Calculate outputs
-    const timeRangeBounds = getTimeRangeBounds(timeRangeFilter, db);
-    const filteredValues = filteredMetricNames.flatMap((metricName) => {
-      try {
-        return db.getMetricTimeSeries(metricName);
-      } catch {
-        return [];
-      }
+    // Generate empty report
+    const emptyReport = generateReport(db, {
+      repository: process.env.GITHUB_REPOSITORY || "unknown/repository",
+      metricNames: [],
+      config,
     });
 
-    const outputs: ActionOutputs = {
-      reportPath: inputs.outputPath,
-      metricsCount: filteredMetricNames.length,
-      dataPoints: filteredValues.length,
-      timeRangeStart: timeRangeBounds.start,
-      timeRangeEnd: timeRangeBounds.end,
-    };
+    await fs.writeFile(inputs.outputPath, emptyReport, "utf-8");
+
+    // Set outputs for empty report
+    core.setOutput("report-path", inputs.outputPath);
+    core.setOutput("metrics-count", "0");
+    core.setOutput("data-points", "0");
+
+    core.info("Empty report generated successfully");
+    return;
+  }
+
+  // Filter metrics by time range
+  const filteredMetricNames = filterMetricsByTimeRange(
+    allMetrics.map((m) => m.name),
+    timeRangeFilter,
+    db
+  );
+
+  if (filteredMetricNames.length === 0) {
+    core.warning(`No metrics found in time range: ${inputs.timeRange}`);
+
+    // Generate report with all metrics but note the time range
+    const report = generateReport(db, {
+      repository: process.env.GITHUB_REPOSITORY || "unknown/repository",
+      metricNames: allMetrics.map((m) => m.name),
+      config,
+    });
+
+    await fs.writeFile(inputs.outputPath, report, "utf-8");
 
     // Set outputs
-    core.setOutput("report-path", outputs.reportPath);
-    core.setOutput("metrics-count", outputs.metricsCount.toString());
-    core.setOutput("data-points", outputs.dataPoints.toString());
+    const timeRangeBounds = getTimeRangeBounds(timeRangeFilter, db);
+    const allValues = db.getAllMetricValues();
+
+    core.setOutput("report-path", inputs.outputPath);
+    core.setOutput("metrics-count", allMetrics.length.toString());
+    core.setOutput("data-points", allValues.length.toString());
+    if (timeRangeBounds.start) {
+      core.setOutput("time-range-start", timeRangeBounds.start);
+    }
+    if (timeRangeBounds.end) {
+      core.setOutput("time-range-end", timeRangeBounds.end);
+    }
+
+    core.info("Report generated successfully (no data in specified time range)");
+    return;
+  }
+
+  // Generate report
+  let report;
+  try {
+    report = generateReport(db, {
+      repository: process.env.GITHUB_REPOSITORY || "unknown/repository",
+      metricNames: filteredMetricNames,
+      config,
+    });
+    core.info(`Report generated successfully with ${filteredMetricNames.length} metrics`);
+  } catch (error) {
+    throw new Error(
+      `Report generation failed: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+
+  // Write report to file
+  try {
+    await fs.writeFile(inputs.outputPath, report, "utf-8");
+    core.info(`Report written to: ${inputs.outputPath}`);
+  } catch (error) {
+    throw new Error(`Output file error: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  // Calculate outputs
+  const timeRangeBounds = getTimeRangeBounds(timeRangeFilter, db);
+  const filteredValues = filteredMetricNames.flatMap((metricName) => {
+    try {
+      return db.getMetricTimeSeries(metricName);
+    } catch {
+      return [];
+    }
+  });
+
+  const outputs: ActionOutputs = {
+    reportPath: inputs.outputPath,
+    metricsCount: filteredMetricNames.length,
+    dataPoints: filteredValues.length,
+    timeRangeStart: timeRangeBounds.start,
+    timeRangeEnd: timeRangeBounds.end,
+  };
+
+  // Set outputs
+  core.setOutput("report-path", outputs.reportPath);
+  core.setOutput("metrics-count", outputs.metricsCount.toString());
+  core.setOutput("data-points", outputs.dataPoints.toString());
+  if (outputs.timeRangeStart) {
+    core.setOutput("time-range-start", outputs.timeRangeStart);
+  }
+  if (outputs.timeRangeEnd) {
+    core.setOutput("time-range-end", outputs.timeRangeEnd);
+  }
+
+  // Write outputs to file for composite action output capture
+  const outputFile = process.env.GITHUB_ACTIONS === "true" ? process.argv[2] : null;
+  if (outputFile) {
+    const outputLines = [
+      `report-path=${outputs.reportPath}`,
+      `metrics-count=${outputs.metricsCount}`,
+      `data-points=${outputs.dataPoints}`,
+    ];
+
     if (outputs.timeRangeStart) {
-      core.setOutput("time-range-start", outputs.timeRangeStart);
+      outputLines.push(`time-range-start=${outputs.timeRangeStart}`);
     }
     if (outputs.timeRangeEnd) {
-      core.setOutput("time-range-end", outputs.timeRangeEnd);
+      outputLines.push(`time-range-end=${outputs.timeRangeEnd}`);
     }
 
-    // Write outputs to file for composite action output capture
-    const outputFile = process.env.GITHUB_ACTIONS === "true" ? process.argv[2] : null;
-    if (outputFile) {
-      const outputLines = [
-        `report-path=${outputs.reportPath}`,
-        `metrics-count=${outputs.metricsCount}`,
-        `data-points=${outputs.dataPoints}`,
-      ];
-
-      if (outputs.timeRangeStart) {
-        outputLines.push(`time-range-start=${outputs.timeRangeStart}`);
-      }
-      if (outputs.timeRangeEnd) {
-        outputLines.push(`time-range-end=${outputs.timeRangeEnd}`);
-      }
-
-      await fs.writeFile(outputFile, outputLines.join("\n"));
-    }
-
-    // Close database connection after all operations are complete
-    db.close();
-
-    core.info("Action completed successfully");
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    core.setFailed(`Action failed: ${errorMessage}`);
-    process.exit(1);
+    await fs.writeFile(outputFile, outputLines.join("\n"));
   }
+
+  // Close database connection after all operations are complete
+  db.close();
+
+  core.info("Action completed successfully");
 }
 
-// Run the action
-async function main() {
-  const isGitHubActions = process.env.GITHUB_ACTIONS === "true";
-
-  if (isGitHubActions || import.meta.main || require.main === module) {
-    run().catch((error) => {
-      core.error(`Unhandled error: ${error instanceof Error ? error.message : String(error)}`);
-      process.exit(1);
-    });
-  }
-}
-
-main();
-
-export { run };
+run().catch((error) => {
+  core.setFailed(`Unhandled error: ${error instanceof Error ? error.message : String(error)}`);
+});
