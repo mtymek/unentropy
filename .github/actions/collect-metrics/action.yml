@@ -41,7 +41,7 @@ runs:
       run: |
         # Create temp file for outputs
         OUTPUT_FILE=$(mktemp)
-        
+
         # Run the Node.js script with output file
         bun "${{ github.action_path }}/dist/collect.js" "$OUTPUT_FILE"
         # Read outputs from file and set them
