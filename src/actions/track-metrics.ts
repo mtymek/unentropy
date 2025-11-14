@@ -8,14 +8,9 @@ import { TrackMetricsActionContext } from "../storage/context";
 import { StorageFactory } from "../storage/factory";
 
 async function run(): Promise<void> {
-  try {
-    // Parse inputs
     const inputs = parseActionInputs();
-
-    // Load and merge configuration
     const config = await loadAndMergeConfiguration(inputs);
 
-    // Validate storage configuration
     StorageFactory.validateStorageConfig(config, inputs);
 
     // Create track-metrics context
@@ -40,11 +35,8 @@ async function run(): Promise<void> {
     } else {
       setFailed(`❌ Workflow failed: ${result.error?.message}`);
     }
-  } catch (error) {
-    setFailed(`❌ Action failed: ${(error as Error).message}`);
-  }
-}
 
-if (require.main === module) {
-  run();
 }
+run().catch(err =>
+    setFailed(`Failed to track metrics: ${err.message}`)
+)
