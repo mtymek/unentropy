@@ -3,7 +3,7 @@
 **Feature Branch**: `003-unified-s3-action`  
 **Created**: Thu Nov 13 2025  
 **Status**: Draft  
-**Input**: User description: "as per spec/Roadmap.md file, plan implemeting the "single unified action" - a gh action that downloads the metrics database from S3-compatible storage, runs the metric collection, uploads the database again and generates the HTML report"
+**Input**: User description: "as per spec/Roadmap.md file, plan implementing the "single unified action" - a gh action that downloads the metrics database from S3-compatible storage, runs the metric collection, uploads the database again and generates the HTML report"
 
 ## User Scenarios & Testing *(mandatory)*
 
