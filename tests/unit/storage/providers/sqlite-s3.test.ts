@@ -97,7 +97,7 @@ describe("SqliteS3StorageProvider", () => {
 
     // Verify file exists in S3
     const s3Client = provider.getS3Client();
-    const s3File = s3Client.file("unentropy.db");
+    const s3File = s3Client.file(provider.getDatabaseKey());
     expect(await s3File.exists()).toBe(true);
   });
 
