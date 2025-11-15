@@ -31,7 +31,7 @@ description: "Task list for unified S3-compatible storage action implementation"
 
 **Purpose**: Ensure dependencies and build scripts are ready for the unified track-metrics action and S3 provider.
 
-- [ ] T003 [P] Ensure `track-metrics` action build entry is configured in `scripts/build-actions.ts`
+- [x] T003 [P] Ensure `track-metrics` action build entry is configured in `scripts/build-actions.ts`
 
 ---
 
@@ -41,9 +41,9 @@ description: "Task list for unified S3-compatible storage action implementation"
 
 **⚠️ CRITICAL**: No user story work should begin until this phase is complete.
 
-- [ ] T004 Create skeleton unified action module exporting a `runTrackMetricsAction` entry point in `src/actions/track-metrics.ts`
-- [ ] T005 [P] Extend storage provider factory to accept a new `sqlite-s3` storage type (temporarily throwing a clear "not implemented" error) in `src/storage/providers/factory.ts`
-- [ ] T006 [P] Add placeholder `SqliteS3StorageProvider` class that implements the `StorageProvider` interface with stubbed methods in `src/storage/providers/sqlite-s3.ts`
+- [x] T004 Create skeleton unified action module exporting a `runTrackMetricsAction` entry point in `src/actions/track-metrics.ts`
+- [x] T005 [P] Extend storage provider factory to accept a new `sqlite-s3` storage type (temporarily throwing a clear "not implemented" error) in `src/storage/providers/factory.ts`
+- [x] T006 [P] Add placeholder `SqliteS3StorageProvider` class that implements the `StorageProvider` interface with stubbed methods in `src/storage/providers/sqlite-s3.ts`
 
 **Checkpoint**: Unified action and S3 storage provider scaffolding exist and compile; user story tasks can now focus on concrete behavior.
 
