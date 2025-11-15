@@ -53,27 +53,13 @@ inputs:
   database-key:
     description: 'Database file key in storage'
     required: false
-    default: 'unentropy.db'
+    default: 'unentropy-metrics.db'
   
   # Report Configuration
   report-name:
     description: 'Generated report file name'
     required: false
     default: 'unentropy-report.html'
-  
-  # Advanced Options
-  timeout:
-    description: 'Action timeout in seconds'
-    required: false
-    default: '300'
-  retry-attempts:
-    description: 'Number of retry attempts for storage operations'
-    required: false
-    default: '3'
-  verbose:
-    description: 'Enable verbose logging'
-    required: false
-    default: 'false'
 ```
 
 ### Output Parameters
@@ -96,10 +82,6 @@ outputs:
     description: 'Database file size in bytes'
     value: ${{ steps.track-metrics.outputs.database-size }}
    
-  report-url:
-    description: 'URL to generated report (if available)'
-    value: ${{ steps.track-metrics.outputs.report-url }}
-   
   metrics-collected:
     description: 'Number of metrics collected'
     value: ${{ steps.track-metrics.outputs.metrics-collected }}
@@ -107,207 +89,6 @@ outputs:
   duration:
     description: 'Total workflow duration in milliseconds'
     value: ${{ steps.track-metrics.outputs.duration }}
-   
-  error-code:
-    description: 'Error code (if failed)'
-    value: ${{ steps.track-metrics.outputs.error-code }}
-   
-  error-message:
-    description: 'Error message (if failed)'
-    value: ${{ steps.track-metrics.outputs.error-message }}
-```
-
-## Action Implementation
-
-### Action Entry Point
-
-```typescript
-// src/actions/track-metrics.ts
-import { getInput, setOutput, setFailed, info, warning } from '@actions/core';
-import { context } from '@actions/github';
-import { TrackMetricsActionContext } from '../storage/context';
-import { StorageConfiguration } from '../config/schema';
-
-async function run(): Promise<void> {
-  try {
-    // Parse inputs
-    const inputs = parseActionInputs();
-    
-    // Load configuration from file
-    const fileConfig = await loadConfiguration(inputs.configFile);
-    
-    // Merge configuration with precedence: Inputs > File
-    const mergedConfig = mergeConfiguration(fileConfig, inputs);
-    
-    // Validate merged configuration
-    validateMergedConfig(mergedConfig, inputs);
-    
-    // Create track-metrics context
-    const trackMetricsContext = new TrackMetricsActionContext(
-      mergedConfig,
-      inputs,
-      process.env.GITHUB_TOKEN!
-    );
-    
-    // Execute workflow
-    const result = await trackMetricsContext.execute();
-    
-    // Set outputs
-    setActionOutputs(result);
-    
-    // Handle result
-    if (result.success) {
-      info(`✅ Track-metrics workflow completed successfully`);
-      info(`📊 Storage: ${result.databaseLocation}`);
-      info(`📈 Metrics collected: ${result.phases.find(p => p.name === 'collect')?.metadata?.metricsCount || 0}`);
-      if (result.reportUrl) {
-        info(`📋 Report: ${result.reportUrl}`);
-      }
-    } else {
-      setFailed(`❌ Workflow failed: ${result.error?.message}`);
-    }
-    
-  } catch (error) {
-    setFailed(`❌ Action failed: ${error.message}`);
-  }
-}
-
-function parseActionInputs(): ActionInputs {
-  return {
-    storageType: getInput('storage-type', { required: true }) as 'artifact' | 's3',
-    s3Endpoint: getInput('s3-endpoint'),
-    s3Bucket: getInput('s3-bucket'),
-    s3Region: getInput('s3-region'),
-    s3AccessKeyId: getInput('s3-access-key-id'),
-    s3SecretAccessKey: getInput('s3-secret-access-key'),
-    configFile: getInput('config-file') || 'unentropy.json',
-    databaseKey: getInput('database-key') || 'unentropy.db',
-    reportName: getInput('report-name') || 'unentropy-report.html',
-    timeout: parseInt(getInput('timeout') || '300') * 1000,
-    retryAttempts: parseInt(getInput('retry-attempts') || '3'),
-    verbose: getInput('verbose') === 'true'
-  };
-}
-
-function mergeConfiguration(configFile: StorageConfiguration, inputs: ActionInputs): MergedConfiguration {
-  // Configuration precedence: Action Inputs > Environment Variables > Config File
-  const merged: MergedConfiguration = {
-    storage: {
-      type: inputs.storageType || configFile.storage?.type || 'artifact'
-    },
-    database: {
-      key: inputs.databaseKey || configFile.database?.key || 'unentropy.db'
-    },
-    report: {
-      name: inputs.reportName || configFile.report?.name || 'unentropy-report.html'
-    }
-  };
-
-  // Merge S3 configuration with precedence
-  if (merged.storage.type === 's3') {
-    merged.storage.s3 = {
-      endpoint: inputs.s3Endpoint || configFile.storage?.s3?.endpoint,
-      bucket: inputs.s3Bucket || configFile.storage?.s3?.bucket,
-      region: inputs.s3Region || configFile.storage?.s3?.region
-    };
-  }
-
-  return merged;
-}
-
-function setActionOutputs(result: ActionResult): void {
-  setOutput('success', result.success);
-  setOutput('storage-type', result.databaseLocation.startsWith('s3://') ? 's3' : 'artifact');
-  setOutput('database-location', result.databaseLocation);
-  setOutput('database-size', result.phases.find(p => p.name === 'upload')?.metadata?.fileSize || 0);
-  setOutput('report-url', result.reportUrl || '');
-  setOutput('metrics-collected', result.phases.find(p => p.name === 'collect')?.metadata?.metricsCount || 0);
-  setOutput('duration', result.duration);
-  setOutput('error-code', result.error?.code || '');
-  setOutput('error-message', result.error?.message || '');
-}
-
-if (require.main === module) {
-  run();
-}
-```
-
-### Input Validation
-
-```typescript
-interface ActionInputs {
-  storageType: 'artifact' | 's3';
-  s3Endpoint?: string;
-  s3Bucket?: string;
-  s3Region?: string;
-  s3AccessKeyId?: string;
-  s3SecretAccessKey?: string;
-  configFile: string;
-  databaseKey: string;
-  reportName: string;
-  timeout: number;
-  retryAttempts: number;
-  verbose: boolean;
-}
-
-interface MergedConfiguration {
-  storage: {
-    type: 'artifact' | 's3';
-    s3?: {
-      endpoint?: string;
-      bucket?: string;
-      region?: string;
-    };
-  };
-  database: {
-    key: string;
-  };
-  report: {
-    name: string;
-  };
-}
-
-function validateMergedConfig(config: MergedConfiguration, inputs: ActionInputs): void {
-  // Validate storage type
-  if (!['artifact', 's3'].includes(config.storage.type)) {
-    throw new Error(`Invalid storage-type: ${config.storage.type}. Must be 'artifact' or 's3'`);
-  }
-  
-  // Validate S3 configuration when S3 storage is selected
-  if (config.storage.type === 's3') {
-    // Credentials must come from action inputs (security requirement)
-    if (!inputs.s3AccessKeyId || !inputs.s3SecretAccessKey) {
-      throw new Error(`S3 credentials (access-key-id, secret-access-key) must be provided as action inputs from GitHub Secrets`);
-    }
-    
-    // S3 settings can come from inputs or config file
-    const s3Config = config.storage.s3!;
-    if (!s3Config.endpoint || !s3Config.bucket || !s3Config.region) {
-      const missing = [];
-      if (!s3Config.endpoint) missing.push('endpoint');
-      if (!s3Config.bucket) missing.push('bucket');
-      if (!s3Config.region) missing.push('region');
-      throw new Error(`Missing required S3 configuration: ${missing.join(', ')}. Provide via action inputs or unentropy.json`);
-    }
-    
-    // Validate S3 endpoint URL
-    try {
-      new URL(s3Config.endpoint!);
-    } catch {
-      throw new Error(`Invalid S3 endpoint URL: ${s3Config.endpoint}`);
-    }
-  }
-  
-  // Validate timeout
-  if (inputs.timeout < 30000) { // Minimum 30 seconds
-    throw new Error(`Timeout must be at least 30 seconds`);
-  }
-  
-  // Validate retry attempts
-  if (inputs.retryAttempts < 0 || inputs.retryAttempts > 10) {
-    throw new Error(`Retry attempts must be between 0 and 10`);
-  }
-}
 ```
 
 ## Configuration Precedence
@@ -470,56 +251,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-       - name: Collect Metrics
-         uses: ./actions/track-metrics
-         with:
-           # Use S3 for main branch, artifacts for others
-           storage-type: ${{ github.ref == 'refs/heads/main' && 's3' || 'artifact' }}
-           # Only provide S3 credentials when using S3
-           s3-access-key-id: ${{ github.ref == 'refs/heads/main' && secrets.S3_ACCESS_KEY_ID || '' }}
-           s3-secret-access-key: ${{ github.ref == 'refs/heads/main' && secrets.S3_SECRET_ACCESS_KEY || '' }}
-           # Other settings come from unentropy.json
-```
-
-## Error Handling
-
-### Error Codes
-
-| Error Code | Description | Retryable | User Action |
-|------------|-------------|------------|--------------|
-| `CONFIG_INVALID` | Invalid configuration file | No | Fix configuration |
-| `STORAGE_CONNECTION` | Cannot connect to storage | Yes | Check credentials/network |
-| `STORAGE_PERMISSION` | Insufficient storage permissions | No | Update permissions |
-| `DATABASE_CORRUPTED` | Database file is corrupted | No | Recreate database |
-| `METRIC_COLLECTION_FAILED` | Metric collection failed | Yes | Check metric commands |
-| `REPORT_GENERATION_FAILED` | Report generation failed | No | Check report configuration |
-| `TIMEOUT` | Workflow exceeded timeout | No | Increase timeout value |
-
-### Error Message Format
-
-```typescript
-interface ActionError {
-  code: string;
-  message: string;
-  details?: Record<string, any>;
-  suggestions?: string[];
-}
-
-// Example error output
-{
-  "code": "STORAGE_CONNECTION",
-  "message": "Failed to connect to S3 endpoint",
-  "details": {
-    "endpoint": "https://s3.amazonaws.com",
-    "region": "us-east-1",
-    "error": "Network timeout"
-  },
-  "suggestions": [
-    "Verify S3 endpoint URL is correct",
-    "Check network connectivity",
-    "Validate AWS credentials"
-  ]
-}
+      - name: Collect Metrics
+        uses: ./actions/track-metrics
+        with:
+          # Only provide S3 credentials when using S3
+          s3-access-key-id: ${{ github.ref == 'refs/heads/main' && secrets.S3_ACCESS_KEY_ID || '' }}
+          s3-secret-access-key: ${{ github.ref == 'refs/heads/main' && secrets.S3_SECRET_ACCESS_KEY || '' }}
+          # Other settings come from unentropy.json
 ```
 
 ## Security Considerations

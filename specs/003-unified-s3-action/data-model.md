@@ -12,7 +12,7 @@ Represents storage configuration in unentropy.json (defaults and non-sensitive s
 ```typescript
 interface StorageConfiguration {
   storage: {
-    type: 'artifact' | 's3'; // Storage backend type
+    type: 'sqlite-artifact' | 'sqlite-s3'; // Storage backend type
     s3?: S3Configuration; // S3-specific settings (when type='s3')
   };
   database?: {

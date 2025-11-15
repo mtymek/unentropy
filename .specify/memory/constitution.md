@@ -28,7 +28,7 @@ Implement comprehensive tests including unit, integration, and contract tests. R
 
 ## Additional Constraints
 
-The project must remain lightweight and self-contained. No dependencies on external services beyond GitHub Actions. Ensure compatibility with CI/CD environments.
+The project must remain lightweight and self-contained while running entirely within GitHub Actions. Features may integrate with external, user-managed services (e.g., S3-compatible storage) when explicitly required, provided Unentropy does not operate persistent servers and GitHub Actions remains the orchestration environment. Ensure compatibility with CI/CD environments.
 
 ## Development Workflow
 

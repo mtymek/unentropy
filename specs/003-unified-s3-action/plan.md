@@ -7,13 +7,14 @@
 
 ## Summary
 
-Create a track-metrics GitHub Action that orchestrates the complete Unentropy metrics workflow: download database from S3-compatible storage, collect metrics, upload updated database, and generate HTML reports. The action will support S3-compatible storage backends with secure credential handling via GitHub Action parameters. **Note**: GitHub Artifacts storage is not supported by the track-metrics action - users must manually download/upload artifacts if using GitHub Artifacts storage.
+Create a track-metrics GitHub Action that orchestrates the complete Unentropy metrics workflow: download database from S3-compatible storage, collect metrics, upload updated database, and generate HTML reports. The action will support S3-compatible storage backends with secure credential handling via GitHub Action parameters. 
+**Note**: When `storage.type` is `sqlite-artifact`, the track-metrics action runs in a limited mode (collect + report only) and expects surrounding workflow steps to handle GitHub Artifact downloads/uploads.
 
 ## Technical Context
 
 **Language/Version**: TypeScript with Bun runtime (per constitution)  
 **Primary Dependencies**: Bun native S3 client, existing Unentropy collector and reporter modules  
-**Storage**: SQLite database files stored in S3-compatible storage only (GitHub Artifacts not supported by track-metrics action)  
+**Storage**: SQLite database files stored in S3-compatible storage (full workflow) with limited artifact-mode support for collection/reporting when users choose GitHub Artifacts  
 **Testing**: Bun test framework (per constitution), unit/integration/contract tests  
 **Target Platform**: GitHub Actions runners (Linux serverless environment)  
 **Project Type**: Single project with modular action architecture  
@@ -64,7 +65,7 @@ Create a track-metrics GitHub Action that orchestrates the complete Unentropy me
 - Provider compatibility: All major S3-compatible providers supported
 - Security patterns: GitHub Secrets + action parameters
 - Error handling: Exponential backoff, clear categorization
-- Storage limitation: GitHub Artifacts not supported due to API permissions
+- Storage limitation: GitHub Artifacts run in limited mode (manual artifact transfers) because API permissions prevent automated persistence
 
 **Phase 1 Design**: ✅ COMPLETED
 - Data model: Complete entity definitions and relationships
@@ -115,9 +116,6 @@ src/
 
 tests/
 ├── contract/
-│   ├── collect-action.test.ts
-│   ├── find-database-action.test.ts
-│   ├── report-action.test.ts
 │   └── track-metrics-action.test.ts    # NEW: Track-Metrics action contract tests
 ├── integration/
 │   ├── artifacts.test.ts
@@ -138,7 +136,7 @@ tests/
     └── track-metrics-example.yml        # NEW: Example track-metrics action workflow
 ```
 
-**Structure Decision**: Single project structure following existing patterns. New track-metrics action integrates with existing collector, reporter, and database modules. Storage abstraction layer simplified for S3-compatible storage only (GitHub Artifacts not supported due to API permission constraints).
+**Structure Decision**: Single project structure following existing patterns. New track-metrics action integrates with existing collector, reporter, and database modules. Storage abstraction layer delivers full automation for S3-compatible storage while providing a limited artifact mode (manual persistence) due to GitHub API permission constraints.
 
 ## Complexity Tracking
 
