@@ -14,6 +14,51 @@ export interface DatabaseConfig {
   provider: StorageProviderConfig;
 }
 
+export function createDatabaseConfig(
+  storageType: "sqlite-local" | "sqlite-artifact" | "sqlite-s3",
+  additionalConfig: Partial<StorageProviderConfig> = {}
+): DatabaseConfig {
+  const baseConfig = {
+    type: storageType,
+  };
+
+  let providerConfig: StorageProviderConfig;
+
+  switch (storageType) {
+    case "sqlite-local":
+      providerConfig = {
+        ...baseConfig,
+        type: "sqlite-local",
+        path: "unentropy.db",
+        readonly: false,
+        timeout: 30000,
+        ...additionalConfig,
+      } as StorageProviderConfig;
+      break;
+
+    case "sqlite-artifact":
+      providerConfig = {
+        ...baseConfig,
+        type: "sqlite-artifact",
+        ...additionalConfig,
+      } as StorageProviderConfig;
+      break;
+
+    case "sqlite-s3":
+      providerConfig = {
+        ...baseConfig,
+        type: "sqlite-s3",
+        ...additionalConfig,
+      } as StorageProviderConfig;
+      break;
+
+    default:
+      throw new Error(`Unsupported storage type: ${storageType}`);
+  }
+
+  return { provider: providerConfig };
+}
+
 export class Storage {
   private provider: StorageProvider | null = null;
   private db: Database | null = null;
