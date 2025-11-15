@@ -17,9 +17,7 @@ describe("getMetricTimeSeries", () => {
       fs.unlinkSync(TEST_DB_PATH);
     }
 
-    db = new Storage({
-      provider: { type: "sqlite-local", path: TEST_DB_PATH },
-    });
+    db = new Storage({ type: "sqlite-local", path: TEST_DB_PATH });
     await db.initialize();
 
     const buildId1 = db.insertBuildContext({
@@ -109,9 +107,7 @@ describe("getMetricTimeSeries", () => {
         fs.unlinkSync(dbPath);
       }
 
-      const db = new Storage({
-        provider: { type: "sqlite-local", path: dbPath },
-      });
+      const db = new Storage({ type: "sqlite-local", path: dbPath });
       await db.initialize();
 
       db.insertBuildContext({
@@ -160,9 +156,7 @@ describe("getMetricTimeSeries", () => {
         fs.unlinkSync(dbPath);
       }
 
-      const db = new Storage({
-        provider: { type: "sqlite-local", path: dbPath },
-      });
+      const db = new Storage({ type: "sqlite-local", path: dbPath });
       await db.initialize();
 
       const nonSparseMetric = db.upsertMetricDefinition({

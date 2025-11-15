@@ -153,10 +153,8 @@ async function generateFixture(config: FixtureConfig): Promise<void> {
   } catch {}
 
   const db = new Storage({
-    provider: {
-      type: "sqlite-local",
-      path: config.dbPath,
-    },
+    type: "sqlite-local",
+    path: config.dbPath,
   });
   await db.ready();
 

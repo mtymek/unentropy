@@ -39,7 +39,7 @@ describe("End-to-end collection workflow", () => {
       },
     ];
 
-    const db = new Storage({ provider: { type: "sqlite-local", path: testDbPath } });
+    const db = new Storage({ type: "sqlite-local", path: testDbPath });
     await db.initialize();
 
     const buildId = db.insertBuildContext({
@@ -74,7 +74,7 @@ describe("End-to-end collection workflow", () => {
   test("creates metric definitions on first collection", async () => {
     const metrics: MetricConfig[] = [{ name: "new-metric", type: "numeric", command: 'echo "42"' }];
 
-    const db = new Storage({ provider: { type: "sqlite-local", path: testDbPath } });
+    const db = new Storage({ type: "sqlite-local", path: testDbPath });
     await db.initialize();
 
     const buildId = db.insertBuildContext({
@@ -100,7 +100,7 @@ describe("End-to-end collection workflow", () => {
       { name: "existing-metric", type: "numeric", command: 'echo "1"' },
     ];
 
-    const db = new Storage({ provider: { type: "sqlite-local", path: testDbPath } });
+    const db = new Storage({ type: "sqlite-local", path: testDbPath });
     await db.initialize();
 
     const buildId1 = db.insertBuildContext({
@@ -145,7 +145,7 @@ describe("End-to-end collection workflow", () => {
       { name: "success2", type: "label", command: 'echo "ok"' },
     ];
 
-    const db = new Storage({ provider: { type: "sqlite-local", path: testDbPath } });
+    const db = new Storage({ type: "sqlite-local", path: testDbPath });
     await db.initialize();
 
     const buildId = db.insertBuildContext({
@@ -171,7 +171,7 @@ describe("End-to-end collection workflow", () => {
   test("associates metrics with correct build context", async () => {
     const metrics: MetricConfig[] = [{ name: "metric", type: "numeric", command: 'echo "5"' }];
 
-    const db = new Storage({ provider: { type: "sqlite-local", path: testDbPath } });
+    const db = new Storage({ type: "sqlite-local", path: testDbPath });
     await db.initialize();
 
     const buildId = db.insertBuildContext({
@@ -198,7 +198,7 @@ describe("End-to-end collection workflow", () => {
       { name: "timed-metric", type: "numeric", command: 'echo "100"' },
     ];
 
-    const db = new Storage({ provider: { type: "sqlite-local", path: testDbPath } });
+    const db = new Storage({ type: "sqlite-local", path: testDbPath });
     await db.initialize();
 
     const buildId = db.insertBuildContext({

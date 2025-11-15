@@ -11,7 +11,7 @@ describe("Storage Backend Selection Integration", () => {
       path: TEST_DB_PATH,
     };
 
-    const db = new Storage({ provider });
+    const db = new Storage(provider);
     await db.ready();
 
     expect(db.isOpen()).toBe(true);
@@ -23,7 +23,7 @@ describe("Storage Backend Selection Integration", () => {
     const provider = { type: "sqlite-artifact" } as any as StorageProviderConfig;
 
     const create = async () => {
-      const db = new Storage({ provider });
+      const db = new Storage(provider);
       await db.ready();
     };
 
@@ -36,12 +36,12 @@ describe("Storage Backend Selection Integration", () => {
     const provider = { type: "sqlite-s3" } as any as StorageProviderConfig;
 
     const create = async () => {
-      const db = new Storage({ provider });
+      const db = new Storage(provider);
       await db.ready();
     };
 
     await expect(create()).rejects.toThrow(
-      "Storage provider type 'sqlite-s3' is not yet implemented"
+      "SqliteS3StorageProvider.initialize() not yet implemented"
     );
   });
 });

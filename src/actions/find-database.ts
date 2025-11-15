@@ -182,11 +182,9 @@ async function downloadArtifact(
 async function logDatabaseStats(databasePath: string): Promise<void> {
   try {
     const dbClient = new Storage({
-      provider: {
-        type: "sqlite-local",
-        path: databasePath,
-        readonly: true,
-      },
+      type: "sqlite-local",
+      path: databasePath,
+      readonly: true,
     });
     await dbClient.ready();
 

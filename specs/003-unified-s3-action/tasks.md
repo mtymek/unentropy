@@ -63,11 +63,10 @@ description: "Task list for unified S3-compatible storage action implementation"
 ### Implementation for User Story 1
 
 - [x] T009 [P] [US1] Implement `StorageConfig` and `storage.type` JSON schema extension per config-schema contract in `src/config/schema.ts`
-- [ ] T010 [P] [US1] Implement runtime storage configuration parsing and defaulting (including fallback to `sqlite-local`) in `src/config/storage-schema.ts`
-- [ ] T011 [US1] Update configuration loader to populate storage settings and validate `storage.type` against allowed values in `src/config/loader.ts`
-- [ ] T012 [US1] Update storage selection logic to choose the correct provider based on `storage.type` (sqlite-local, sqlite-artifact, sqlite-s3) in `src/storage/storage.ts`
+- [x] T010 [P] [US1] Implement runtime storage configuration parsing and defaulting (including fallback to `sqlite-local`) in `src/config/storage-schema.ts`
+- [x] T011 [US1] Update configuration loader to populate storage settings and validate `storage.type` against allowed values in `src/config/loader.ts`
+- [ ] T012 [US1] Update storage selection logic to choose the correct provider based on `storage.type` (sqlite-local, sqlite-artifact, sqlite-s3) in `src/storage/providers/factory.ts`
 - [ ] T013 [US1] Update storage configuration examples and S3 setup section for `storage.type` in `specs/003-unified-s3-action/quickstart.md`
-- [ ] T014 [US1] Ensure root `unentropy.json` example demonstrates valid `storage.type` usage for local, artifact, and S3 storage in `unentropy.json`
 
 **Checkpoint**: User Story 1 is fully functional and independently testable via configuration and contract tests without requiring the full S3 workflow.
 
@@ -88,14 +87,12 @@ description: "Task list for unified S3-compatible storage action implementation"
 ### Implementation for User Story 2
 
 - [ ] T018 [P] [US2] Implement S3 client adapter using Bun's built-in `S3Client` for core download/upload operations in `src/storage/providers/sqlite-s3.ts`
-- [ ] T019 [US2] Implement `initialize()` to download the SQLite database from S3 (or create a new one on first run) and open it in `src/storage/providers/sqlite-s3.ts`
-- [ ] T020 [US2] Implement `persist()` to upload the updated database to S3 and verify upload success in `src/storage/providers/sqlite-s3.ts`
-- [ ] T021 [P] [US2] Implement track-metrics workflow phases (download, collect, upload, report), phase metadata, and action input parsing/validation in `src/actions/track-metrics.ts`
-- [ ] T022 [US2] Wire track-metrics action to use `createStorageProvider`, apply configuration precedence (action inputs overriding `unentropy.json`), and orchestrate the unified workflow using existing collector and reporter modules in `src/actions/track-metrics.ts`
-- [ ] T023 [US2] Add example unified metrics workflow using the track-metrics action in `.github/workflows/track-metrics-example.yml`
-- [ ] T024 [US2] Ensure build pipeline bundles the track-metrics action for GitHub Actions in `scripts/build-actions.ts`
-- [ ] T025 [P] [US2] Add unit tests for `SqliteS3StorageProvider` happy-path behavior in `tests/unit/storage/providers/sqlite-s3.test.ts`
-- [ ] T026 [P] [US2] Add unit tests for track-metrics action orchestration (phase order, configuration precedence, and input validation) in `tests/unit/actions/track-metrics.test.ts`
+- [ ] T019 [P] [US2] Implement track-metrics workflow phases (download, collect, upload, report), phase metadata, and action input parsing/validation in `src/actions/track-metrics.ts`
+- [ ] T020 [US2] Wire track-metrics action to use `createStorageProvider`, apply configuration precedence (action inputs overriding `unentropy.json`), and orchestrate the unified workflow using existing collector and reporter modules in `src/actions/track-metrics.ts`
+- [ ] T021 [US2] Add example unified metrics workflow using the track-metrics action in `.github/workflows/track-metrics-example.yml`
+- [ ] T022 [US2] Ensure build pipeline bundles the track-metrics action for GitHub Actions in `scripts/build-actions.ts`
+- [ ] T023 [P] [US2] Add unit tests for `SqliteS3StorageProvider` happy-path behavior in `tests/unit/storage/providers/sqlite-s3.test.ts`
+- [ ] T024 [P] [US2] Add unit tests for track-metrics action orchestration (phase order, configuration precedence, and input validation) in `tests/unit/actions/track-metrics.test.ts`
 
 **Checkpoint**: User Stories 1 and 2 are independently testable; the unified action can be run end-to-end with S3-backed storage.
 

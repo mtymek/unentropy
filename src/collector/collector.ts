@@ -69,10 +69,8 @@ export async function collectMetrics(
   }
 
   const db = new Storage({
-    provider: {
-      type: "sqlite-local",
-      path: dbPath,
-    },
+    type: "sqlite-local",
+    path: dbPath,
   });
   await db.ready();
 

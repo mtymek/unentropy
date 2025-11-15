@@ -8,7 +8,13 @@ export async function createStorageProvider(
   const { type } = config;
 
   if (type === "sqlite-local") {
-    return new SqliteLocalStorageProvider(config);
+    const finalConfig = {
+      ...config,
+      path: config.path ?? "unentropy.db",
+      readonly: config.readonly ?? false,
+      timeout: config.timeout ?? 30000,
+    };
+    return new SqliteLocalStorageProvider(finalConfig);
   }
 
   if (type === "sqlite-artifact") {
