@@ -56,12 +56,11 @@
 **Context**: Originally implemented to support both Bun (local development) and Node.js (GitHub Actions) environments. With the migration to Bun-only runtime, the adapter pattern is retained for future extensibility (e.g., Postgres support).
 
 - [x] T011a Define database adapter interface in src/database/adapters/interface.ts
-- [x] T011b [P] ~~Implement better-sqlite3 adapter in src/database/adapters/better-sqlite3.ts~~ (DEPRECATED - Node.js no longer used)
-- [x] T011c [P] Implement bun:sqlite adapter in src/database/adapters/bun-sqlite.ts
-- [x] T011d Implement adapter factory with runtime detection in src/database/adapters/factory.ts
-- [x] T011e Refactor DatabaseClient to use adapter pattern in src/database/client.ts
-- [x] T011f Update database tests to work with bun:sqlite adapter in tests/unit/database/*.test.ts
-- [x] T011g Verify tests pass with Bun locally
+- [x] T011b [P] Implement bun:sqlite adapter in src/database/adapters/bun-sqlite.ts
+- [x] T011c Implement adapter factory with runtime detection in src/database/adapters/factory.ts
+- [x] T011d Refactor DatabaseClient to use adapter pattern in src/database/client.ts
+- [x] T011e Update database tests to work with bun:sqlite adapter in tests/unit/database/*.test.ts
+- [x] T011f Verify tests pass with Bun locally
 
 **Checkpoint**: Database layer works with Bun runtime, adapter pattern retained for future extensibility ✅
 
@@ -86,7 +85,7 @@
 
 ### Implementation for User Story 1
 
-- [x] T018 [US1] Define Zod schemas in src/config/schema.ts (MetricConfigSchema, DatabaseConfigSchema, UnentropyConfigSchema)
+- [x] T018 [US1] Define Zod schemas in src/config/schema.ts (MetricConfigSchema, UnentropyConfigSchema)
 - [x] T019 [US1] Export inferred TypeScript types in src/config/schema.ts (combined with T018)
 - [x] T020 [US1] Implement config file loader with validation in src/config/loader.ts
 - [x] T021 [US1] Implement custom error formatter for validation errors in src/config/loader.ts (integrated into schema.ts)

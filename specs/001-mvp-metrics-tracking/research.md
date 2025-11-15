@@ -184,11 +184,7 @@ gh api repos/:owner/:repo/actions/artifacts/$ARTIFACT_ID/zip \
       command: string,            // Shell command to collect metric
       unit?: string               // Display unit (e.g., 'ms', '%', 'LOC')
     }
-  ],
-  database?: {
-    path?: string,                // Custom DB path (default: .unentropy/metrics.db)
-    artifactName?: string         // Custom artifact name
-  }
+  ]
 }
 ```
 

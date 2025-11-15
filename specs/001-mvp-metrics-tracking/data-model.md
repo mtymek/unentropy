@@ -137,8 +137,7 @@ BuildContext (1) ──────────────< (N) MetricValue
 **Structure**:
 ```typescript
 {
-  metrics: MetricConfig[],
-  database?: DatabaseConfig
+  metrics: MetricConfig[]
 }
 
 MetricConfig {
@@ -147,11 +146,6 @@ MetricConfig {
   description?: string,      // Maps to MetricDefinition.description
   command: string,           // Shell command to execute (not stored)
   unit?: string              // Maps to MetricDefinition.unit
-}
-
-DatabaseConfig {
-  path?: string,             // Custom database file path
-  artifactName?: string      // Custom GitHub Actions artifact name
 }
 ```
 
@@ -162,8 +156,6 @@ DatabaseConfig {
 - `metrics[].command`: Non-empty string, max 1024 characters
 - `metrics[].unit`: Max 10 characters if provided
 - `metrics[].description`: Max 256 characters if provided
-- `database.path`: Valid file path if provided
-- `database.artifactName`: Valid artifact name pattern if provided
 
 ---
 

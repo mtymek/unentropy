@@ -23,9 +23,6 @@ Visual acceptance testing ensures the HTML reports meet design, usability, and a
 **Configuration**:
 ```json
 {
-  "database": {
-    "path": "tests/fixtures/visual-review/minimal/minimal.db"
-  },
   "metrics": [
     {
       "name": "test-coverage",
@@ -58,9 +55,6 @@ Visual acceptance testing ensures the HTML reports meet design, usability, and a
 **Configuration**:
 ```json
 {
-  "database": {
-    "path": "tests/fixtures/visual-review/full-featured/full-featured.db"
-  },
   "metrics": [
     {
       "name": "test-coverage",

@@ -33,19 +33,12 @@ export const MetricConfigSchema = z.object({
   unit: z.string().max(10).optional(),
 });
 
-export const DatabaseConfigSchema = z.object({
-  path: z.string().optional(),
-  artifactName: z.string().regex(/^[a-zA-Z0-9_-]+$/).optional(),
-});
-
 export const UnentropyConfigSchema = z.object({
   metrics: z.array(MetricConfigSchema).min(1).max(50),
-  database: DatabaseConfigSchema.optional(),
 });
 
 // 2. Export inferred types in src/config/types.ts
 export type MetricConfig = z.infer<typeof MetricConfigSchema>;
-export type DatabaseConfig = z.infer<typeof DatabaseConfigSchema>;
 export type UnentropyConfig = z.infer<typeof UnentropyConfigSchema>;
 
 // 3. Implement loader in src/config/loader.ts

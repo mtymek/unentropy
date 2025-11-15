@@ -16,7 +16,6 @@ This document defines the JSON schema for the `unentropy.json` configuration fil
 ```typescript
 interface UnentropyConfig {
   metrics: MetricConfig[];
-  database?: DatabaseConfig;
 }
 ```
 
@@ -53,23 +52,7 @@ interface MetricConfig {
 - `command` is executed in shell environment with build context variables
 - `unit` is only meaningful for `numeric` type (ignored for `label`)
 
-### DatabaseConfig
 
-Optional database configuration for advanced use cases.
-
-```typescript
-interface DatabaseConfig {
-  path?: string;
-  artifactName?: string;
-}
-```
-
-**Field Specifications**:
-
-| Field | Type | Required | Constraints | Description |
-|-------|------|----------|-------------|-------------|
-| `path` | string | No | Valid file path<br>Default: `.unentropy-metrics.db` | Custom location for SQLite database file. |
-| `artifactName` | string | No | Pattern: `^[a-zA-Z0-9_-]+$`<br>Default: `unentropy-metrics` | Custom name for GitHub Actions artifact. |
 
 ## JSON Schema (for validators)
 
@@ -110,18 +93,6 @@ interface DatabaseConfig {
             "type": "string",
             "maxLength": 10
           }
-        }
-      }
-    },
-    "database": {
-      "type": "object",
-      "properties": {
-        "path": {
-          "type": "string"
-        },
-        "artifactName": {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9_-]+$"
         }
       }
     }
@@ -170,11 +141,7 @@ interface DatabaseConfig {
       "description": "Overall build health status",
       "command": "npm run build && echo 'healthy' || echo 'failing'"
     }
-  ],
-  "database": {
-    "path": ".metrics/unentropy.db",
-    "artifactName": "my-project-metrics"
-  }
+  ]
 }
 ```
 
