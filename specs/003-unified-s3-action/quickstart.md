@@ -127,12 +127,7 @@ Option 1: Update unentropy.json to specify S3 storage:
 ```json
 {
   "storage": {
-    "type": "sqlite-s3",
-    "s3": {
-      "endpoint": "https://s3.amazonaws.com",
-      "bucket": "my-unentropy-metrics",
-      "region": "us-east-1"
-    }
+    "type": "sqlite-s3"
   },
   "metrics": [
     {

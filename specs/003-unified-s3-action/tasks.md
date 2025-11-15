@@ -57,12 +57,12 @@ description: "Task list for unified S3-compatible storage action implementation"
 
 ### Tests for User Story 1
 
-- [ ] T007 [P] [US1] Add configuration contract tests for `storage.type` values and defaults in `tests/contract/track-metrics-config.test.ts`
-- [ ] T008 [P] [US1] Extend config schema unit tests to cover the `storage` block and invalid `storage.type` values in `tests/unit/config/schema.test.ts`
+- [x] T007 [P] [US1] Add configuration contract tests for `storage.type` values and defaults in `tests/contract/track-metrics-config.test.ts`
+- [x] T008 [P] [US1] Extend config schema unit tests to cover the `storage` block and invalid `storage.type` values in `tests/unit/config/schema.test.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T009 [P] [US1] Implement `StorageConfig` and `storage.type` JSON schema extension per config-schema contract in `src/config/schema.ts`
+- [x] T009 [P] [US1] Implement `StorageConfig` and `storage.type` JSON schema extension per config-schema contract in `src/config/schema.ts`
 - [ ] T010 [P] [US1] Implement runtime storage configuration parsing and defaulting (including fallback to `sqlite-local`) in `src/config/storage-schema.ts`
 - [ ] T011 [US1] Update configuration loader to populate storage settings and validate `storage.type` against allowed values in `src/config/loader.ts`
 - [ ] T012 [US1] Update storage selection logic to choose the correct provider based on `storage.type` (sqlite-local, sqlite-artifact, sqlite-s3) in `src/storage/storage.ts`

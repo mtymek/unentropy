@@ -13,8 +13,18 @@ export interface SqliteLocalConfig extends BaseStorageProviderConfig {
   timeout?: number;
 }
 
-// Future: sqlite-artifact, sqlite-s3, postgres configs
-export type StorageProviderConfig = SqliteLocalConfig;
+export interface SqliteArtifactConfig extends BaseStorageProviderConfig {
+  type: "sqlite-artifact";
+}
+
+export interface SqliteS3Config extends BaseStorageProviderConfig {
+  type: "sqlite-s3";
+  endpoint?: string;
+  bucket?: string;
+  region?: string;
+}
+
+export type StorageProviderConfig = SqliteLocalConfig | SqliteArtifactConfig | SqliteS3Config;
 
 export interface StorageProvider {
   initialize(): Promise<Database>;

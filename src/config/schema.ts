@@ -19,16 +19,30 @@ export const MetricConfigSchema = z
   })
   .strict();
 
+export const StorageConfigSchema = z
+  .object({
+    type: z.enum(["sqlite-local", "sqlite-artifact", "sqlite-s3"], {
+      message: "must be one of 'sqlite-local', 'sqlite-artifact', or 'sqlite-s3'",
+    }),
+  })
+  .strict();
+
 export const UnentropyConfigSchema = z
   .object({
+    storage: StorageConfigSchema.optional(),
     metrics: z
       .array(MetricConfigSchema)
       .min(1, { message: "metrics array must contain at least one metric" })
       .max(50),
   })
-  .strict();
+  .strict()
+  .transform((data) => ({
+    ...data,
+    storage: data.storage || { type: "sqlite-local" },
+  }));
 
 export type MetricConfig = z.infer<typeof MetricConfigSchema>;
+export type StorageConfig = z.infer<typeof StorageConfigSchema>;
 export type UnentropyConfig = z.infer<typeof UnentropyConfigSchema>;
 
 export function validateConfig(config: unknown): UnentropyConfig {
