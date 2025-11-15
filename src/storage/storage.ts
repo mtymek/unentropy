@@ -1,5 +1,6 @@
-import type { DatabaseAdapter } from "./adapters/interface";
-import { createAdapter } from "./adapters/factory";
+import type { Database } from "bun:sqlite";
+import type { StorageProvider, StorageProviderConfig } from "./providers/interface";
+import { createStorageProvider } from "./providers/factory";
 import { DatabaseQueries } from "./queries";
 import type {
   InsertBuildContext,
@@ -10,14 +11,12 @@ import type {
 } from "./types";
 
 export interface DatabaseConfig {
-  path: string;
-  readonly?: boolean;
-  timeout?: number;
-  verbose?: boolean;
+  provider: StorageProviderConfig;
 }
 
-export class DatabaseClient {
-  private adapter: DatabaseAdapter | null = null;
+export class Storage {
+  private provider: StorageProvider | null = null;
+  private db: Database | null = null;
   private initPromise: Promise<void>;
   private queries: DatabaseQueries | null = null;
 
@@ -26,17 +25,13 @@ export class DatabaseClient {
   }
 
   async initialize(): Promise<void> {
-    const { path, readonly = false, timeout = 5000, verbose = true } = this.config;
+    this.provider = await createStorageProvider(this.config.provider);
+    this.db = await this.provider.initialize();
 
-    this.adapter = await createAdapter({
-      path,
-      readonly,
-      create: true,
-      timeout,
-      verbose,
-    });
-
-    this.configureConnection();
+    const readonly =
+      this.config.provider.type === "sqlite-local"
+        ? (this.config.provider.readonly ?? false)
+        : false;
 
     if (!readonly) {
       const { initializeSchema } = await import("./migrations");
@@ -46,40 +41,30 @@ export class DatabaseClient {
     this.queries = new DatabaseQueries(this);
   }
 
-  private configureConnection(): void {
-    if (!this.adapter) throw new Error("Database not initialized");
-
-    this.adapter.pragma("journal_mode = WAL");
-    this.adapter.pragma("synchronous = NORMAL");
-    this.adapter.pragma("foreign_keys = ON");
-    this.adapter.pragma("busy_timeout = 5000");
-    this.adapter.pragma("cache_size = -2000");
-    this.adapter.pragma("temp_store = MEMORY");
-  }
-
   async ready(): Promise<void> {
     await this.initPromise;
   }
 
-  getConnection(): DatabaseAdapter {
-    if (!this.adapter) throw new Error("Database not initialized");
-    return this.adapter;
+  getConnection(): Database {
+    if (!this.db) throw new Error("Database not initialized");
+    return this.db;
   }
 
-  close(): void {
-    if (this.adapter?.open) {
-      this.adapter.close();
+  async close(): Promise<void> {
+    if (this.provider) {
+      await this.provider.cleanup();
+      this.db = null;
     }
   }
 
   transaction<T>(fn: () => T): T {
-    if (!this.adapter) throw new Error("Database not initialized");
-    const tx = this.adapter.transaction(fn);
+    if (!this.db) throw new Error("Database not initialized");
+    const tx = this.db.transaction(fn);
     return tx();
   }
 
   isOpen(): boolean {
-    return this.adapter?.open ?? false;
+    return this.provider?.isInitialized() ?? false;
   }
 
   insertBuildContext(data: InsertBuildContext): number {

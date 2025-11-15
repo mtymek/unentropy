@@ -65,7 +65,7 @@ export async function loadConfig(path: string): Promise<UnentropyConfig> {
 **Goal**: SQLite database with schema initialization and basic CRUD operations
 
 **Components**:
-1. `src/database/client.ts` - Database connection management
+1. `src/storage/storage.ts` - Storage connection management
 2. `src/database/migrations.ts` - Schema creation
 3. `src/database/queries.ts` - Data access functions
 4. `src/database/types.ts` - Entity types
@@ -73,7 +73,7 @@ export async function loadConfig(path: string): Promise<UnentropyConfig> {
 **Implementation Steps**:
 
 ```typescript
-// 1. Setup connection in src/database/client.ts
+// 1. Setup connection in src/storage/storage.ts
 import Database from 'better-sqlite3';
 
 export function openDatabase(path: string): Database.Database {
@@ -680,7 +680,6 @@ jobs:
       - run: bun install
       - run: bun run build
       - run: bun test
-      - run: npm run build
 ```
 
 ---

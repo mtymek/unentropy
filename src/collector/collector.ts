@@ -1,7 +1,6 @@
 import { runCommand } from "./runner";
 import type { MetricConfig } from "../config/schema";
-import { DatabaseClient } from "../database/client";
-import { DatabaseQueries } from "../database/queries";
+import { Storage } from "../storage/storage";
 
 export interface ParseResult {
   success: boolean;
@@ -69,9 +68,13 @@ export async function collectMetrics(
     return result;
   }
 
-  const db = new DatabaseClient({ path: dbPath });
+  const db = new Storage({
+    provider: {
+      type: "sqlite-local",
+      path: dbPath,
+    },
+  });
   await db.ready();
-  const queries = new DatabaseQueries(db);
 
   for (const metric of metrics) {
     try {
@@ -101,14 +104,14 @@ export async function collectMetrics(
         continue;
       }
 
-      const metricDef = queries.upsertMetricDefinition({
+      const metricDef = db.upsertMetricDefinition({
         name: metric.name,
         type: metric.type,
         unit: metric.unit,
         description: metric.description,
       });
 
-      queries.insertMetricValue({
+      db.insertMetricValue({
         metric_id: metricDef.id,
         build_id: buildId,
         value_numeric: parseResult.numericValue,
@@ -127,6 +130,6 @@ export async function collectMetrics(
     }
   }
 
-  db.close();
+  await db.close();
   return result;
 }

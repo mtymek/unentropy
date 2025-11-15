@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { unlink } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { collectMetrics } from "../../src/collector/collector";
-import { DatabaseClient } from "../../src/database/client";
+import { Storage } from "../../src/storage/storage";
 import type { MetricConfig } from "../../src/config/schema";
 
 describe("End-to-end collection workflow", () => {
@@ -39,7 +39,7 @@ describe("End-to-end collection workflow", () => {
       },
     ];
 
-    const db = new DatabaseClient({ path: testDbPath });
+    const db = new Storage({ provider: { type: "sqlite-local", path: testDbPath } });
     await db.initialize();
 
     const buildId = db.insertBuildContext({
@@ -68,13 +68,13 @@ describe("End-to-end collection workflow", () => {
     expect(status).toBeDefined();
     expect(status?.value_label).toBe("passing");
 
-    db.close();
+    await db.close();
   });
 
   test("creates metric definitions on first collection", async () => {
     const metrics: MetricConfig[] = [{ name: "new-metric", type: "numeric", command: 'echo "42"' }];
 
-    const db = new DatabaseClient({ path: testDbPath });
+    const db = new Storage({ provider: { type: "sqlite-local", path: testDbPath } });
     await db.initialize();
 
     const buildId = db.insertBuildContext({
@@ -92,7 +92,7 @@ describe("End-to-end collection workflow", () => {
     expect(metricDef?.name).toBe("new-metric");
     expect(metricDef?.type).toBe("numeric");
 
-    db.close();
+    await db.close();
   });
 
   test("reuses existing metric definitions", async () => {
@@ -100,7 +100,7 @@ describe("End-to-end collection workflow", () => {
       { name: "existing-metric", type: "numeric", command: 'echo "1"' },
     ];
 
-    const db = new DatabaseClient({ path: testDbPath });
+    const db = new Storage({ provider: { type: "sqlite-local", path: testDbPath } });
     await db.initialize();
 
     const buildId1 = db.insertBuildContext({
@@ -135,7 +135,7 @@ describe("End-to-end collection workflow", () => {
     const existingValues = values.filter((v) => v.metric_name === "existing-metric");
     expect(existingValues).toHaveLength(2);
 
-    db.close();
+    await db.close();
   });
 
   test("handles mixed success and failure gracefully", async () => {
@@ -145,7 +145,7 @@ describe("End-to-end collection workflow", () => {
       { name: "success2", type: "label", command: 'echo "ok"' },
     ];
 
-    const db = new DatabaseClient({ path: testDbPath });
+    const db = new Storage({ provider: { type: "sqlite-local", path: testDbPath } });
     await db.initialize();
 
     const buildId = db.insertBuildContext({
@@ -165,13 +165,13 @@ describe("End-to-end collection workflow", () => {
     const values = db.getMetricValues(buildId);
     expect(values).toHaveLength(2);
 
-    db.close();
+    await db.close();
   });
 
   test("associates metrics with correct build context", async () => {
     const metrics: MetricConfig[] = [{ name: "metric", type: "numeric", command: 'echo "5"' }];
 
-    const db = new DatabaseClient({ path: testDbPath });
+    const db = new Storage({ provider: { type: "sqlite-local", path: testDbPath } });
     await db.initialize();
 
     const buildId = db.insertBuildContext({
@@ -190,7 +190,7 @@ describe("End-to-end collection workflow", () => {
     expect(values).toHaveLength(1);
     expect(values[0]?.build_id).toBe(buildId);
 
-    db.close();
+    await db.close();
   });
 
   test("stores collection duration for successful metrics", async () => {
@@ -198,7 +198,7 @@ describe("End-to-end collection workflow", () => {
       { name: "timed-metric", type: "numeric", command: 'echo "100"' },
     ];
 
-    const db = new DatabaseClient({ path: testDbPath });
+    const db = new Storage({ provider: { type: "sqlite-local", path: testDbPath } });
     await db.initialize();
 
     const buildId = db.insertBuildContext({
@@ -215,6 +215,6 @@ describe("End-to-end collection workflow", () => {
     expect(values).toHaveLength(1);
     expect(values[0]?.collection_duration_ms).toBeGreaterThan(0);
 
-    db.close();
+    await db.close();
   });
 });

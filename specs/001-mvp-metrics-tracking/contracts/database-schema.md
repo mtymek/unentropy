@@ -161,9 +161,20 @@ CREATE INDEX idx_metric_value_build ON metric_values(build_id);
 
 ## Database Configuration
 
-### Pragma Settings
+### Connection Settings
 
-Applied on every connection:
+```typescript
+const db = new Database(dbPath, {
+  readonly: false,
+  fileMustExist: false,
+  timeout: 5000,
+  verbose: process.env.DEBUG ? console.log : undefined
+});
+```
+
+### Provider-Level Pragma Settings
+
+SQLite-specific PRAGMA configuration is handled by the `SqliteLocalStorageProvider`:
 
 ```sql
 PRAGMA journal_mode = WAL;          -- Write-Ahead Logging for concurrency
@@ -181,16 +192,7 @@ PRAGMA temp_store = MEMORY;         -- Use memory for temp tables
 - **5s busy timeout**: Handles concurrent GitHub Actions writes
 - **2MB cache**: Improves query performance for reports
 
-### Connection Settings
-
-```typescript
-const db = new Database(dbPath, {
-  readonly: false,
-  fileMustExist: false,
-  timeout: 5000,
-  verbose: process.env.DEBUG ? console.log : undefined
-});
-```
+**Note**: These PRAGMA statements are applied by the storage provider, not by the generic Storage class, ensuring proper separation of concerns between storage-specific configuration and generic storage operations.
 
 ---
 

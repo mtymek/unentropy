@@ -1,9 +1,9 @@
-import { DatabaseClient } from "./client";
+import { Storage } from "./storage";
 
 const SCHEMA_VERSION = "1.0.0";
 
-export function initializeSchema(client: DatabaseClient): void {
-  const db = client.getConnection();
+export function initializeSchema(storage: Storage): void {
+  const db = storage.getConnection();
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS schema_version (
@@ -13,9 +13,10 @@ export function initializeSchema(client: DatabaseClient): void {
     );
   `);
 
-  const currentVersion = db
-    .prepare("SELECT version FROM schema_version ORDER BY applied_at DESC LIMIT 1")
-    .get() as { version: string } | undefined;
+  const stmt = db.query<{ version: string }, []>(
+    "SELECT version FROM schema_version ORDER BY applied_at DESC LIMIT 1"
+  );
+  const currentVersion = stmt.get();
 
   if (currentVersion?.version === SCHEMA_VERSION) {
     return;
@@ -71,8 +72,8 @@ export function initializeSchema(client: DatabaseClient): void {
     CREATE INDEX IF NOT EXISTS idx_metric_value_build ON metric_values(build_id);
   `);
 
-  db.prepare("INSERT OR IGNORE INTO schema_version (version, description) VALUES (?, ?)").run(
-    SCHEMA_VERSION,
-    "Initial MVP schema"
+  const insertStmt = db.query<unknown, [string, string]>(
+    "INSERT OR IGNORE INTO schema_version (version, description) VALUES (?, ?)"
   );
+  insertStmt.run(SCHEMA_VERSION, "Initial MVP schema");
 }

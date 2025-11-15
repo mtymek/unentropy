@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
-import { DatabaseClient } from "../../../src/database/client";
+import { Storage } from "../../../src/storage/storage";
 import {
   getMetricTimeSeries,
   calculateSummaryStats,
@@ -10,14 +10,16 @@ import fs from "fs";
 const TEST_DB_PATH = "/tmp/test-generator.db";
 
 describe("getMetricTimeSeries", () => {
-  let db: DatabaseClient;
+  let db: Storage;
 
   beforeAll(async () => {
     if (fs.existsSync(TEST_DB_PATH)) {
       fs.unlinkSync(TEST_DB_PATH);
     }
 
-    db = new DatabaseClient({ path: TEST_DB_PATH });
+    db = new Storage({
+      provider: { type: "sqlite-local", path: TEST_DB_PATH },
+    });
     await db.initialize();
 
     const buildId1 = db.insertBuildContext({
@@ -107,7 +109,9 @@ describe("getMetricTimeSeries", () => {
         fs.unlinkSync(dbPath);
       }
 
-      const db = new DatabaseClient({ path: dbPath });
+      const db = new Storage({
+        provider: { type: "sqlite-local", path: dbPath },
+      });
       await db.initialize();
 
       db.insertBuildContext({
@@ -146,7 +150,7 @@ describe("getMetricTimeSeries", () => {
       expect(html).toContain("Limited data available");
       expect(html).toContain("5 builds");
 
-      db.close();
+      await db.close();
       fs.unlinkSync(dbPath);
     });
 
@@ -156,7 +160,9 @@ describe("getMetricTimeSeries", () => {
         fs.unlinkSync(dbPath);
       }
 
-      const db = new DatabaseClient({ path: dbPath });
+      const db = new Storage({
+        provider: { type: "sqlite-local", path: dbPath },
+      });
       await db.initialize();
 
       const nonSparseMetric = db.upsertMetricDefinition({
@@ -186,13 +192,13 @@ describe("getMetricTimeSeries", () => {
 
       expect(html).not.toContain("Limited data available");
 
-      db.close();
+      await db.close();
       fs.unlinkSync(dbPath);
     });
   });
 
-  afterAll(() => {
-    db.close();
+  afterAll(async () => {
+    await db.close();
     if (fs.existsSync(TEST_DB_PATH)) {
       fs.unlinkSync(TEST_DB_PATH);
     }

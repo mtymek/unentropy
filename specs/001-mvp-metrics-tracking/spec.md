@@ -199,10 +199,22 @@ This configuration serves as both a working example and genuine project monitori
 ### In Scope (MVP)
 
 - Configuration file parsing and validation
-- SQLite database creation and metric storage
+- SQLite database creation and metric storage (local file system)
+- Storage provider pattern architecture (extensible: sqlite-local, sqlite-artifact, sqlite-s3, postgres)
+- SQLite local storage provider implementation (file-based SQLite)
 - GitHub Action for collecting metrics in CI/CD
 - Basic HTML report generation with time-series charts
 - Single repository tracking
 - Commit-level granularity for metrics
 - Self-monitoring implementation for Unentropy project (test coverage + LoC)
 - Reference configuration and workflow for demonstration purposes
+
+### Out of Scope (Future Specs)
+
+- Remote storage backends (sqlite-artifact for GitHub Artifacts, sqlite-s3 for S3, postgres for PostgreSQL)
+- Multi-repository metric aggregation
+- Advanced analytics (anomaly detection, trend forecasting)
+- Real-time metric streaming
+- Metric alerting and notifications
+- Custom visualization plugins
+- Database migration tools for schema evolution beyond v1.0.0

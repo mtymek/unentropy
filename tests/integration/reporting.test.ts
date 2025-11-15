@@ -1,19 +1,21 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
-import { DatabaseClient } from "../../src/database/client";
+import { Storage } from "../../src/storage/storage";
 import { generateReport } from "../../src/reporter/generator";
 import fs from "fs";
 
 const TEST_DB_PATH = "/tmp/test-integration-reporting.db";
 
 describe("Full reporting workflow integration (Bun runtime)", () => {
-  let db: DatabaseClient;
+  let db: Storage;
 
   beforeAll(async () => {
     if (fs.existsSync(TEST_DB_PATH)) {
       fs.unlinkSync(TEST_DB_PATH);
     }
 
-    db = new DatabaseClient({ path: TEST_DB_PATH });
+    db = new Storage({
+      provider: { type: "sqlite-local", path: TEST_DB_PATH },
+    });
     await db.initialize();
 
     const coverageMetric = db.upsertMetricDefinition({
@@ -68,8 +70,8 @@ describe("Full reporting workflow integration (Bun runtime)", () => {
     }
   });
 
-  afterAll(() => {
-    db.close();
+  afterAll(async () => {
+    await db.close();
     if (fs.existsSync(TEST_DB_PATH)) {
       fs.unlinkSync(TEST_DB_PATH);
     }
@@ -182,7 +184,9 @@ describe("Full reporting workflow integration (Bun runtime)", () => {
       fs.unlinkSync(emptyDbPath);
     }
 
-    const emptyDb = new DatabaseClient({ path: emptyDbPath });
+    const emptyDb = new Storage({
+      provider: { type: "sqlite-local", path: emptyDbPath },
+    });
     await emptyDb.initialize();
 
     const html = generateReport(emptyDb, {

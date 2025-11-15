@@ -1,19 +1,24 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { DatabaseClient } from "../../../src/database/client";
-import { initializeSchema } from "../../../src/database/migrations";
+import { Storage } from "../../../src/storage/storage";
+import { initializeSchema } from "../../../src/storage/migrations";
 import { rm } from "fs/promises";
 
 describe("Schema Initialization", () => {
   const testDbPath = "./test-migrations.db";
-  let client: DatabaseClient;
+  let client: Storage;
 
   beforeEach(async () => {
-    client = new DatabaseClient({ path: testDbPath });
+    client = new Storage({
+      provider: {
+        type: "sqlite-local",
+        path: testDbPath,
+      },
+    });
     await client.ready();
   });
 
   afterEach(async () => {
-    client.close();
+    await client.close();
     await rm(testDbPath, { force: true });
     await rm(`${testDbPath}-shm`, { force: true });
     await rm(`${testDbPath}-wal`, { force: true });
@@ -24,8 +29,11 @@ describe("Schema Initialization", () => {
     const db = client.getConnection();
 
     const tables = db
-      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
-      .all() as { name: string }[];
+      .query<
+        { name: string },
+        []
+      >("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+      .all();
 
     const tableNames = tables.map((t) => t.name).sort();
     expect(tableNames).toEqual([
@@ -40,10 +48,9 @@ describe("Schema Initialization", () => {
     initializeSchema(client);
     const db = client.getConnection();
 
-    const columns = db.pragma("table_info(metric_definitions)") as {
-      name: string;
-      type: string;
-    }[];
+    const columns = db
+      .query<{ name: string; type: string }, []>("PRAGMA table_info(metric_definitions)")
+      .all();
     const columnNames = columns.map((c) => c.name);
 
     expect(columnNames).toEqual(["id", "name", "type", "unit", "description", "created_at"]);
@@ -53,10 +60,9 @@ describe("Schema Initialization", () => {
     initializeSchema(client);
     const db = client.getConnection();
 
-    const columns = db.pragma("table_info(build_contexts)") as {
-      name: string;
-      type: string;
-    }[];
+    const columns = db
+      .query<{ name: string; type: string }, []>("PRAGMA table_info(build_contexts)")
+      .all();
     const columnNames = columns.map((c) => c.name);
 
     expect(columnNames).toEqual([
@@ -76,10 +82,9 @@ describe("Schema Initialization", () => {
     initializeSchema(client);
     const db = client.getConnection();
 
-    const columns = db.pragma("table_info(metric_values)") as {
-      name: string;
-      type: string;
-    }[];
+    const columns = db
+      .query<{ name: string; type: string }, []>("PRAGMA table_info(metric_values)")
+      .all();
     const columnNames = columns.map((c) => c.name);
 
     expect(columnNames).toEqual([
@@ -97,9 +102,9 @@ describe("Schema Initialization", () => {
     initializeSchema(client);
     const db = client.getConnection();
 
-    const indexes = db.prepare("SELECT name FROM sqlite_master WHERE type='index'").all() as {
-      name: string;
-    }[];
+    const indexes = db
+      .query<{ name: string }, []>("SELECT name FROM sqlite_master WHERE type='index'")
+      .all();
 
     const indexNames = indexes.map((i) => i.name).sort();
     expect(indexNames).toContain("idx_metric_name");
@@ -115,10 +120,13 @@ describe("Schema Initialization", () => {
     const db = client.getConnection();
 
     const version = db
-      .prepare("SELECT version FROM schema_version ORDER BY applied_at DESC LIMIT 1")
-      .get() as { version: string };
+      .query<
+        { version: string },
+        []
+      >("SELECT version FROM schema_version ORDER BY applied_at DESC LIMIT 1")
+      .get();
 
-    expect(version.version).toBe("1.0.0");
+    expect(version?.version).toBe("1.0.0");
   });
 
   it("is idempotent", () => {
@@ -126,10 +134,10 @@ describe("Schema Initialization", () => {
     initializeSchema(client);
 
     const db = client.getConnection();
-    const versions = db.prepare("SELECT COUNT(*) as count FROM schema_version").get() as {
-      count: number;
-    };
+    const versions = db
+      .query<{ count: number }, []>("SELECT COUNT(*) as count FROM schema_version")
+      .get();
 
-    expect(versions.count).toBe(1);
+    expect(versions?.count).toBe(1);
   });
 });

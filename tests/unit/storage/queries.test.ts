@@ -1,23 +1,28 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { DatabaseClient } from "../../../src/database/client";
-import { initializeSchema } from "../../../src/database/migrations";
-import { DatabaseQueries } from "../../../src/database/queries";
+import { Storage } from "../../../src/storage/storage";
+import { initializeSchema } from "../../../src/storage/migrations";
+import { DatabaseQueries } from "../../../src/storage/queries";
 import { rm } from "fs/promises";
 
 describe("DatabaseQueries", () => {
   const testDbPath = "./test-queries.db";
-  let client: DatabaseClient;
+  let client: Storage;
   let queries: DatabaseQueries;
 
   beforeEach(async () => {
-    client = new DatabaseClient({ path: testDbPath });
+    client = new Storage({
+      provider: {
+        type: "sqlite-local",
+        path: testDbPath,
+      },
+    });
     await client.ready();
     initializeSchema(client);
     queries = new DatabaseQueries(client);
   });
 
   afterEach(async () => {
-    client.close();
+    await client.close();
     await rm(testDbPath, { force: true });
     await rm(`${testDbPath}-shm`, { force: true });
     await rm(`${testDbPath}-wal`, { force: true });

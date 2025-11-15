@@ -1,4 +1,4 @@
-import type { MetricType } from "../database/types";
+import type { MetricType } from "../storage/types";
 import type { ChartConfig } from "./charts";
 
 export interface TimeSeriesDataPoint {

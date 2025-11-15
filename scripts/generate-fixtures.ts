@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { DatabaseClient } from "../src/database/client";
+import { Storage } from "../src/storage/storage";
 import { generateReport } from "../src/reporter/generator";
 import { writeFileSync, mkdirSync } from "fs";
 import { dirname } from "path";
@@ -152,7 +152,12 @@ async function generateFixture(config: FixtureConfig): Promise<void> {
     await fs.unlink(config.dbPath);
   } catch {}
 
-  const db = new DatabaseClient({ path: config.dbPath });
+  const db = new Storage({
+    provider: {
+      type: "sqlite-local",
+      path: config.dbPath,
+    },
+  });
   await db.ready();
 
   const baseTimestamp = new Date("2025-01-01T00:00:00Z").getTime();
@@ -210,7 +215,7 @@ async function generateFixture(config: FixtureConfig): Promise<void> {
   writeFileSync(config.outputPath, html, "utf-8");
   console.log(`  ✅ HTML report generated: ${config.outputPath}`);
 
-  db.close();
+  await db.close();
 }
 
 async function main(): Promise<void> {

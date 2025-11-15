@@ -3,7 +3,7 @@ import * as github from "@actions/github";
 import { promises as fs } from "fs";
 import { dirname } from "path";
 import { execSync } from "child_process";
-import { DatabaseClient } from "../database/client";
+import { Storage } from "../storage/storage";
 
 interface ActionInputs {
   databaseArtifact: string;
@@ -181,7 +181,13 @@ async function downloadArtifact(
 
 async function logDatabaseStats(databasePath: string): Promise<void> {
   try {
-    const dbClient = new DatabaseClient({ path: databasePath, readonly: true });
+    const dbClient = new Storage({
+      provider: {
+        type: "sqlite-local",
+        path: databasePath,
+        readonly: true,
+      },
+    });
     await dbClient.ready();
 
     const buildContexts = dbClient.getAllBuildContexts();
@@ -206,7 +212,7 @@ async function logDatabaseStats(databasePath: string): Promise<void> {
       core.info(`- Metrics: ${metricNames}`);
     }
 
-    dbClient.close();
+    await dbClient.close();
   } catch (error) {
     core.warning(`Failed to analyze database contents: ${error}`);
   }

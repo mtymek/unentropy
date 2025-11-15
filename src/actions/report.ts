@@ -1,7 +1,7 @@
 import * as core from "@actions/core";
 import { promises as fs } from "fs";
 import { dirname, resolve } from "path";
-import { DatabaseClient } from "../database/client";
+import { Storage } from "../storage/storage";
 import { generateReport } from "../reporter/generator";
 import { loadConfig } from "../config/loader";
 
@@ -92,7 +92,7 @@ async function ensureOutputDirectory(outputPath: string): Promise<void> {
 function filterMetricsByTimeRange(
   metricNames: string[],
   timeRangeFilter: TimeRangeFilter,
-  db: DatabaseClient
+  db: Storage
 ): string[] {
   if (timeRangeFilter.type === "all") {
     return metricNames;
@@ -143,7 +143,7 @@ function filterMetricsByTimeRange(
 
 function getTimeRangeBounds(
   timeRangeFilter: TimeRangeFilter,
-  db: DatabaseClient
+  db: Storage
 ): { start?: string; end?: string } {
   if (timeRangeFilter.type === "all") {
     const allBuilds = db.getAllBuildContexts();
@@ -213,7 +213,13 @@ export async function run(): Promise<void> {
   // Initialize database
   let db;
   try {
-    db = new DatabaseClient({ path: tempDbPath });
+    db = new Storage({
+      provider: {
+        type: "sqlite-local",
+        path: tempDbPath,
+        readonly: true,
+      },
+    });
     await db.ready();
     core.info("Database initialized successfully");
   } catch (error) {
@@ -356,7 +362,7 @@ export async function run(): Promise<void> {
   }
 
   // Close database connection after all operations are complete
-  db.close();
+  await db.close();
 
   core.info("Action completed successfully");
 }

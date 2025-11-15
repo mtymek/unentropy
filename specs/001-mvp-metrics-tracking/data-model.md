@@ -159,6 +159,133 @@ MetricConfig {
 
 ---
 
+## Storage Provider Architecture
+
+### Overview
+
+The storage layer uses a **Provider Pattern** to abstract where the SQLite database file is stored and how it's accessed. This enables future extensibility for different storage backends (GitHub Artifacts, S3, etc.) while keeping the MVP simple with local file storage.
+
+### Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────┐
+│ Storage                                             │
+│ - Business logic methods                            │
+│ - Uses DatabaseQueries helper                       │
+└────────────────┬────────────────────────────────────┘
+                 │
+                 │ uses
+                 ▼
+┌─────────────────────────────────────────────────────┐
+│ StorageProvider (interface)                         │
+│ + initialize(): Promise<Database>                   │
+│ + persist(): Promise<void>                          │
+│ + cleanup(): void                                   │
+└────────────────┬────────────────────────────────────┘
+                 │
+                 │ implements
+                 ▼
+     ┌────────────┴────────────┬──────────────────────┬───────────────────┐
+     │                         │                      │                   │
+┌───▼──────────────┐  ┌──────▼──────────┐  ┌───────▼────────┐  ┌──────▼────────┐
+│ SqliteLocal      │  │ SqliteArtifact  │  │ SqliteS3       │  │ Postgres      │
+│ StorageProvider  │  │ StorageProvider │  │ StorageProvider│  │ StorageProvider│
+│ (MVP)            │  │ (future)        │  │ (future)       │  │ (future)      │
+└───┬──────────────┘  └──────────┬──────┘  └───────────┬────┘  └──────┬────────┘
+     │                            │                      │               │
+     │ all return                 │                      │               │
+     ▼                            ▼                      ▼               ▼
+┌───────────────────────────────────────────────────────────────────────────┐
+│ Database (from bun:sqlite) or PostgreSQL Connection                      │
+│ - query(), run(), exec(), transaction(), close()                         │
+└───────────────────────────────────────────────────────────────────────────┘
+```
+
+### Storage Provider Interface
+
+```typescript
+interface StorageProvider {
+  initialize(): Promise<Database>;  // Returns bun:sqlite Database
+  persist(): Promise<void>;         // Save/upload database if needed
+  cleanup(): void;                  // Close connections, clean temp files
+  readonly isInitialized: boolean;
+}
+
+interface StorageProviderConfig {
+  type: 'sqlite-local' | 'sqlite-artifact' | 'sqlite-s3' | 'postgres';
+  
+  // For SQLite local storage
+  path?: string;
+  
+  // For SQLite artifact storage (future)
+  artifactName?: string;
+  repository?: string;
+  
+  // For PostgreSQL (future)
+  connectionString?: string;
+  
+  // Common options
+  readonly?: boolean;
+  verbose?: boolean;
+}
+```
+
+### MVP: SQLite Local Storage Provider
+
+For the MVP, only `SqliteLocalStorageProvider` is implemented:
+
+```typescript
+class SqliteLocalStorageProvider implements StorageProvider {
+  async initialize(): Promise<Database> {
+    // Open SQLite database at specified file path
+    return new Database(config.path, { readonly, create: true });
+  }
+  
+  async persist(): Promise<void> {
+    // No-op for local storage (writes are immediate to disk)
+  }
+  
+  cleanup(): void {
+    // Close database connection
+  }
+}
+```
+
+**Future Providers** (documented for extensibility, not implemented in MVP):
+- `SqliteArtifactStorageProvider`: Downloads SQLite DB from GitHub Artifacts on init, uploads on persist
+- `SqliteS3StorageProvider`: Downloads SQLite DB from S3 on init, uploads on persist
+- `PostgresStorageProvider`: Connects to remote PostgreSQL database (different interface, no download/upload)
+
+### Storage Architecture
+
+The `Storage` class uses a storage provider to obtain a `Database` instance:
+
+```typescript
+class Storage {
+  private provider: StorageProvider;
+  private db: Database;  // Direct bun:sqlite Database instance
+  
+  async initialize(): Promise<void> {
+    this.provider = await createStorageProvider(config);
+    this.db = await this.provider.initialize();
+    initializeSchema(this);
+  }
+  
+  async close(): Promise<void> {
+    await this.provider.persist();
+    this.provider.cleanup();
+  }
+}
+```
+
+**Key Design Decisions**:
+- No adapter/wrapper around `bun:sqlite` - use Database API directly
+- Provider handles **where** the DB file is (local, remote, artifact) and connection configuration
+- Storage handles **what** to do with the DB (queries, transactions, schema)
+- Simple for MVP (local only), extensible for future storage backends
+
+---
+
 ## State Transitions
 
 ### Metric Collection Workflow
@@ -167,7 +294,9 @@ MetricConfig {
 1. Load Configuration
    └─> Validate schema (fail fast on error)
    
-2. Initialize Database
+2. Initialize Storage Provider
+   └─> Create SqliteLocalStorageProvider (MVP)
+   └─> Initialize database connection
    └─> Create tables if not exist
    └─> Enable WAL mode
    
@@ -187,15 +316,17 @@ MetricConfig {
        └─> Insert MetricValue with parsed value
        
 5. Finalize
+   └─> Persist storage (no-op for local in MVP)
    └─> Close database connection
-   └─> Upload database artifact
+   └─> Cleanup resources
 ```
 
 ### Report Generation Workflow
 
 ```
-1. Download Database Artifact
-   └─> Download latest from GitHub Actions
+1. Initialize Storage Provider
+   └─> Create SqliteLocalStorageProvider (MVP)
+   └─> Open database in read-only mode
    
 2. Query Data
    ├─> Load all MetricDefinitions
@@ -211,6 +342,10 @@ MetricConfig {
    ├─> Render template with embedded data
    ├─> Include Chart.js from CDN
    └─> Write to output file
+   
+5. Finalize
+   └─> Close database connection
+   └─> Cleanup resources
 ```
 
 ---
@@ -289,15 +424,19 @@ CREATE INDEX idx_metric_value_build ON metric_values(build_id);
 - **Isolation Level**: Read Uncommitted (acceptable for metrics)
 - **No Lock Contention**: WAL mode allows concurrent reads during writes
 
-### Artifact Merge Strategy
-When multiple concurrent jobs write to the database:
-1. Each job downloads the latest artifact
-2. Job performs its writes (new build + metric values)
-3. Job uploads updated database as new artifact
-4. GitHub Actions handles artifact versioning
-5. Report generation uses latest artifact
+### MVP Concurrency (Local Storage)
+For the MVP with local file storage:
+- Single workflow writes to database at a time
+- Database file is stored in repository or mounted volume
+- Standard SQLite WAL mode provides ACID guarantees
+- No special merge strategy needed
 
-**Note**: Concurrent jobs may overwrite each other's artifacts, but each job's data is preserved because they insert to different builds. The "last write wins" artifact model is acceptable since SQLite ensures data consistency within each write operation.
+**Future: Artifact/S3 Storage** (not implemented in MVP):
+When multiple concurrent jobs need to write to the database, the provider pattern will handle:
+1. Download latest database artifact/file
+2. Apply local writes (new build + metric values)
+3. Upload updated database
+4. Conflict resolution handled by storage backend (last-write-wins for artifacts)
 
 ---
 
@@ -331,7 +470,7 @@ When multiple concurrent jobs write to the database:
 ### Report Generation Errors
 - **Missing data**: Generate report with available data, show warnings
 - **Invalid data**: Skip invalid records, log warnings
-- **Empty database**: Generate report with "no data" message
+- **Empty storage**: Generate report with "no data" message
 
 ---
 
@@ -340,9 +479,9 @@ When multiple concurrent jobs write to the database:
 **Initial Schema**: Version 1 (MVP)
 
 **Future Migrations**:
-- Handled via migration scripts in `src/database/migrations.ts`
+- Handled via migration scripts in `src/storage/migrations.ts`
 - Version tracking table: `schema_version`
-- Apply migrations on database initialization
+- Apply migrations on storage initialization
 - No breaking changes to existing data
 
 ---

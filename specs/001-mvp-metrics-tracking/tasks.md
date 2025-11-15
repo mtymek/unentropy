@@ -22,9 +22,9 @@
 
 **Purpose**: Project initialization and dependencies
 
-- [x] T001 Install dependencies: better-sqlite3, zod, @actions/core, @actions/github
-- [x] T002 [P] Create directory structure: src/config/, src/database/, src/collector/, src/reporter/, src/actions/
-- [x] T003 [P] Create directory structure: tests/unit/config/, tests/unit/database/, tests/unit/collector/, tests/unit/reporter/
+- [x] T001 Install dependencies: zod, @actions/core, @actions/github
+- [x] T002 [P] Create directory structure: src/config/, src/storage/, src/storage/providers/, src/collector/, src/reporter/, src/actions/
+- [x] T003 [P] Create directory structure: tests/unit/config/, tests/unit/storage/, tests/unit/storage/providers/, tests/unit/collector/, tests/unit/reporter/
 - [x] T004 [P] Create directory structure: tests/integration/, tests/contract/
 
 ---
@@ -35,34 +35,59 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [x] T005 Create TypeScript types for database entities in src/database/types.ts
-- [x] T006 Implement database client with connection management in src/database/client.ts
-- [x] T007 Implement database schema initialization in src/database/migrations.ts
-- [x] T008 Implement database query functions (insert/upsert) in src/database/queries.ts
-- [x] T009 [P] Write unit tests for database client in tests/unit/database/client.test.ts
-- [x] T010 [P] Write unit tests for schema initialization in tests/unit/database/migrations.test.ts
-- [x] T011 [P] Write unit tests for query functions in tests/unit/database/queries.test.ts
+### Storage Provider Architecture
 
-**Note**: Tests T009-T011 failed with better-sqlite3 incompatibility in Bun environment. Requires adapter pattern implementation.
+**Architecture**: Storage Provider Pattern abstracts WHERE the database is stored (local file, GitHub Artifacts, S3, PostgreSQL) while using bun:sqlite Database API directly (no wrapper). Provider types follow pattern: `<database-engine>-<storage-location>` (e.g., 'sqlite-local', 'sqlite-artifact', 'postgres').
 
-**Checkpoint**: Database layer ready - user story implementation can now begin
+- [x] T005 Create TypeScript types for storage entities in src/storage/types.ts
+- [x] T006 Define StorageProvider interface in src/storage/providers/interface.ts
+  - Define StorageProvider interface (initialize, persist, cleanup, isInitialized)
+  - Define StorageProviderConfig type with types: 'sqlite-local', 'sqlite-artifact', 'sqlite-s3', 'postgres'
+  - Add config fields: path (sqlite-local), artifactName/repository (sqlite-artifact), s3Bucket/s3Key (sqlite-s3), connectionString (postgres)
+  
+- [x] T007 Implement SqliteLocalStorageProvider in src/storage/providers/sqlite-local.ts
+  - initialize(): Opens SQLite database at config.path using `new Database(path, options)`
+  - persist(): No-op for local storage (writes are immediate to disk)
+  - cleanup(): Closes database via db.close()
+  - Uses bun:sqlite Database API directly
+  
+- [x] T008 Create provider factory in src/storage/providers/factory.ts
+  - createStorageProvider(config: StorageProviderConfig): Promise<StorageProvider>
+  - Handles 'sqlite-local' type (MVP only)
+  - Throws error for unsupported types with clear message
+  
+- [x] T009 Implement Storage with provider pattern in src/storage/storage.ts
+  - Use StorageProvider to get Database instance
+  - Direct use of bun:sqlite Database (no wrapper)
+  - configureConnection() uses db.run("PRAGMA ...") for SQLite configuration
+  - Methods: initialize(), close(), getConnection(), transaction()
+  
+- [x] T010 Implement storage schema initialization in src/storage/migrations.ts
+  - Uses Database.exec() for schema creation
+  - Tables: metric_definitions, build_contexts, metric_values, schema_version
+  - Proper indexes and foreign keys
+  
+- [x] T011 Implement storage query functions in src/storage/queries.ts
+  - Uses db.query() to create prepared statements
+  - Methods: insertBuildContext, upsertMetricDefinition, insertMetricValue
+  - Query methods: getMetricTimeSeries, getAllMetricDefinitions, etc.
 
----
+### Tests for Storage Layer
 
-## Phase 2.5: Database Adapter Layer (Completed - Retained for Future Extensibility)
+- [x] T012 [P] Write unit tests for SqliteLocalStorageProvider in tests/unit/storage/providers/sqlite-local.test.ts
+- [x] T013 [P] Write unit tests for provider factory in tests/unit/storage/providers/factory.test.ts
+- [x] T014 [P] Write unit tests for Storage in tests/unit/storage/client.test.ts
+- [x] T015 [P] Write unit tests for schema initialization in tests/unit/storage/migrations.test.ts
+- [x] T016 [P] Write unit tests for query functions in tests/unit/storage/queries.test.ts
 
-**Purpose**: Enable database layer to work in Bun environment (retained for future extensibility)
+**Checkpoint**: Storage layer ready with provider pattern - user story implementation can now begin
 
-**Context**: Originally implemented to support both Bun (local development) and Node.js (GitHub Actions) environments. With the migration to Bun-only runtime, the adapter pattern is retained for future extensibility (e.g., Postgres support).
-
-- [x] T011a Define database adapter interface in src/database/adapters/interface.ts
-- [x] T011b [P] Implement bun:sqlite adapter in src/database/adapters/bun-sqlite.ts
-- [x] T011c Implement adapter factory with runtime detection in src/database/adapters/factory.ts
-- [x] T011d Refactor DatabaseClient to use adapter pattern in src/database/client.ts
-- [x] T011e Update database tests to work with bun:sqlite adapter in tests/unit/database/*.test.ts
-- [x] T011f Verify tests pass with Bun locally
-
-**Checkpoint**: Database layer works with Bun runtime, adapter pattern retained for future extensibility ✅
+**Key Design Decisions**:
+- ✓ No wrapper around bun:sqlite - use Database API directly
+- ✓ Provider abstracts storage location, not database operations
+- ✓ Type naming: 'sqlite-local' (MVP), 'sqlite-artifact', 'sqlite-s3', 'postgres' (future)
+- ✓ PRAGMA statements via db.run(), not separate pragma() method
+- ✓ Simple for MVP (local only), extensible for future (artifacts, S3, Postgres)
 
 ---
 
@@ -76,19 +101,19 @@
 
 **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [x] T012 [P] [US1] Write unit test for valid config parsing in tests/unit/config/loader.test.ts
-- [x] T013 [P] [US1] Write unit test for invalid metric names in tests/unit/config/schema.test.ts
-- [x] T014 [P] [US1] Write unit test for duplicate metric names in tests/unit/config/schema.test.ts
-- [x] T015 [P] [US1] Write unit test for type mismatches in tests/unit/config/schema.test.ts
-- [x] T016 [P] [US1] Write unit test for empty/missing required fields in tests/unit/config/schema.test.ts
-- [x] T017 [P] [US1] Write unit test for clear error messages in tests/unit/config/schema.test.ts
+- [x] T017 [P] [US1] Write unit test for valid config parsing in tests/unit/config/loader.test.ts
+- [x] T018 [P] [US1] Write unit test for invalid metric names in tests/unit/config/schema.test.ts
+- [x] T019 [P] [US1] Write unit test for duplicate metric names in tests/unit/config/schema.test.ts
+- [x] T020 [P] [US1] Write unit test for type mismatches in tests/unit/config/schema.test.ts
+- [x] T021 [P] [US1] Write unit test for empty/missing required fields in tests/unit/config/schema.test.ts
+- [x] T022 [P] [US1] Write unit test for clear error messages in tests/unit/config/schema.test.ts
 
 ### Implementation for User Story 1
 
-- [x] T018 [US1] Define Zod schemas in src/config/schema.ts (MetricConfigSchema, UnentropyConfigSchema)
-- [x] T019 [US1] Export inferred TypeScript types in src/config/schema.ts (combined with T018)
-- [x] T020 [US1] Implement config file loader with validation in src/config/loader.ts
-- [x] T021 [US1] Implement custom error formatter for validation errors in src/config/loader.ts (integrated into schema.ts)
+- [x] T023 [US1] Define Zod schemas in src/config/schema.ts (MetricConfigSchema, UnentropyConfigSchema)
+- [x] T024 [US1] Export inferred TypeScript types in src/config/schema.ts
+- [x] T025 [US1] Implement config file loader with validation in src/config/loader.ts
+- [x] T026 [US1] Implement custom error formatter for validation errors in src/config/loader.ts
 
 **Checkpoint**: Users can create unentropy.json with metrics and get validation feedback ✅
 
@@ -102,24 +127,24 @@
 
 ### Tests for User Story 2
 
-- [x] T022 [P] [US2] Write unit test for build context extraction in tests/unit/collector/context.test.ts
-- [x] T023 [P] [US2] Write unit test for command execution in tests/unit/collector/runner.test.ts
-- [x] T024 [P] [US2] Write unit test for command timeout handling in tests/unit/collector/runner.test.ts
-- [x] T025 [P] [US2] Write unit test for environment variable passing in tests/unit/collector/runner.test.ts
-- [x] T026 [P] [US2] Write unit test for numeric value parsing in tests/unit/collector/collector.test.ts
-- [x] T027 [P] [US2] Write unit test for label value parsing in tests/unit/collector/collector.test.ts
-- [x] T028 [P] [US2] Write unit test for partial failure handling in tests/unit/collector/collector.test.ts
-- [x] T029 [US2] Write integration test for end-to-end collection workflow in tests/integration/collection.test.ts
+- [x] T027 [P] [US2] Write unit test for build context extraction in tests/unit/collector/context.test.ts
+- [x] T028 [P] [US2] Write unit test for command execution in tests/unit/collector/runner.test.ts
+- [x] T029 [P] [US2] Write unit test for command timeout handling in tests/unit/collector/runner.test.ts
+- [x] T030 [P] [US2] Write unit test for environment variable passing in tests/unit/collector/runner.test.ts
+- [x] T031 [P] [US2] Write unit test for numeric value parsing in tests/unit/collector/collector.test.ts
+- [x] T032 [P] [US2] Write unit test for label value parsing in tests/unit/collector/collector.test.ts
+- [x] T033 [P] [US2] Write unit test for partial failure handling in tests/unit/collector/collector.test.ts
+- [x] T034 [US2] Write integration test for end-to-end collection workflow in tests/integration/collection.test.ts
 
 ### Implementation for User Story 2
 
-- [x] T031 [P] [US2] Implement build context extraction in src/collector/context.ts
-- [x] T032 [P] [US2] Implement command execution with timeout using Bun.spawn() in src/collector/runner.ts
-- [x] T033 [US2] Implement metric value parser (numeric/label) in src/collector/collector.ts
-- [x] T034 [US2] Implement main collection orchestration with retry logic in src/collector/collector.ts
-- [x] T035 [US2] Implement error handling for partial metric failures in src/collector/collector.ts
+- [x] T035 [P] [US2] Implement build context extraction in src/collector/context.ts
+- [x] T036 [P] [US2] Implement command execution with timeout using Bun.spawn() in src/collector/runner.ts
+- [x] T037 [US2] Implement metric value parser (numeric/label) in src/collector/collector.ts
+- [x] T038 [US2] Implement main collection orchestration with retry logic in src/collector/collector.ts
+- [x] T039 [US2] Implement error handling for partial metric failures in src/collector/collector.ts
 
-**Checkpoint**: Metrics are collected and stored in SQLite database with build metadata
+**Checkpoint**: Metrics are collected and stored in SQLite storage with build metadata
 
 ---
 
@@ -129,49 +154,49 @@
 
 **Independent Test**: Generate an HTML report from stored metric data, verify charts and trends display correctly in a browser, report works offline
 
-**Status**: Core implementation and ALL TESTS complete ✅ (T036-T048f). Remaining: Visual acceptance testing (T048g-T048n).
+**Independent Test**: Generate an HTML report from stored metric data, verify charts and trends display correctly in a browser, report works offline
 
 ### Tests for User Story 3
 
-- [x] T036 [P] [US3] Write unit test for time-series data query in tests/unit/reporter/generator.test.ts
-- [x] T037 [P] [US3] Write unit test for Chart.js config builder (numeric) in tests/unit/reporter/charts.test.ts
-- [x] T038 [P] [US3] Write unit test for Chart.js config builder (label) in tests/unit/reporter/charts.test.ts
-- [x] T039 [P] [US3] Write unit test for HTML template rendering in tests/unit/reporter/templates.test.ts
-- [x] T040 [P] [US3] Write unit test for self-contained output validation in tests/unit/reporter/templates.test.ts
-- [x] T041 [P] [US3] Write unit test for empty data handling in tests/unit/reporter/generator.test.ts
-- [x] T042 [P] [US3] Write unit test for sparse data handling in tests/unit/reporter/generator.test.ts
-- [x] T043 [US3] Write integration test for report generation workflow in tests/integration/reporting.test.ts
-- [x] T043a [US3] Write unit test for XSS sanitization in metric names/descriptions in tests/unit/reporter/templates.test.ts
-- [x] T043b [US3] Write unit test for summary statistics calculation (min/max/avg/trend) in tests/unit/reporter/generator.test.ts
-- [x] T043c [US3] Write unit test for responsive breakpoint data attributes in tests/unit/reporter/templates.test.ts
+- [x] T040 [P] [US3] Write unit test for time-series data query in tests/unit/reporter/generator.test.ts
+- [x] T041 [P] [US3] Write unit test for Chart.js config builder (numeric) in tests/unit/reporter/charts.test.ts
+- [x] T042 [P] [US3] Write unit test for Chart.js config builder (label) in tests/unit/reporter/charts.test.ts
+- [x] T043 [P] [US3] Write unit test for HTML template rendering in tests/unit/reporter/templates.test.ts
+- [x] T044 [P] [US3] Write unit test for self-contained output validation in tests/unit/reporter/templates.test.ts
+- [x] T045 [P] [US3] Write unit test for empty data handling in tests/unit/reporter/generator.test.ts
+- [x] T046 [P] [US3] Write unit test for sparse data handling in tests/unit/reporter/generator.test.ts
+- [x] T047 [US3] Write integration test for report generation workflow in tests/integration/reporting.test.ts
+- [x] T048 [US3] Write unit test for XSS sanitization in metric names/descriptions in tests/unit/reporter/templates.test.ts
+- [x] T049 [US3] Write unit test for summary statistics calculation (min/max/avg/trend) in tests/unit/reporter/generator.test.ts
+- [x] T050 [US3] Write unit test for responsive breakpoint data attributes in tests/unit/reporter/templates.test.ts
 
 ### Implementation for User Story 3
 
-- [x] T044 [P] [US3] Implement time-series query functions in src/database/queries.ts
-- [x] T044a [US3] Implement getAllBuildContexts query in src/database/queries.ts (added for report metadata)
-- [x] T045 [P] [US3] Implement Chart.js configuration builder in src/reporter/charts.ts
-- [x] T046 [US3] Implement HTML template with Tailwind CSS and embedded Chart.js in src/reporter/templates.ts
-- [x] T047 [US3] Implement report generator orchestration in src/reporter/generator.ts
-- [x] T048 [US3] Add error handling for missing/invalid data in src/reporter/generator.ts
-- [x] T048a [US3] Implement XSS sanitization for user-provided content in src/reporter/templates.ts
-- [x] T048b [US3] Implement summary statistics calculator (min/max/avg/trend) in src/reporter/generator.ts
-- [x] T048c [US3] Add responsive layout with Tailwind classes (mobile/tablet/desktop) in src/reporter/templates.ts
-- [x] T048d [US3] Add dark mode support using Tailwind dark: variants in src/reporter/templates.ts
-- [x] T048e [US3] Add print stylesheet for PDF export in src/reporter/templates.ts
-- [x] T048f [US3] Add accessibility features (ARIA labels, semantic HTML) in src/reporter/templates.ts
+- [x] T051 [P] [US3] Implement time-series query functions in src/storage/queries.ts
+- [x] T052 [US3] Implement getAllBuildContexts query in src/storage/queries.ts (for report metadata)
+- [x] T053 [P] [US3] Implement Chart.js configuration builder in src/reporter/charts.ts
+- [x] T054 [US3] Implement HTML template with Tailwind CSS and embedded Chart.js in src/reporter/templates.ts
+- [x] T055 [US3] Implement report generator orchestration in src/reporter/generator.ts
+- [x] T056 [US3] Add error handling for missing/invalid data in src/reporter/generator.ts
+- [x] T057 [US3] Implement XSS sanitization for user-provided content in src/reporter/templates.ts
+- [x] T058 [US3] Implement summary statistics calculator (min/max/avg/trend) in src/reporter/generator.ts
+- [x] T059 [US3] Add responsive layout with Tailwind classes (mobile/tablet/desktop) in src/reporter/templates.ts
+- [x] T060 [US3] Add dark mode support using Tailwind dark: variants in src/reporter/templates.ts
+- [x] T061 [US3] Add print stylesheet for PDF export in src/reporter/templates.ts
+- [x] T062 [US3] Add accessibility features (ARIA labels, semantic HTML) in src/reporter/templates.ts
 
 ### Visual Acceptance Testing for User Story 3
 
 **Purpose**: Manual quality assurance for HTML template design, usability, and accessibility
 
-- [x] T048g [US3] Create test fixture: minimal data (unentropy.json + 5 data points) in tests/fixtures/visual-review/minimal/
-- [x] T048h [US3] Create test fixture: full-featured (4 metrics + 100 data points) in tests/fixtures/visual-review/full-featured/
-- [x] T048i [US3] Create test fixture: sparse data (2 metrics + 3 data points) in tests/fixtures/visual-review/sparse-data/
-- [x] T048j [US3] Create test fixture: edge cases (special chars, extreme values) in tests/fixtures/visual-review/edge-cases/
-- [x] T048k [US3] Implement fixture generation script (generate-fixture command) in scripts/generate-fixture.ts
-- [x] T048l [US3] Generate HTML reports from all 4 test fixtures
-- [x] T048m [US3] Manual visual review: Complete all checklist items from contracts/visual-acceptance-criteria.md
-- [x] T048n [US3] Document review findings and capture screenshots for documentation
+- [x] T063 [US3] Create test fixture: minimal data (unentropy.json + 5 data points) in tests/fixtures/visual-review/minimal/
+- [x] T064 [US3] Create test fixture: full-featured (4 metrics + 100 data points) in tests/fixtures/visual-review/full-featured/
+- [x] T065 [US3] Create test fixture: sparse data (2 metrics + 3 data points) in tests/fixtures/visual-review/sparse-data/
+- [x] T066 [US3] Create test fixture: edge cases (special chars, extreme values) in tests/fixtures/visual-review/edge-cases/
+- [x] T067 [US3] Implement fixture generation script (generate-fixture command) in scripts/generate-fixture.ts
+- [x] T068 [US3] Generate HTML reports from all 4 test fixtures
+- [x] T069 [US3] Manual visual review: Complete all checklist items from contracts/visual-acceptance-criteria.md
+- [x] T070 [US3] Document review findings and capture screenshots for documentation
 
 **Checkpoint**: HTML reports can be generated from collected data and viewed in browser
 
@@ -190,7 +215,7 @@
 **How User Story 4 Will Be Tested**:
 1. **Configuration Validation**: The existing configuration validation tests (T012-T017) will validate the self-monitoring unentropy.json when CI runs
 2. **Metric Collection**: CI workflow will execute the actual collection commands and verify they return valid numeric values
-3. **Database Storage**: Existing database tests (T009-T011) ensure data persistence works correctly
+3. **Storage Persistence**: Existing storage tests (T009-T011) ensure data persistence works correctly
 4. **Report Generation**: Existing report tests (T036-T048) validate HTML generation from the collected data
 5. **End-to-End Validation**: Each CI run will demonstrate the complete workflow working with real project data
 6. **Visual Verification**: Generated reports will be available as CI artifacts for manual review
@@ -204,18 +229,18 @@
 
 ### Implementation for User Story 4
 
-- [x] T075 [P] [US4] Create unentropy.json configuration in repository root with test coverage and LoC metrics
-- [x] T076 [US4] Implement test coverage collection command in unentropy.json
-- [x] T077 [US4] Implement lines of code collection command in unentropy.json
-- [x] T078 [US4] Update .github/workflows/ci.yml to include metric collection step
-- [x] T079 [US4] Add database artifact persistence to CI workflow
-- [x] T080 [US4] Add report generation step to CI workflow
-- [x] T081 [US4] Configure report artifact upload or PR comment integration
-- [x] T082 [US4] Add workflow triggers for self-monitoring (on push, pull_request)
-- [x] T083 [US4] Add documentation for self-monitoring setup in README.md
-- [x] T084 [US4] Validate self-monitoring configuration works with existing test suite
-- [x] T085 [US4] Test report generation with actual project data
-- [x] T086 [US4] Ensure self-monitoring demonstrates Unentropy capabilities effectively
+- [x] T071 [P] [US4] Create unentropy.json configuration in repository root with test coverage and LoC metrics
+- [x] T072 [US4] Implement test coverage collection command in unentropy.json
+- [x] T073 [US4] Implement lines of code collection command in unentropy.json
+- [x] T074 [US4] Create .github/workflows/metrics.yml to include metric collection step
+- [x] T075 [US4] Add storage artifact persistence to CI workflow
+- [x] T076 [US4] Add report generation step to CI workflow
+- [x] T077 [US4] Configure report artifact upload or PR comment integration
+- [x] T078 [US4] Add workflow triggers for self-monitoring (on push, pull_request)
+- [x] T079 [US4] Add documentation for self-monitoring setup in README.md
+- [x] T080 [US4] Validate self-monitoring configuration works with existing test suite
+- [x] T081 [US4] Test report generation with actual project data
+- [x] T082 [US4] Ensure self-monitoring demonstrates Unentropy capabilities effectively
 
 **Checkpoint**: Self-monitoring implementation complete and serving as live example
 
@@ -229,27 +254,27 @@
 
 ### Tests for GitHub Actions
 
-- [x] T049 [P] Write contract test for collect-metrics action inputs in tests/contract/collect-action.test.ts
-- [x] T050 [P] Write contract test for collect-metrics action outputs in tests/contract/collect-action.test.ts
-- [x] T051 [P] Write contract test for generate-report action inputs in tests/contract/report-action.test.ts
-- [x] T052 [P] Write contract test for generate-report action outputs in tests/contract/report-action.test.ts
-- [x] T053 [P] Write integration test for artifact upload/download in tests/integration/artifacts.test.ts
+- [x] T083 [P] Write contract test for collect-metrics action inputs in tests/contract/collect-action.test.ts
+- [x] T084 [P] Write contract test for collect-metrics action outputs in tests/contract/collect-action.test.ts
+- [x] T085 [P] Write contract test for generate-report action inputs in tests/contract/report-action.test.ts
+- [x] T086 [P] Write contract test for generate-report action outputs in tests/contract/report-action.test.ts
+- [ ] T087 [P] Write integration test for artifact upload/download in tests/integration/artifacts.test.ts
 
 ### GitHub Action: collect-metrics
 
-- [x] T054 Create action metadata file .github/actions/collect-metrics/action.yml
-- [x] T055 Implement action entrypoint with metric collection in src/actions/collect.ts
-- [x] T056 Add input validation and error handling in src/actions/collect.ts
-- [x] T057 Add output setting (metrics-collected, metrics-failed, database-path, build-id) in src/actions/collect.ts
-- [x] T058 Create build script for action distribution in package.json
+- [x] T088 Create action metadata file .github/actions/collect-metrics/action.yml
+- [x] T089 Implement action entrypoint with metric collection in src/actions/collect.ts
+- [x] T090 Add input validation and error handling in src/actions/collect.ts
+- [x] T091 Add output setting (metrics-collected, metrics-failed, storage-path, build-id) in src/actions/collect.ts
+- [x] T092 Create build script for action distribution in package.json
 
 ### GitHub Action: generate-report
 
-- [x] T059 Create action metadata file .github/actions/generate-report/action.yml
-- [x] T060 Implement action entrypoint with report generation in src/actions/report.ts
-- [x] T061 Add time-range filtering logic in src/actions/report.ts
-- [x] T062 Add output setting (report-path, metrics-count, data-points, time-range-start, time-range-end) in src/actions/report.ts
-- [x] T063 Create build script for action distribution in package.json
+- [x] T093 Create action metadata file .github/actions/generate-report/action.yml
+- [x] T094 Implement action entrypoint with report generation in src/actions/report.ts
+- [x] T095 Add time-range filtering logic in src/actions/report.ts
+- [x] T096 Add output setting (report-path, metrics-count, data-points, time-range-start, time-range-end) in src/actions/report.ts
+- [x] T097 Create build script for action distribution in package.json
 
 **Checkpoint**: Both GitHub Actions are functional (collect-metrics, generate-report).
 
@@ -259,18 +284,18 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [x] T064 [P] Add comprehensive logging throughout all modules
-- [x] T065 [P] Optimize database queries with proper indexes
-- [x] T066 [P] Add database VACUUM operation for maintenance
-- [x] T067 [P] Add SRI hashes to CDN resources in HTML template
-- [x] T068 [P] Create example unentropy.json configurations
-- [x] T069 [P] Create example GitHub Actions workflows
-- [x] T070 Update main exports in src/index.ts
-- [x] T071 Run bun run lint and fix any issues
-- [x] T072 Run bun run typecheck and fix any issues
-- [x] T073 Run bun test and ensure all tests pass
-- [x] T074 Run bun run build and verify output
-- [x] T075 Validate against quickstart.md acceptance criteria
+- [ ] T098 [P] Add comprehensive logging throughout all modules
+- [x] T099 [P] Optimize storage queries with proper indexes
+- [ ] T100 [P] Add storage VACUUM operation for maintenance
+- [ ] T101 [P] Add SRI hashes to CDN resources in HTML template
+- [ ] T102 [P] Create example unentropy.json configurations
+- [ ] T103 [P] Create example GitHub Actions workflows
+- [x] T104 Update main exports in src/index.ts
+- [x] T105 Run bun run lint and fix any issues
+- [x] T106 Run bun run typecheck and fix any issues
+- [x] T107 Run bun test and ensure all tests pass
+- [x] T108 Run bun run build and verify output
+- [ ] T109 Validate against quickstart.md acceptance criteria
 
 ---
 
@@ -280,6 +305,9 @@
 
 - **Setup (Phase 1)**: No dependencies - can start immediately
 - **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
+  - **Critical**: Storage Provider Pattern must be implemented correctly
+  - Uses bun:sqlite Database API directly (no adapter wrapper)
+  - Provider abstracts storage location, not database operations
 - **User Stories (Phase 3-5)**: All depend on Foundational phase completion
   - User stories can then proceed in parallel (if staffed)
   - Or sequentially in priority order (P1 → P2 → P3)
@@ -382,54 +410,57 @@ With multiple developers:
 
 ## Task Summary
 
-- **Total Tasks**: 100
-- **Phase 1 (Setup)**: 4 tasks (4 completed)
-- **Phase 2 (Foundational)**: 7 tasks (7 completed) (BLOCKING)
-- **Phase 2.5 (Database Adapter)**: 8 tasks (8 completed) (not critical, but required for future extensibility)
-- **Phase 3 (User Story 1)**: 10 tasks (10 completed) (6 tests + 4 implementation)
-- **Phase 4 (User Story 2)**: 14 tasks (14 completed) (9 tests + 5 implementation)
-- **Phase 5 (User Story 3)**: 26 tasks (26 completed) (13 tests + 13 implementation including visual acceptance)
-- **Phase 6 (User Story 4)**: 12 tasks (12 completed) (0 tests + 12 implementation) - Tested via CI/CD execution
-- **Phase 7 (GitHub Actions)**: 20 tasks (20 completed) - All three actions complete with clean separation of concerns
+- **Total Tasks**: 109
+- **Phase 1 (Setup)**: 4 tasks
+- **Phase 2 (Foundational - Storage Provider Pattern)**: 16 tasks (11 implementation + 5 tests) **← BLOCKING**
+- **Phase 3 (User Story 1)**: 10 tasks (6 tests + 4 implementation)
+- **Phase 4 (User Story 2)**: 13 tasks (8 tests + 5 implementation)
+- **Phase 5 (User Story 3)**: 31 tasks (11 tests + 12 implementation + 8 visual acceptance)
+- **Phase 6 (User Story 4)**: 12 tasks (0 tests + 12 implementation) - Tested via CI/CD execution
+- **Phase 7 (GitHub Actions)**: 15 tasks (5 tests + 10 implementation)
+- **Phase 8 (Polish)**: 12 tasks
 
-### Current Status: 100/100 tasks completed (100%) ✅
+### Current Status: 89/109 tasks completed (82%)
 
-### Parallel Opportunities Identified
+### Storage Provider Pattern (Phase 2)
 
-- **15 parallel opportunities** in tests across all user stories (all completed)
-- **10 parallel opportunities** in implementation across different modules (all completed)
-- **6 parallel opportunities** in polish phase (all completed)
+**Key Changes from Previous Approach**:
+- ✓ No DatabaseAdapter wrapper - use bun:sqlite Database API directly
+- ✓ StorageProvider abstracts storage LOCATION (local/artifact/s3), not database operations
+- ✓ Type naming: 'sqlite-local', 'sqlite-artifact', 'sqlite-s3', 'postgres'
+- ✓ PRAGMA configuration via db.run("PRAGMA ..."), not separate method
+- ✓ Simple MVP (SqliteLocalStorageProvider only), extensible for future
 
-### Remaining Work: NONE ✅
+### Parallel Opportunities
 
-**Phase 7 - GitHub Actions (COMPLETED)**:
-- ✅ Refactor collect-metrics action to remove embedded database finding logic
-- ✅ Refactor generate-report action to remove embedded database finding logic
-- ✅ Update workflow examples to use three-action pattern
-- ✅ Update documentation with three-action architecture examples
+- **16 parallel opportunities** in tests across all user stories
+- **12 parallel opportunities** in implementation across different modules  
+- **6 parallel opportunities** in polish phase
 
 ### MVP Scope (Recommended)
 
 **Minimum Viable Product** = Phase 1 + Phase 2 + Phase 3 (User Story 1 only)
 
 This delivers:
-- ✅ Configuration file support
-- ✅ Metric definition and validation
-- ✅ Clear error messages
-- ✅ Foundation for metrics system
-- ❌ Collection (Phase 4)
-- ❌ Reporting (Phase 5)
-- ❌ GitHub Actions (Phase 6)
+- ✓ Storage Provider Pattern foundation (sqlite-local)
+- ✓ Configuration file support
+- ✓ Metric definition and validation
+- ✓ Clear error messages
+- ✓ Foundation for metrics system
+- ✗ Collection (Phase 4)
+- ✗ Reporting (Phase 5)
+- ✗ GitHub Actions (Phase 7)
 
 **Realistic MVP** = Phase 1 + Phase 2 + Phase 3 + Phase 4 + Phase 5 + Phase 6 + Phase 7
 
 This delivers complete end-to-end functionality:
-- ✅ Configuration system
-- ✅ Metric collection in CI/CD
-- ✅ HTML report generation
-- ✅ Self-monitoring demonstration
-- ✅ GitHub Actions integration
-- ✅ All user stories functional
+- ✓ Storage Provider Pattern (extensible for future: artifact, s3, postgres)
+- ✓ Configuration system
+- ✓ Metric collection in CI/CD
+- ✓ HTML report generation
+- ✓ Self-monitoring demonstration
+- ✓ GitHub Actions integration
+- ✓ All user stories functional
 
 ---
 
@@ -442,29 +473,32 @@ This delivers complete end-to-end functionality:
 - Run lint/typecheck frequently during development
 - Commit after each logical group of tasks
 - Stop at any checkpoint to validate story independently
-- Database schema is foundational and blocks all stories
+- Storage Provider Pattern is foundational and blocks all stories
 - User stories have sequential dependencies in this feature
 - User Story 4 (self-monitoring) serves as both demonstration and genuine project monitoring
 
-## Three-Action Architecture Update
+## Storage Provider Pattern - Key Principles
 
-**Planned 3-action design (COMPLETED)**:
-- **find-database**: ✅ **IMPLEMENTED** - Handles GitHub API calls to locate and download latest database artifact
-- **collect-metrics**: ✅ **IMPLEMENTED** - Clean implementation with no embedded database finding logic
-- **generate-report**: ✅ **IMPLEMENTED** - Clean implementation with no embedded database finding logic
+**Design Philosophy**:
+- Provider abstracts WHERE database is stored (location/access method)
+- Client abstracts WHAT to do with database (business operations)
+- Use bun:sqlite Database API directly - no wrapper needed
+- Type naming convention: `<database-engine>-<storage-location>`
 
-**Current State**: ✅ **Three-action architecture with separated concerns**
-**Target State**: ✅ **ACHIEVED**
+**MVP Implementation**:
+- Type: 'sqlite-local' - SQLite on local file system
+- Opens database file directly using `new Database(path, options)`
+- PRAGMA configuration via `db.run("PRAGMA ...")`
+- No persist() operation needed (writes immediate to disk)
 
-**Benefits of three-action design**:
-- ✅ Separation of concerns (each action has single responsibility)
-- ✅ Better error handling and debugging
-- ✅ Reusable database finding logic
-- ✅ Cleaner workflow definitions
-- ✅ Independent testing and versioning of each action
+**Future Extensibility**:
+- 'sqlite-artifact' - SQLite in GitHub Artifacts (download/upload)
+- 'sqlite-s3' - SQLite in S3 storage (download/upload)
+- 'postgres' - PostgreSQL remote database (different connection model)
 
-**Migration Path**: ✅ **COMPLETED**
-1. ✅ Implement find-database action
-2. ✅ Refactor collect-metrics to remove database finding logic
-3. ✅ Refactor generate-report to remove database finding logic
-4. ✅ Update workflow examples to use three-action pattern
+**Benefits**:
+- Simple MVP (just opens a file)
+- Clear separation of concerns
+- Easy to test (mock providers)
+- Extensible without changing existing code
+

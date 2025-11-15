@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import { parseMetricValue, collectMetrics } from "../../../src/collector/collector";
 import type { MetricConfig } from "../../../src/config/schema";
-import { DatabaseClient } from "../../../src/database/client";
+import { Storage } from "../../../src/storage/storage";
 import { unlink } from "node:fs/promises";
 import { existsSync } from "node:fs";
 
@@ -13,7 +13,9 @@ beforeAll(async () => {
     await unlink(TEST_DB_PATH);
   }
 
-  const db = new DatabaseClient({ path: TEST_DB_PATH });
+  const db = new Storage({
+    provider: { type: "sqlite-local", path: TEST_DB_PATH },
+  });
   await db.initialize();
   testBuildId = db.insertBuildContext({
     commit_sha: "test123test123test123test123test123test",
@@ -22,7 +24,7 @@ beforeAll(async () => {
     run_number: 1,
     timestamp: new Date().toISOString(),
   });
-  db.close();
+  await db.close();
 });
 
 afterAll(async () => {

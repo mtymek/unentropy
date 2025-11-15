@@ -83,9 +83,10 @@ specs/003-mvp-metrics-tracking/
  ├── data-model.md        # Phase 1 output (/speckit.plan command)
  ├── quickstart.md        # Phase 1 output (/speckit.plan command)
  ├── contracts/           # Phase 1 output (/speckit.plan command)
- │   ├── config-schema.md       # unentropy.json schema
- │   ├── database-schema.md     # SQLite table definitions
- │   └── action-interface.md    # GitHub Action inputs/outputs
+ │   ├── config-schema.md              # unentropy.json schema
+ │   ├── database-schema.md            # SQLite table definitions
+ │   ├── storage-provider-interface.md # Storage provider contract (extensibility)
+ │   └── action-interface.md           # GitHub Action inputs/outputs
  └── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
 ```
 
@@ -97,12 +98,12 @@ specs/003-mvp-metrics-tracking/
  │   ├── schema.ts           # Zod schema for unentropy.json
  │   ├── loader.ts           # Config file reading and validation
  │   └── types.ts            # TypeScript types for configuration
- ├── database/
- │   ├── adapters/
- │   │   ├── interface.ts    # Database adapter interface (for future extensibility)
- │   │   ├── bun-sqlite.ts   # Bun adapter (bun:sqlite)
- │   │   └── factory.ts      # Adapter factory
- │   ├── client.ts           # SQLite connection management (uses adapter)
+ ├── storage/
+ │   ├── providers/
+ │   │   ├── interface.ts    # StorageProvider interface + config types
+ │   │   ├── factory.ts      # createStorageProvider() factory function
+ │   │   └── sqlite-local.ts # SqliteLocalStorageProvider (MVP)
+ │   ├── storage.ts          # Storage (uses StorageProvider)
  │   ├── migrations.ts       # Schema initialization
  │   ├── queries.ts          # Data access functions
  │   └── types.ts            # Database entity types
@@ -122,7 +123,7 @@ specs/003-mvp-metrics-tracking/
 tests/
  ├── unit/
  │   ├── config/             # Configuration validation tests
- │   ├── database/           # Database operations tests
+ │   ├── storage/            # Storage provider and database tests
  │   ├── collector/          # Collection logic tests
  │   └── reporter/           # Report generation tests
  ├── integration/
@@ -145,7 +146,9 @@ tests/
 unentropy.json               # Self-monitoring configuration (test coverage + LoC)
 ```
 
-**Structure Decision**: Using single project structure as this is a CLI tool/library with GitHub Action wrappers. All components are TypeScript/Bun. Clear separation of concerns: config parsing, database operations, collection logic, and reporting are independent modules that can be tested separately. Two-action architecture provides atomic operations: metric collection and report generation.
+**Structure Decision**: Using single project structure as this is a CLI tool/library with GitHub Action wrappers. All components are TypeScript/Bun. Clear separation of concerns: config parsing, storage abstraction (providers pattern for future extensibility), database operations, collection logic, and reporting are independent modules that can be tested separately. Two-action architecture provides atomic operations: metric collection and report generation.
+
+**Storage Architecture**: The `storage/` directory implements a Provider Pattern to abstract where SQLite database files are stored. For MVP, only `SqliteLocalStorageProvider` is implemented (local file system). The pattern enables future extensions for GitHub Artifacts (`sqlite-artifact`), S3 (`sqlite-s3`), or even PostgreSQL (`postgres`) without changing database operations code. Provider type format: `<database-engine>-<storage-location>`. See `contracts/storage-provider-interface.md` for detailed interface contract.
 
 ## User Story 4 Implementation: Self-Monitoring
 

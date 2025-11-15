@@ -1,4 +1,4 @@
-import type { DatabaseClient } from "../database/client";
+import type { Storage } from "../storage/storage";
 import { buildChartConfig } from "./charts";
 import render from "preact-render-to-string";
 import { h } from "preact";
@@ -13,7 +13,7 @@ import type {
   GenerateReportOptions,
 } from "./types";
 
-export function getMetricTimeSeries(db: DatabaseClient, metricName: string): TimeSeriesData {
+export function getMetricTimeSeries(db: Storage, metricName: string): TimeSeriesData {
   const metricDef = db.getMetricDefinition(metricName);
   if (!metricDef) {
     throw new Error(`Metric '${metricName}' not found`);
@@ -111,7 +111,7 @@ export function calculateSummaryStats(data: TimeSeriesData): SummaryStats {
   };
 }
 
-function getReportMetadata(db: DatabaseClient, repository: string): ReportMetadata {
+function getReportMetadata(db: Storage, repository: string): ReportMetadata {
   const allBuilds = db.getAllBuildContexts();
 
   if (allBuilds.length === 0) {
@@ -155,7 +155,7 @@ function getReportMetadata(db: DatabaseClient, repository: string): ReportMetada
   };
 }
 
-export function generateReport(db: DatabaseClient, options: GenerateReportOptions = {}): string {
+export function generateReport(db: Storage, options: GenerateReportOptions = {}): string {
   const repository = options.repository || "unknown/repository";
 
   const allMetrics = db.getAllMetricDefinitions();

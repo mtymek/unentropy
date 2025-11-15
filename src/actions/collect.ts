@@ -2,7 +2,7 @@ import * as core from "@actions/core";
 import { promises as fs } from "fs";
 import { dirname } from "path";
 import { loadConfig } from "../config/loader";
-import { DatabaseClient } from "../database/client";
+import { Storage } from "../storage/storage";
 import { extractBuildContext } from "../collector/context";
 
 interface ActionInputs {
@@ -59,7 +59,12 @@ export async function run(): Promise<void> {
   core.info(`Configuration loaded successfully with ${config.metrics.length} metrics`);
 
   // Initialize database and get build context
-  const db = new DatabaseClient({ path: inputs.databasePath });
+  const db = new Storage({
+    provider: {
+      type: "sqlite-local",
+      path: inputs.databasePath,
+    },
+  });
   await db.ready();
   core.info("Database initialized successfully");
 
@@ -88,7 +93,7 @@ export async function run(): Promise<void> {
     `Metrics collection completed: ${collectionResult.successful} collected, ${collectionResult.failed} failed`
   );
 
-  db.close();
+  await db.close();
 
   // Set outputs
   const outputs: ActionOutputs = {
