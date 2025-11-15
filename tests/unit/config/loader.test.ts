@@ -29,10 +29,6 @@ describe("Config Loader", () => {
     expect(metric?.description).toBe("Percentage of code covered by tests");
     expect(metric?.unit).toBe("%");
     expect(metric?.command).toBe("npm run test:coverage -- --json | jq -r '.total.lines.pct'");
-
-    expect(config.database).toBeDefined();
-    expect(config.database?.path).toBe(".metrics/unentropy.db");
-    expect(config.database?.artifactName).toBe("my-project-metrics");
   });
 
   it("should parse config with label type metric", async () => {
@@ -54,12 +50,5 @@ describe("Config Loader", () => {
     const configPath = path.join(fixturesDir, "invalid-json.json");
 
     await expect(loadConfig(configPath)).rejects.toThrow(SyntaxError);
-  });
-
-  it("should use default database config when not provided", async () => {
-    const configPath = path.join(fixturesDir, "valid-minimal.json");
-    const config = await loadConfig(configPath);
-
-    expect(config.database).toBeUndefined();
   });
 });

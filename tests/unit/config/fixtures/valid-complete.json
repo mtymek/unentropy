@@ -20,9 +20,5 @@
       "description": "Overall build health status",
       "command": "npm run build && echo 'healthy' || echo 'failing'"
     }
-  ],
-  "database": {
-    "path": ".metrics/unentropy.db",
-    "artifactName": "my-project-metrics"
-  }
+  ]
 }

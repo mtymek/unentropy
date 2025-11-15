@@ -19,32 +19,16 @@ export const MetricConfigSchema = z
   })
   .strict();
 
-export const DatabaseConfigSchema = z
-  .object({
-    path: z.string().optional(),
-    artifactName: z
-      .string()
-      .regex(/^[a-zA-Z0-9_-]+$/, {
-        message:
-          "artifactName must contain only alphanumeric characters, hyphens, and underscores (pattern: ^[a-zA-Z0-9_-]+$)",
-      })
-      .optional(),
-  })
-  .strict()
-  .optional();
-
 export const UnentropyConfigSchema = z
   .object({
     metrics: z
       .array(MetricConfigSchema)
       .min(1, { message: "metrics array must contain at least one metric" })
       .max(50),
-    database: DatabaseConfigSchema,
   })
   .strict();
 
 export type MetricConfig = z.infer<typeof MetricConfigSchema>;
-export type DatabaseConfig = z.infer<typeof DatabaseConfigSchema>;
 export type UnentropyConfig = z.infer<typeof UnentropyConfigSchema>;
 
 export function validateConfig(config: unknown): UnentropyConfig {

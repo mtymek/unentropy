@@ -1,7 +1,4 @@
 {
-  "database": {
-    "path": "tests/fixtures/visual-review/sparse-data/sparse-data.db"
-  },
   "metrics": [
     {
       "name": "test-coverage",
