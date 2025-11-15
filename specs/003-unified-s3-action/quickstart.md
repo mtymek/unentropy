@@ -9,6 +9,18 @@
 - GitHub Actions enabled for your repository
 - (Optional) S3-compatible storage account for persistent storage
 
+## Storage Backends Overview
+
+Unentropy supports three storage backends via the `storage.type` field in `unentropy.json` and the `storage-type` action input:
+
+- `sqlite-local` (default): local SQLite file, ideal for simple or local setups
+- `sqlite-artifact`: database persisted as a GitHub Artifact (limited unified workflow)
+- `sqlite-s3`: database stored in S3-compatible storage, enabling the full unified track-metrics workflow
+
+In the steps below:
+- Step 1 uses `storage-type: 'sqlite-artifact'` in the workflow while configuration defaults to `sqlite-local` when `storage` is omitted.
+- Step 2 and later show how to enable the unified S3-backed workflow with `sqlite-s3`.
+
 ## Step 1: Basic Setup (GitHub Artifacts)
 
 ### 1.1 Create unentropy.json
@@ -17,13 +29,13 @@
 {
   "metrics": [
     {
-      "name": "test_coverage",
-      "type": "percentage",
+      "name": "test-coverage",
+      "type": "numeric",
       "description": "Test coverage percentage",
       "command": "bun test --coverage | grep 'Lines' | awk '{print $2}' | sed 's/%//'"
     },
     {
-      "name": "lines_of_code",
+      "name": "lines-of-code",
       "type": "numeric", 
       "description": "Total lines of code",
       "command": "find src/ -name '*.ts' | xargs wc -l | tail -1 | awk '{print $1}'"
@@ -62,7 +74,7 @@ jobs:
       - name: Collect Metrics
         uses: ./actions/track-metrics
         with:
-          storage-type: 'artifact'
+          storage-type: 'sqlite-artifact'
 ```
 
 ### 1.3 Commit and Push
@@ -106,6 +118,8 @@ Add the following to your repository's **Settings > Secrets and variables > Acti
 | `S3_ACCESS_KEY_ID` | Your access key ID |
 | `S3_SECRET_ACCESS_KEY` | Your secret access key |
 
+> Security note: S3 credentials (access key ID, secret access key, etc.) must always be provided via GitHub Secrets and passed as action inputs. They should never be stored in `unentropy.json` or committed to the repository.
+
 ### 2.3 Update Configuration
 
 Option 1: Update unentropy.json to specify S3 storage:
@@ -113,7 +127,7 @@ Option 1: Update unentropy.json to specify S3 storage:
 ```json
 {
   "storage": {
-    "type": "s3",
+    "type": "sqlite-s3",
     "s3": {
       "endpoint": "https://s3.amazonaws.com",
       "bucket": "my-unentropy-metrics",
@@ -122,8 +136,8 @@ Option 1: Update unentropy.json to specify S3 storage:
   },
   "metrics": [
     {
-      "name": "test_coverage",
-      "type": "percentage",
+      "name": "test-coverage",
+      "type": "numeric",
       "description": "Test coverage percentage",
       "command": "bun test --coverage | grep 'Lines' | awk '{print $2}' | sed 's/%//'"
     }
@@ -137,7 +151,7 @@ Option 2: Keep unentropy.json unchanged and specify storage type in workflow:
 - name: Collect Metrics
   uses: ./actions/track-metrics
   with:
-    storage-type: 's3'
+    storage-type: 'sqlite-s3'
     s3-endpoint: ${{ secrets.S3_ENDPOINT }}
     s3-bucket: ${{ secrets.S3_BUCKET }}
     s3-region: ${{ secrets.S3_REGION }}
@@ -173,7 +187,7 @@ jobs:
       - name: Collect Metrics
         uses: ./actions/track-metrics
         with:
-          storage-type: 's3'
+          storage-type: 'sqlite-s3'
           s3-endpoint: ${{ secrets.S3_ENDPOINT }}
           s3-bucket: ${{ secrets.S3_BUCKET }}
           s3-region: ${{ secrets.S3_REGION }}
@@ -191,7 +205,7 @@ Use different storage backends based on branch:
 - name: Collect Metrics
   uses: ./actions/track-metrics
   with:
-    storage-type: ${{ github.ref == 'refs/heads/main' && 's3' || 'artifact' }}
+    storage-type: ${{ github.ref == 'refs/heads/main' && 'sqlite-s3' || 'sqlite-artifact' }}
     s3-endpoint: ${{ secrets.S3_ENDPOINT }}
     s3-bucket: ${{ secrets.S3_BUCKET }}
     s3-region: ${{ secrets.S3_REGION }}
@@ -205,7 +219,7 @@ Use different storage backends based on branch:
 - name: Collect Metrics
   uses: ./actions/track-metrics
   with:
-    storage-type: 's3'
+    storage-type: 'sqlite-s3'
     s3-endpoint: ${{ secrets.S3_ENDPOINT }}
     s3-bucket: ${{ secrets.S3_BUCKET }}
     s3-region: ${{ secrets.S3_REGION }}
@@ -221,7 +235,7 @@ Use different storage backends based on branch:
   uses: ./actions/track-metrics
   id: metrics
   with:
-    storage-type: 's3'
+    storage-type: 'sqlite-s3'
     s3-endpoint: ${{ secrets.S3_ENDPOINT }}
     s3-bucket: ${{ secrets.S3_BUCKET }}
     s3-region: ${{ secrets.S3_REGION }}
@@ -279,7 +293,7 @@ aws iam put-user-policy --user-name unentropy-metrics --policy-name UnentropyMet
 - name: Collect Metrics
   uses: ./actions/track-metrics
   with:
-    storage-type: 's3'
+    storage-type: 'sqlite-s3'
     s3-endpoint: 'https://minio.example.com'
     s3-bucket: 'unentropy-metrics'
     s3-region: 'us-east-1'
@@ -294,7 +308,7 @@ aws iam put-user-policy --user-name unentropy-metrics --policy-name UnentropyMet
 - name: Collect Metrics
   uses: ./actions/track-metrics
   with:
-    storage-type: 's3'
+    storage-type: 'sqlite-s3'
     s3-endpoint: 'https://nyc3.digitaloceanspaces.com'
     s3-bucket: 'my-unentropy-metrics'
     s3-region: 'nyc3'
@@ -309,7 +323,7 @@ aws iam put-user-policy --user-name unentropy-metrics --policy-name UnentropyMet
 - name: Collect Metrics
   uses: ./actions/track-metrics
   with:
-    storage-type: 's3'
+    storage-type: 'sqlite-s3'
     s3-endpoint: 'https://your-account-id.r2.cloudflarestorage.com'
     s3-bucket: 'unentropy-metrics'
     s3-region: 'auto'
@@ -322,7 +336,7 @@ aws iam put-user-policy --user-name unentropy-metrics --policy-name UnentropyMet
 ### 5.1 Common Issues
 
 **Issue**: "Invalid storage-type"  
-**Solution**: Ensure storage-type is either 'artifact' or 's3'
+**Solution**: Ensure storage-type is 'sqlite-local', 'sqlite-artifact', or 'sqlite-s3'
 
 **Issue**: "Missing required S3 parameters"  
 **Solution**: Provide all S3 parameters when using S3 storage
@@ -341,7 +355,7 @@ Enable verbose logging:
 - name: Collect Metrics
   uses: ./actions/track-metrics
   with:
-    storage-type: 's3'
+    storage-type: 'sqlite-s3'
     s3-endpoint: ${{ secrets.S3_ENDPOINT }}
     s3-bucket: ${{ secrets.S3_BUCKET }}
     s3-region: ${{ secrets.S3_REGION }}
@@ -357,7 +371,7 @@ Enable verbose logging:
   uses: ./actions/track-metrics
   id: metrics
   with:
-    storage-type: 's3'
+    storage-type: 'sqlite-s3'
     s3-endpoint: ${{ secrets.S3_ENDPOINT }}
     s3-bucket: ${{ secrets.S3_BUCKET }}
     s3-region: ${{ secrets.S3_REGION }}

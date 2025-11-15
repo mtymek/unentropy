@@ -172,7 +172,7 @@ As a developer, I want the unified action to handle S3 storage failures graceful
 
 - GitHub Actions workflow execution environment
 - S3-compatible storage provider account and bucket
-- S3 client library compatible with Bun/Node.js (e.g., @aws-sdk/client-s3)
+- S3 client support via Buns built-in `S3Client` (no extra dependency)
 - Existing Unentropy metric collection and report generation functionality (from specs 001 and 002)
 - Storage Provider interface and implementations from spec 001
 - SQLite support via bun:sqlite for database operations

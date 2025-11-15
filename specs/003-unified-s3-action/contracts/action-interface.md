@@ -22,9 +22,9 @@ branding:
 inputs:
   # Storage Configuration
   storage-type:
-    description: 'Storage backend type (artifact or s3)'
+    description: 'Storage backend type (sqlite-local, sqlite-artifact, or sqlite-s3)'
     required: true
-    default: 'artifact'
+    default: 'sqlite-local'
   
   # S3 Configuration (overrides unentropy.json, required for credentials)
   s3-endpoint:
@@ -140,7 +140,7 @@ The track-metrics action uses a hierarchical configuration system with the follo
 # GitHub Action (secrets + overrides)
 - uses: ./actions/track-metrics
   with:
-    storage-type: 's3'
+    storage-type: 'sqlite-s3'
     s3-bucket: ${{ secrets.S3_BUCKET }}  # Overrides config file
     s3-access-key-id: ${{ secrets.S3_ACCESS_KEY_ID }}
     s3-secret-access-key: ${{ secrets.S3_SECRET_ACCESS_KEY }}
@@ -164,10 +164,10 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Collect Metrics
-        uses: ./actions/track-metrics
-        with:
-          storage-type: 'artifact'
-          config-file: 'unentropy.json'
+      uses: ./actions/track-metrics
+      with:
+        storage-type: 'sqlite-artifact'
+        config-file: 'unentropy.json'
 ```
 
 ### S3 Storage Usage (Hybrid Configuration)
@@ -185,9 +185,9 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Collect Metrics
-        uses: ./actions/track-metrics
-        with:
-          storage-type: 's3'
+      uses: ./actions/track-metrics
+      with:
+        storage-type: 'sqlite-s3'
            # S3 credentials from secrets (override config file)
           s3-access-key-id: ${{ secrets.S3_ACCESS_KEY_ID }}
           s3-secret-access-key: ${{ secrets.S3_SECRET_ACCESS_KEY }}
@@ -211,11 +211,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-       - name: Collect Metrics
+        - name: Collect Metrics
          uses: ./actions/track-metrics
          id: metrics
         with:
-          storage-type: 's3'
+          storage-type: 'sqlite-s3'
           # All S3 settings from secrets (complete override)
           s3-endpoint: ${{ secrets.S3_ENDPOINT }}
           s3-bucket: ${{ secrets.S3_BUCKET }}

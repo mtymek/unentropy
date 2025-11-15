@@ -5,14 +5,14 @@
 
 ## S3 SDK Selection
 
-### Decision: AWS SDK v3 with @aws-sdk/client-s3
+### Decision: Bun built-in S3Client
 
 **Rationale**: 
-- Full Bun compatibility through Node.js compatibility layer
-- Comprehensive support for all required S3-compatible providers (AWS S3, MinIO, DigitalOcean Spaces, Cloudflare R2, Backblaze B2)
-- Modular architecture allows importing only needed commands (PutObjectCommand, GetObjectCommand, ListObjectsV2Command)
-- Regular updates and AWS backing ensure long-term stability
-- Excellent error handling and retry mechanisms built-in
+- Built into the Bun runtime, no extra dependency
+- Works with S3-compatible providers via endpoint configuration (AWS S3, MinIO, DigitalOcean Spaces, Cloudflare R2, Backblaze B2)
+- Keeps bundle size small and avoids Node-specific SDK overhead
+- Sufficient for required operations (download/upload and basic metadata)
+- Error handling and retries implemented in our storage provider layer
 
 **Alternatives Considered**:
 - **MinIO JavaScript SDK**: Good for MinIO-specific deployments but less actively maintained and limited Bun compatibility
@@ -49,7 +49,7 @@
 - name: Run Unified Metrics Action
   uses: ./actions/unified
   with:
-    storage-type: 's3'
+    storage-type: 'sqlite-s3'
     s3-endpoint: ${{ secrets.S3_ENDPOINT }}
     s3-bucket: ${{ secrets.S3_BUCKET }}
     s3-region: ${{ secrets.S3_REGION }}
@@ -99,7 +99,7 @@ class ArtifactAdapter implements StorageAdapter {
 }
 
 class StorageFactory {
-  static create(type: 's3' | 'artifact'): StorageAdapter {
+  static create(type: 'sqlite-local' | 'sqlite-artifact' | 'sqlite-s3'): StorageAdapter {
     // Factory method based on configuration
   }
 }
@@ -199,11 +199,8 @@ interface LockManager {
 
 ## Implementation Dependencies
 
-### Required Packages
-```bash
-bun add @aws-sdk/client-s3
-bun add -d @types/node # For GitHub Actions types
-```
+### Runtime Requirements
+- Bun runtime with built-in `S3Client` support (see https://bun.com/docs/runtime/s3)
 
 ### Existing Dependencies
 - Current Unentropy collector and reporter modules
