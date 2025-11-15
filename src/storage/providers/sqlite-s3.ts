@@ -1,42 +1,158 @@
-import type { Database } from "bun:sqlite";
-import type { StorageProvider } from "./interface";
+import { Database } from "bun:sqlite";
+import type { StorageProvider, SqliteS3Config } from "./interface";
 
+/**
+ * S3-compatible storage provider for SQLite databases
+ *
+ * Downloads database from S3 on initialization, uploads on persist.
+ * Uses temporary local storage for SQLite operations.
+ */
 export class SqliteS3StorageProvider implements StorageProvider {
   private db: Database | null = null;
-  private tempPath: string | null = null;
   private initialized = false;
+  private s3Client: any = null;
+  private tempDbPath: string;
+  private config: SqliteS3Config;
 
-  constructor(private config: any) {
-    // TODO: Accept S3 configuration parameters
-    // TODO: Initialize S3 client with credentials
+  constructor(config: SqliteS3Config) {
+    this.config = config;
+    this.tempDbPath = `/tmp/unentropy-s3-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.db`;
   }
 
   async initialize(): Promise<Database> {
-    // TODO: Download database from S3 to temporary directory
-    // TODO: Open SQLite database connection
-    // TODO: Validate database integrity
-    throw new Error("SqliteS3StorageProvider.initialize() not yet implemented");
+    if (this.initialized) {
+      return this.db!;
+    }
+
+    // Generate fresh temp path for each initialization to avoid conflicts
+    this.tempDbPath = `/tmp/unentropy-s3-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.db`;
+
+    // Initialize S3 client
+    await this.initializeS3Client();
+
+    // Download existing database from S3 or create new one
+    await this.downloadOrCreateDatabase();
+
+    // Open SQLite database
+    this.db = new Database(this.tempDbPath, { create: true });
+
+    // Configure SQLite connection
+    this.configureConnection();
+
+    this.initialized = true;
+    return this.db;
   }
 
   async persist(): Promise<void> {
-    // TODO: Upload updated database to S3
-    // TODO: Verify upload success
-    // TODO: Handle retry logic for transient failures
-    throw new Error("SqliteS3StorageProvider.persist() not yet implemented");
+    if (!this.initialized || !this.db) {
+      throw new Error("Storage provider not initialized");
+    }
+
+    // Close database to ensure all changes are written
+    this.db.close();
+
+    // Upload updated database to S3
+    await this.uploadDatabase();
+
+    // Reopen database for continued use
+    this.db = new Database(this.tempDbPath, { create: true });
+    this.configureConnection();
   }
 
   async cleanup(): Promise<void> {
-    // TODO: Close database connection
-    // TODO: Remove temporary files
-    // TODO: Clean up S3 client resources
-    if (this.db) {
-      this.db.close();
-      this.db = null;
+    try {
+      if (this.db) {
+        this.db.close();
+        this.db = null;
+      }
+
+      // Clean up temporary database file
+      await Bun.write(this.tempDbPath, ""); // Clear file
+
+      this.initialized = false;
+    } catch (error) {
+      // Ignore cleanup errors
     }
-    this.initialized = false;
   }
 
   isInitialized(): boolean {
     return this.initialized;
+  }
+
+  private async initializeS3Client(): Promise<void> {
+    if (!this.config.endpoint || !this.config.accessKeyId || !this.config.secretAccessKey) {
+      throw new Error(
+        "S3 configuration is incomplete: endpoint, accessKeyId, and secretAccessKey are required"
+      );
+    }
+
+    const { S3Client } = await import("bun");
+
+    this.s3Client = new S3Client({
+      accessKeyId: this.config.accessKeyId,
+      secretAccessKey: this.config.secretAccessKey,
+      bucket: this.config.bucket,
+      endpoint: this.config.endpoint,
+      region: this.config.region,
+    });
+  }
+
+  private async downloadOrCreateDatabase(): Promise<void> {
+    const databaseKey = this.getDatabaseKey();
+
+    try {
+      // Try to download existing database
+      const s3File = this.s3Client.file(databaseKey);
+      if (await s3File.exists()) {
+        const databaseData = await s3File.arrayBuffer();
+        await Bun.write(this.tempDbPath, databaseData);
+        return;
+      }
+    } catch (error) {
+      // Database doesn't exist or download failed, create new one
+      console.log(`Database not found in S3, creating new database: ${error}`);
+    }
+
+    // Create new empty database
+    const newDb = new Database(this.tempDbPath, { create: true });
+    newDb.close();
+  }
+
+  private async uploadDatabase(): Promise<void> {
+    const databaseKey = this.getDatabaseKey();
+    const databaseData = await Bun.file(this.tempDbPath).arrayBuffer();
+
+    await this.s3Client.write(databaseKey, databaseData);
+  }
+
+  getDatabaseKey(): string {
+    // Use a default database key or allow custom key via config
+    return this.config.databaseKey || "unentropy.db";
+  }
+
+  private configureConnection(): void {
+    if (!this.db) return;
+
+    // Configure SQLite for optimal performance
+    this.db.run("PRAGMA journal_mode = WAL");
+    this.db.run("PRAGMA synchronous = NORMAL");
+    this.db.run("PRAGMA foreign_keys = ON");
+    this.db.run("PRAGMA busy_timeout = 5000");
+    this.db.run("PRAGMA cache_size = -2000");
+    this.db.run("PRAGMA temp_store = MEMORY");
+  }
+
+  /**
+   * Get S3 client for testing purposes
+   */
+  getS3Client(): any {
+    return this.s3Client;
+  }
+
+  /**
+   * Get temporary database path for testing
+   */
+  getTempDbPath(): string {
+    return this.tempDbPath;
   }
 }
