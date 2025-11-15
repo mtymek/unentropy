@@ -7,20 +7,19 @@
 
 ## Summary
 
-Create a track-metrics GitHub Action that orchestrates the complete Unentropy metrics workflow: download database from S3-compatible storage, collect metrics, upload updated database, and generate HTML reports. The action will support S3-compatible storage backends with secure credential handling via GitHub Action parameters. 
-**Note**: When `storage.type` is `sqlite-artifact`, the track-metrics action runs in a limited mode (collect + report only) and expects surrounding workflow steps to handle GitHub Artifact downloads/uploads.
+Create a unified track-metrics GitHub Action that orchestrates the complete Unentropy metrics workflow with support for three storage backends: local file system (sqlite-local), GitHub Artifacts (sqlite-artifact), and S3-compatible storage (sqlite-s3). The action will provide full workflow automation for S3 storage (download, collect, upload, report) while maintaining backward compatibility with existing local and artifact-based workflows. S3 credentials are handled securely via GitHub Action parameters.
 
 ## Technical Context
 
 **Language/Version**: TypeScript with Bun runtime (per constitution)  
-**Primary Dependencies**: Bun native S3 client, existing Unentropy collector and reporter modules  
-**Storage**: SQLite database files stored in S3-compatible storage (full workflow) with limited artifact-mode support for collection/reporting when users choose GitHub Artifacts  
-**Testing**: Bun test framework (per constitution), unit/integration/contract tests  
+**Primary Dependencies**: Bun native S3 client, existing Unentropy collector and reporter modules, StorageProvider interface from spec 001  
+**Storage**: Three-tier storage architecture - sqlite-local (default), sqlite-artifact (limited workflow), sqlite-s3 (full unified workflow)  
+**Testing**: Bun test framework (per constitution), unit/integration/contract tests for all storage providers  
 **Target Platform**: GitHub Actions runners (Linux serverless environment)  
-**Project Type**: Single project with modular action architecture  
+**Project Type**: Single project with modular storage provider architecture  
 **Performance Goals**: Database download/upload within 30-45 seconds for 10MB files, complete workflow under 5 minutes  
 **Constraints**: Serverless architecture, no external servers, <50MB database files, secure credential handling  
-**Scale/Scope**: Support for 4+ S3-compatible providers, concurrent workflow handling, simplified S3-only implementation
+**Scale/Scope**: Support for 4+ S3-compatible providers, concurrent workflow handling, StorageProvider pattern for extensibility
 
 ## Constitution Check
 
@@ -33,7 +32,7 @@ Create a track-metrics GitHub Action that orchestrates the complete Unentropy me
 
 ### II. Technology Stack Consistency ✅
 - **Requirement**: Bun runtime with TypeScript, SQLite, Chart.js
-- **Compliance**: Uses existing Bun/TypeScript codebase, SQLite database, existing Chart.js reports
+- **Compliance**: Uses existing Bun/TypeScript codebase, SQLite database, existing Chart.js reports, StorageProvider interface from spec 001
 - **Status**: PASS
 
 ### III. Code Quality Standards ✅
@@ -48,12 +47,12 @@ Create a track-metrics GitHub Action that orchestrates the complete Unentropy me
 
 ### V. Testing Discipline ✅
 - **Requirement**: Comprehensive unit, integration, contract tests
-- **Compliance**: Will follow existing test patterns for actions and storage backends
+- **Compliance**: Will follow existing test patterns for actions and storage providers, including contract tests for StorageProvider interface
 - **Status**: PASS
 
 ### Additional Constraints ✅
 - **Requirement**: Lightweight, self-contained, CI/CD compatible
-- **Compliance**: Single action, no external dependencies beyond S3 SDK
+- **Compliance**: Single action with modular storage providers, no external dependencies beyond S3 SDK
 - **Status**: PASS
 
 **Overall Status**: ✅ PASS - Ready for Phase 2 task creation
@@ -65,20 +64,20 @@ Create a track-metrics GitHub Action that orchestrates the complete Unentropy me
 - Provider compatibility: All major S3-compatible providers supported
 - Security patterns: GitHub Secrets + action parameters
 - Error handling: Exponential backoff, clear categorization
-- Storage limitation: GitHub Artifacts run in limited mode (manual artifact transfers) because API permissions prevent automated persistence
+- Storage architecture: Three-tier approach (sqlite-local, sqlite-artifact, sqlite-s3) using StorageProvider interface from spec 001
 
 **Phase 1 Design**: ✅ COMPLETED
 - Data model: Complete entity definitions and relationships
-- Contracts: GitHub Action interface fully specified
-- Quickstart: Comprehensive setup guide for all providers
-- Agent context: Updated with new technologies
+- Contracts: GitHub Action interface fully specified, StorageProvider interface extension documented
+- Quickstart: Comprehensive setup guide for all storage types
+- Agent context: Updated with new technologies and storage patterns
 
 **Constitution Compliance**: ✅ MAINTAINED
 - Serverless architecture: Action runs entirely in GitHub Actions
-- Technology consistency: Uses Bun/TypeScript, follows existing patterns
+- Technology consistency: Uses Bun/TypeScript, follows existing patterns, leverages StorageProvider interface
 - Security: Credentials properly separated from configuration
-- Testing: Comprehensive test strategy defined
-- Lightweight: Single action with modular storage adapters
+- Testing: Comprehensive test strategy defined including contract tests for storage providers
+- Lightweight: Single action with modular storage providers following established patterns
 
 ## Project Structure
 
@@ -91,6 +90,9 @@ specs/[###-feature]/
 ├── data-model.md        # Phase 1 output (/speckit.plan command)
 ├── quickstart.md        # Phase 1 output (/speckit.plan command)
 ├── contracts/           # Phase 1 output (/speckit.plan command)
+│   ├── config-schema.md              # Extension of base config schema
+│   ├── storage-provider-interface.md  # Extension of base storage interface
+│   └── action-interface.md          # GitHub Action interface
 └── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
 ```
 
@@ -102,41 +104,47 @@ src/
 │   ├── collect.ts           # Existing metric collection action
 │   ├── find-database.ts     # Existing artifact finder action
 │   ├── report.ts            # Existing report generation action
-│   └── track-metrics.ts     # NEW: Track-Metrics S3-compatible action
+│   └── track-metrics.ts     # NEW: Unified track-metrics action
 ├── storage/
-│   ├── adapters/
-│   │   └── s3.ts            # NEW: S3-compatible storage adapter (Bun native)
-│   └── factory.ts           # NEW: Storage backend factory
+│   ├── providers/               # Existing storage providers from spec 001
+│   │   ├── sqlite-local.ts     # Existing local storage provider
+│   │   ├── factory.ts         # Existing factory (to be extended)
+│   │   └── sqlite-s3.ts       # NEW: S3-compatible storage provider
+│   ├── interface.ts            # Existing StorageProvider interface
+│   └── storage.ts             # Existing high-level Storage class
 ├── config/
-│   ├── loader.ts            # Existing config loading
-│   └── schema.ts            # Existing config validation
+│   ├── loader.ts            # Existing config loading (to be extended)
+│   └── schema.ts            # Existing config validation (to be extended)
 ├── collector/               # Existing metric collection modules
 ├── reporter/                # Existing report generation modules
 └── database/                # Existing database operations
 
 tests/
 ├── contract/
-│   └── track-metrics-action.test.ts    # NEW: Track-Metrics action contract tests
+│   ├── track-metrics-config.test.ts      # NEW: Track-Metrics config contract tests
+│   └── track-metrics-workflow.test.ts    # NEW: Track-Metrics workflow contract tests
 ├── integration/
-│   ├── artifacts.test.ts
 │   ├── collection.test.ts
 │   ├── reporting.test.ts
-│   └── s3-storage.test.ts         # NEW: S3 storage integration tests
+│   ├── storage-selection.test.ts         # Existing storage selection tests
+│   └── s3-storage.test.ts              # NEW: S3 storage integration tests
 └── unit/
     ├── storage/
-    │   ├── s3-adapter.test.ts    # NEW: S3 adapter unit tests
-    │   └── factory.test.ts       # NEW: Storage factory tests
+    │   ├── providers/
+    │   │   ├── sqlite-s3.test.ts         # NEW: S3 provider unit tests
+    │   │   └── factory.test.ts           # NEW: Extended factory tests
+    │   └── interface.test.ts             # Existing StorageProvider interface tests
     └── actions/
-        └── track-metrics.test.ts        # NEW: Track-Metrics action unit tests
+        └── track-metrics.test.ts         # NEW: Track-Metrics action unit tests
 
 .github/
 └── workflows/
     ├── ci.yml
     ├── metrics.yml
-    └── track-metrics-example.yml        # NEW: Example track-metrics action workflow
+    └── track-metrics-example.yml         # NEW: Example unified track-metrics workflow
 ```
 
-**Structure Decision**: Single project structure following existing patterns. New track-metrics action integrates with existing collector, reporter, and database modules. Storage abstraction layer delivers full automation for S3-compatible storage while providing a limited artifact mode (manual persistence) due to GitHub API permission constraints.
+**Structure Decision**: Single project structure following existing patterns from spec 001. New unified track-metrics action integrates with existing collector, reporter, and database modules. Storage provider pattern from spec 001 is extended with SqliteS3StorageProvider while maintaining backward compatibility with existing sqlite-local and sqlite-artifact providers.
 
 ## Complexity Tracking
 
