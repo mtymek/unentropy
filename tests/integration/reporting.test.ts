@@ -13,9 +13,7 @@ describe("Full reporting workflow integration (Bun runtime)", () => {
       fs.unlinkSync(TEST_DB_PATH);
     }
 
-    db = new Storage({
-      provider: { type: "sqlite-local", path: TEST_DB_PATH },
-    });
+    db = new Storage({ type: "sqlite-local", path: TEST_DB_PATH });
     await db.initialize();
 
     const coverageMetric = db.upsertMetricDefinition({
@@ -184,9 +182,7 @@ describe("Full reporting workflow integration (Bun runtime)", () => {
       fs.unlinkSync(emptyDbPath);
     }
 
-    const emptyDb = new Storage({
-      provider: { type: "sqlite-local", path: emptyDbPath },
-    });
+    const emptyDb = new Storage({ type: "sqlite-local", path: emptyDbPath });
     await emptyDb.initialize();
 
     const html = generateReport(emptyDb, {

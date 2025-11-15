@@ -28,5 +28,8 @@
       "command": "find .github/actions/*/dist/*.js -type f 2>/dev/null | xargs wc -c 2>/dev/null | tail -1 | awk '{print $1}' || echo '0'",
       "unit": "bytes"
     }
-  ]
+  ],
+  "storage": {
+    "type": "sqlite-s3"
+  }
 }

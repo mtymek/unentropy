@@ -13,9 +13,7 @@ beforeAll(async () => {
     await unlink(TEST_DB_PATH);
   }
 
-  const db = new Storage({
-    provider: { type: "sqlite-local", path: TEST_DB_PATH },
-  });
+  const db = new Storage({ type: "sqlite-local", path: TEST_DB_PATH });
   await db.initialize();
   testBuildId = db.insertBuildContext({
     commit_sha: "test123test123test123test123test123test",

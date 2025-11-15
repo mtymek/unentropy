@@ -10,28 +10,21 @@ import type {
   MetricValue,
 } from "./types";
 
-export interface DatabaseConfig {
-  provider: StorageProviderConfig;
-}
-
 export class Storage {
   private provider: StorageProvider | null = null;
   private db: Database | null = null;
   private initPromise: Promise<void>;
   private queries: DatabaseQueries | null = null;
 
-  constructor(private config: DatabaseConfig) {
+  constructor(private config: StorageProviderConfig) {
     this.initPromise = this.initialize();
   }
 
   async initialize(): Promise<void> {
-    this.provider = await createStorageProvider(this.config.provider);
+    this.provider = await createStorageProvider(this.config);
     this.db = await this.provider.initialize();
 
-    const readonly =
-      this.config.provider.type === "sqlite-local"
-        ? (this.config.provider.readonly ?? false)
-        : false;
+    const readonly = this.config.type === "sqlite-local" ? (this.config.readonly ?? false) : false;
 
     if (!readonly) {
       const { initializeSchema } = await import("./migrations");
