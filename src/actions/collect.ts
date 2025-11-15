@@ -60,10 +60,8 @@ export async function run(): Promise<void> {
 
   // Initialize database and get build context
   const db = new Storage({
-    provider: {
-      type: "sqlite-local",
-      path: inputs.databasePath,
-    },
+    type: "sqlite-local",
+    path: inputs.databasePath,
   });
   await db.ready();
   core.info("Database initialized successfully");

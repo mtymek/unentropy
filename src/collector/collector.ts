@@ -124,5 +124,6 @@ export async function collectMetrics(
     }
   }
 
+  await storage.close();
   return result;
 }
