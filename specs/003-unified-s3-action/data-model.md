@@ -12,8 +12,8 @@ Represents storage configuration in unentropy.json (defaults and non-sensitive s
 ```typescript
 interface StorageConfiguration {
   storage: {
-    type: 'sqlite-artifact' | 'sqlite-s3'; // Storage backend type
-    s3?: S3Configuration; // S3-specific settings (when type='s3')
+    type: 'sqlite-local' | 'sqlite-artifact' | 'sqlite-s3'; // Storage backend type
+    s3?: S3Configuration; // S3-specific settings (when type='sqlite-s3')
   };
   database?: {
     key?: string; // Database file key in storage
@@ -31,8 +31,8 @@ interface S3Configuration {
 ```
 
 **Validation Rules**:
-- `type` must be 'artifact' or 's3'
-- When `type='s3'`, `s3` configuration is recommended (can be provided via action inputs)
+- `type` must be 'sqlite-local', 'sqlite-artifact', or 'sqlite-s3'
+- When `type='sqlite-s3'`, `s3` configuration is recommended (can be partially overridden via action inputs)
 - `endpoint` must be a valid HTTPS URL
 - `bucket` must be non-empty string with valid bucket naming
 - `region` must be non-empty string
@@ -47,12 +47,12 @@ Represents GitHub Action input parameters for S3 credentials and runtime overrid
 
 ```typescript
 interface ActionParameters {
-  storageType: 'artifact' | 's3';  // Storage backend selection
+  storageType: 'sqlite-local' | 'sqlite-artifact' | 'sqlite-s3';  // Storage backend selection
   s3Endpoint?: string;               // S3 endpoint URL (overrides config)
   s3Bucket?: string;                 // S3 bucket name (overrides config)
   s3Region?: string;                 // S3 region (overrides config)
-  s3AccessKeyId?: string;            // AWS access key ID (from secrets)
-  s3SecretAccessKey?: string;        // AWS secret access key (from secrets)
+  s3AccessKeyId?: string;            // S3 access key ID (from secrets)
+  s3SecretAccessKey?: string;        // S3 secret access key (from secrets)
   s3SessionToken?: string;           // Optional session token for temporary credentials
   configFile?: string;                // Path to configuration file
   databaseKey?: string;               // Database key override
@@ -64,7 +64,7 @@ interface ActionParameters {
 ```
 
 **Validation Rules**:
-- S3 credentials (accessKeyId, secretAccessKey) required when storageType='s3'
+- S3 credentials (accessKeyId, secretAccessKey) required when storageType='sqlite-s3'
 - Action inputs override configuration file values
 - Credentials must come from GitHub Secrets, never from config files
 - Non-sensitive settings can come from either source
@@ -236,7 +236,7 @@ class TrackMetricsActionContext {
 
 interface MergedConfiguration {
   storage: {
-    type: 'artifact' | 's3';
+    type: 'sqlite-local' | 'sqlite-artifact' | 'sqlite-s3';
     s3?: {
       endpoint: string;
       bucket: string;
@@ -324,17 +324,17 @@ Database → S3 Operations
 ## Validation Rules Summary
 
 ### Configuration Validation
-- Storage type must be 's3' (track-metrics action only supports S3)
-- S3 configuration is always required
+- Storage type must be 'sqlite-local', 'sqlite-artifact', or 'sqlite-s3'
+- S3 configuration is required when using 'sqlite-s3'
 - All URL fields must be valid HTTPS URLs
 - Bucket names must follow S3 naming conventions
 
 ### Parameter Validation
-- S3 credentials (accessKeyId, secretAccessKey) required when storageType='s3'
+- S3 credentials (accessKeyId, secretAccessKey) required when storageType='sqlite-s3'
 - S3 settings can come from config file or action inputs (inputs override)
 - All credential parameters must come from GitHub Secrets
 - No credential logging or exposure
-- GitHub Artifacts storage supported when storageType='artifact'
+- GitHub Artifacts storage supported when storageType='sqlite-artifact'
 
 ### Data Integrity Validation
 - SQLite database must be valid format
