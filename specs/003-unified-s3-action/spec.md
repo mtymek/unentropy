@@ -9,17 +9,19 @@
 
 ### User Story 1 - Configure Storage Backend (Priority: P1)
 
-As a developer, I want to specify my storage backend preference in my Unentropy configuration, so I can choose between GitHub Artifacts (default) or S3-compatible storage for persisting my metrics database across workflow runs.
+As a developer, I want to specify my storage backend preference via the `storage` key in my Unentropy configuration, so I can choose between the default `sqlite-artifact` persistence (GitHub Artifacts) or the `sqlite-s3` backend that powers the unified action.
 
-**Why this priority**: This is the foundation for the unified action. The storage type selection determines how the entire workflow operates. This enables users to leverage different storage solutions based on their needs without changing workflow structure.
+**Why this priority**: This is the foundation for the unified action. The `storage.type` selection determines how the entire workflow operates while keeping existing projects on GitHub Artifacts unless they explicitly opt into S3.
 
-**Independent Test**: Can be fully tested by setting the storage type in unentropy.json (either "artifact" or "s3"), verifying the system validates the configuration correctly and provides clear error messages for invalid settings, delivering immediate value by validating the storage setup.
+**Independent Test**: Can be fully tested by setting `storage.type` in `unentropy.json` (either `sqlite-artifact` or `sqlite-s3`), verifying the system validates the configuration correctly and provides clear error messages for invalid settings, delivering immediate value by validating the storage setup.
+
+Only the `type` property exists on `storage` for now; future specs may extend it with backend-specific options. When `storage.type` is `sqlite-artifact`, the track-metrics action can still run metric collection and report generation but relies on separate workflow steps to download/upload the SQLite database artifact—automatic persistence is only available with `sqlite-s3`.
 
 **Acceptance Scenarios**:
 
-1. **Given** I want to use S3-compatible storage, **When** I set storage type to "s3" in my `unentropy.json` and provide S3 credentials as GitHub Action parameters, **Then** the system uses S3 for database storage
-2. **Given** I want to use the default GitHub Artifacts storage, **When** I set storage type to "artifact" in my `unentropy.json` (or omit the storage configuration entirely), **Then** the system uses GitHub Artifacts for database storage
-3. **Given** I have configured storage type, **When** the configuration is invalid (unrecognized storage type), **Then** the system provides clear error messages and defaults to GitHub Artifacts with a warning
+1. **Given** I want to use S3-compatible storage, **When** I set `storage.type` to `sqlite-s3` in my `unentropy.json` and provide S3 credentials as GitHub Action parameters, **Then** the system uses S3 for database storage
+2. **Given** I want to use the default GitHub Artifacts storage, **When** I set `storage.type` to `sqlite-artifact` (or omit the `storage` configuration entirely), **Then** the system uses GitHub Artifacts for database storage and runs the track-metrics action in its limited mode (collect + report only)
+3. **Given** I have configured `storage.type`, **When** the value is invalid, **Then** the system provides clear error messages and defaults to `sqlite-artifact` with a warning
 4. **Given** I need to keep S3 credentials secure, **When** I provide credentials as GitHub Action parameters from GitHub Secrets, **Then** the system accepts credentials without exposing them in logs or configuration files
 
 ---
@@ -58,21 +60,6 @@ As a developer, I want the unified action to handle S3 storage failures graceful
 
 ---
 
-### User Story 4 - Maintain Backward Compatibility with GitHub Artifacts (Priority: P4)
-
-As an existing Unentropy user, I want to continue using GitHub Artifacts if I haven't configured S3 storage, so I can upgrade to the new unified action without breaking my existing workflows.
-
-**Why this priority**: This ensures a smooth migration path for existing users. It's not critical for new users but reduces friction for adoption of the unified action.
-
-**Independent Test**: Can be fully tested by running the unified action without S3 configuration, verifying it falls back to GitHub Artifacts behavior, delivering value by maintaining compatibility with existing setups.
-
-**Acceptance Scenarios**:
-
-1. **Given** I have an existing Unentropy setup using GitHub Artifacts, **When** I upgrade to the unified action without adding S3 configuration, **Then** the action continues to work using GitHub Artifacts for database storage
-2. **Given** I want to migrate from Artifacts to S3, **When** I add S3 configuration to my existing setup, **Then** the unified action switches to S3 storage and uploads my existing database from artifacts to S3 on first run
-3. **Given** I have S3 configuration, **When** S3 is temporarily unavailable, **Then** the action optionally falls back to GitHub Artifacts as a backup storage mechanism (if configured to do so)
-
----
 
 ### Edge Cases
 
@@ -93,58 +80,57 @@ As an existing Unentropy user, I want to continue using GitHub Artifacts if I ha
 
 #### Storage Configuration
 
-- **FR-001**: System MUST support storage type configuration in the `unentropy.json` file with values "artifact" (default) or "s3"
-- **FR-002**: System MUST default to GitHub Artifacts storage when no storage type is specified in configuration
+- **FR-001**: System MUST support a `storage` object in `unentropy.json` with a `type` property limited to `sqlite-artifact` (default) or `sqlite-s3`.
+- **FR-002**: System MUST default `storage.type` to `sqlite-artifact` when the `storage` block or `type` field is omitted
 - **FR-003**: System MUST accept S3 credentials (access key ID, secret access key, endpoint, bucket, region) as GitHub Action input parameters, not in configuration file
-- **FR-004**: System MUST validate storage type configuration and provide clear error messages for unrecognized types
-- **FR-005**: System MUST validate S3 action parameters (when storage type is "s3") before attempting any storage operations
+- **FR-004**: System MUST validate `storage.type` and provide clear error messages for unrecognized values before falling back to `sqlite-artifact`
+- **FR-005**: System MUST validate S3 action parameters (when `storage.type` is `sqlite-s3`) before attempting any storage operations
 - **FR-006**: System MUST work with any S3-compatible storage provider (AWS S3, MinIO, DigitalOcean Spaces, Cloudflare R2, Backblaze B2) through parameterized configuration
 - **FR-007**: System MUST provide clear error messages for missing or invalid S3 parameters when S3 storage type is selected
 - **FR-008**: System MUST never log or expose S3 credentials in workflow output, error messages, or generated reports
 
 #### Unified Workflow Orchestration
 
-- **FR-007**: System MUST provide a single GitHub Action that orchestrates the complete metrics workflow
-- **FR-008**: Action MUST execute workflow phases in sequence: download database, collect metrics, upload database, generate report
-- **FR-009**: Action MUST create a new database if none exists in S3 storage (first-run scenario)
-- **FR-010**: Action MUST preserve existing database data when collecting new metrics (append, not overwrite)
-- **FR-011**: Action MUST log progress for each phase to provide visibility in workflow logs
-- **FR-012**: Action MUST continue to report generation even if previous steps encountered non-fatal issues
+- **FR-009**: System MUST provide a single GitHub Action that orchestrates the complete metrics workflow
+- **FR-010**: Action MUST execute workflow phases in sequence: download database, collect metrics, upload database, generate report
+- **FR-011**: Action MUST create a new database if none exists in S3 storage (first-run scenario)
+- **FR-013**: Action MUST log progress for each phase to provide visibility in workflow logs
+- **FR-014**: Action MUST continue to report generation even if previous steps encountered non-fatal issues
 
 #### Database Download from S3
 
-- **FR-013**: System MUST download the metrics database from S3-compatible storage before metric collection
-- **FR-014**: System MUST verify the downloaded database is a valid SQLite file before proceeding
-- **FR-015**: System MUST handle the case where no database exists in S3 (first run) by creating a new empty database
-- **FR-016**: Download MUST use authenticated requests with configured credentials
-- **FR-017**: System MUST store the downloaded database in a temporary location accessible to metric collection
+- **FR-015**: System MUST download the metrics database from S3-compatible storage before metric collection
+- **FR-016**: System MUST verify the downloaded database is a valid SQLite file before proceeding
+- **FR-017**: System MUST handle the case where no database exists in S3 (first run) by creating a new empty database
+- **FR-018**: Download MUST use authenticated requests with configured credentials
+- **FR-019**: System MUST store the downloaded database in a temporary location accessible to metric collection
 
 #### Database Upload to S3
 
-- **FR-018**: System MUST upload the updated database to S3-compatible storage after metric collection completes
-- **FR-019**: Upload MUST use authenticated requests with configured credentials
-- **FR-020**: System MUST verify upload success before considering the workflow complete
-- **FR-021**: Upload MUST use appropriate content-type headers for SQLite database files
-- **FR-022**: System MUST preserve the database in local storage until upload is confirmed successful (no premature deletion)
+- **FR-020**: System MUST upload the updated database to S3-compatible storage after metric collection completes
+- **FR-021**: Upload MUST use authenticated requests with configured credentials
+- **FR-022**: System MUST verify upload success before considering the workflow complete
+- **FR-023**: Upload MUST use appropriate content-type headers for SQLite database files
+- **FR-024**: System MUST preserve the database in local storage until upload is confirmed successful (no premature deletion)
 
 #### Error Handling and Resilience
 
-- **FR-023**: System MUST provide clear, actionable error messages for S3 authentication failures
-- **FR-024**: System MUST provide clear, actionable error messages for S3 bucket access issues
-- **FR-025**: System MUST implement retry logic with exponential backoff for transient network failures
-- **FR-026**: System MUST distinguish between recoverable errors (network issues) and permanent failures (invalid credentials)
-- **FR-027**: System MUST prioritize data preservation - ensure database is uploaded to S3 even if report generation fails
-- **FR-028**: System MUST handle corrupted database files gracefully with options to recreate or restore from backup
+- **FR-025**: System MUST provide clear, actionable error messages for S3 authentication failures
+- **FR-026**: System MUST provide clear, actionable error messages for S3 bucket access issues
+- **FR-027**: System MUST implement retry logic with exponential backoff for transient network failures
+- **FR-028**: System MUST distinguish between recoverable errors (network issues) and permanent failures (invalid credentials)
+- **FR-029**: System MUST prioritize data preservation - ensure database is uploaded to S3 even if report generation fails
+- **FR-030**: System MUST handle corrupted database files gracefully with options to recreate or restore from backup
 
 #### Backward Compatibility
 
-- **FR-029**: System MUST maintain support for GitHub Artifacts storage when storage type is "artifact" or not specified
-- **FR-030**: System MUST automatically detect which storage backend to use based on storage type in unentropy.json
-- **FR-031**: System MUST provide migration guidance for users transitioning from GitHub Artifacts to S3 storage
+- **FR-031**: System MUST maintain support for GitHub Artifacts storage whenever `storage.type` is `sqlite-artifact` or the `storage` block is not specified, even if the track-metrics action runs in a limited mode (collect + report only, artifact transfers handled externally)
+- **FR-032**: System MUST automatically detect which storage backend to use based on storage type in unentropy.json and adjust workflow capabilities accordingly (full workflow for `sqlite-s3`, limited workflow for `sqlite-artifact`)
+- **FR-033**: System MUST provide migration guidance for users transitioning from the limited GitHub Artifacts workflow to full S3 storage support
 
 ### Key Entities
 
-- **Storage Type Configuration**: Represents the storage backend selection in unentropy.json, including storage type ("artifact" or "s3") and optional settings specific to each type
+- **Storage Type Configuration**: Represents the `storage` block in `unentropy.json`, currently limited to a `type` property with values `sqlite-artifact` or `sqlite-s3`
 - **Action Parameters**: Represents GitHub Action input parameters including S3 credentials (access key, secret key, endpoint, bucket, region) when S3 storage is used
 - **Database File**: Represents the SQLite database stored in either GitHub Artifacts or S3, including file path, size, last modified timestamp, and storage-specific metadata (artifact ID or S3 ETag)
 - **Workflow Phase**: Represents a distinct step in the unified action (download, collect, upload, report), including status, duration, and error information
@@ -176,7 +162,7 @@ As an existing Unentropy user, I want to continue using GitHub Artifacts if I ha
 - Network connectivity between GitHub Actions runners and S3 endpoints is generally reliable (99%+ uptime) when using S3 storage
 - S3 bucket is dedicated to Unentropy or uses a clear prefix/path to avoid conflicts
 - Database schema remains compatible across versions (migrations handled by existing migration system)
-- GitHub Artifacts remain the default and recommended storage for users without specific S3 requirements
+- GitHub Artifacts remain the default and recommended storage for users without specific S3 requirements, but the unified track-metrics action operates in limited mode (collect + report only) when artifacts are used
 
 ## Dependencies *(mandatory)*
 
@@ -192,7 +178,7 @@ As an existing Unentropy user, I want to continue using GitHub Artifacts if I ha
 
 ### In Scope
 
-- Storage type selection (artifact/s3) in unentropy.json
+- Storage type selection (`sqlite-artifact`/`sqlite-s3`) in `unentropy.json`
 - S3 credentials passed as GitHub Action input parameters (not in configuration file)
 - Unified GitHub Action that orchestrates complete workflow
 - Database download from S3 before metric collection
@@ -201,7 +187,7 @@ As an existing Unentropy user, I want to continue using GitHub Artifacts if I ha
 - Error handling for S3 authentication and connectivity issues
 - Retry logic for transient failures
 - Support for multiple S3-compatible providers (AWS S3, MinIO, etc.)
-- Backward compatibility with GitHub Artifacts storage
+- Backward compatibility with GitHub Artifacts storage (limited workflow: collection + reporting, manual artifact transfers)
 - First-run scenario handling (no existing database)
 - Basic concurrency handling (advisory locking or warnings)
 - Configuration validation and error reporting
