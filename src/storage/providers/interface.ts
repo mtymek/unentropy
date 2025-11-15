@@ -22,6 +22,9 @@ export interface SqliteS3Config extends BaseStorageProviderConfig {
   endpoint?: string;
   bucket?: string;
   region?: string;
+  accessKeyId?: string;
+  secretAccessKey?: string;
+  databaseKey?: string;
 }
 
 export type StorageProviderConfig = SqliteLocalConfig | SqliteArtifactConfig | SqliteS3Config;

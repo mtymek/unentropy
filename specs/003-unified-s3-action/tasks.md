@@ -65,8 +65,8 @@ description: "Task list for unified S3-compatible storage action implementation"
 - [x] T009 [P] [US1] Implement `StorageConfig` and `storage.type` JSON schema extension per config-schema contract in `src/config/schema.ts`
 - [x] T010 [P] [US1] Implement runtime storage configuration parsing and defaulting (including fallback to `sqlite-local`) in `src/config/storage-schema.ts`
 - [x] T011 [US1] Update configuration loader to populate storage settings and validate `storage.type` against allowed values in `src/config/loader.ts`
-- [ ] T012 [US1] Update storage selection logic to choose the correct provider based on `storage.type` (sqlite-local, sqlite-artifact, sqlite-s3) in `src/storage/providers/factory.ts`
-- [ ] T013 [US1] Update storage configuration examples and S3 setup section for `storage.type` in `specs/003-unified-s3-action/quickstart.md`
+- [x] T012 [US1] Update storage selection logic to choose the correct provider based on `storage.type` (sqlite-local, sqlite-artifact, sqlite-s3) in `src/storage/providers/factory.ts`
+- [x] T013 [US1] Update storage configuration examples and S3 setup section for `storage.type` in `specs/003-unified-s3-action/quickstart.md`
 
 **Checkpoint**: User Story 1 is fully functional and independently testable via configuration and contract tests without requiring the full S3 workflow.
 

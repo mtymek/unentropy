@@ -73,8 +73,6 @@ jobs:
       
       - name: Collect Metrics
         uses: ./actions/track-metrics
-        with:
-          storage-type: 'sqlite-artifact'
 ```
 
 ### 1.3 Commit and Push
@@ -146,7 +144,6 @@ Option 2: Keep unentropy.json unchanged and specify storage type in workflow:
 - name: Collect Metrics
   uses: ./actions/track-metrics
   with:
-    storage-type: 'sqlite-s3'
     s3-endpoint: ${{ secrets.S3_ENDPOINT }}
     s3-bucket: ${{ secrets.S3_BUCKET }}
     s3-region: ${{ secrets.S3_REGION }}
@@ -182,7 +179,6 @@ jobs:
       - name: Collect Metrics
         uses: ./actions/track-metrics
         with:
-          storage-type: 'sqlite-s3'
           s3-endpoint: ${{ secrets.S3_ENDPOINT }}
           s3-bucket: ${{ secrets.S3_BUCKET }}
           s3-region: ${{ secrets.S3_REGION }}
@@ -214,7 +210,6 @@ Use different storage backends based on branch:
 - name: Collect Metrics
   uses: ./actions/track-metrics
   with:
-    storage-type: 'sqlite-s3'
     s3-endpoint: ${{ secrets.S3_ENDPOINT }}
     s3-bucket: ${{ secrets.S3_BUCKET }}
     s3-region: ${{ secrets.S3_REGION }}
@@ -230,7 +225,6 @@ Use different storage backends based on branch:
   uses: ./actions/track-metrics
   id: metrics
   with:
-    storage-type: 'sqlite-s3'
     s3-endpoint: ${{ secrets.S3_ENDPOINT }}
     s3-bucket: ${{ secrets.S3_BUCKET }}
     s3-region: ${{ secrets.S3_REGION }}
@@ -288,7 +282,6 @@ aws iam put-user-policy --user-name unentropy-metrics --policy-name UnentropyMet
 - name: Collect Metrics
   uses: ./actions/track-metrics
   with:
-    storage-type: 'sqlite-s3'
     s3-endpoint: 'https://minio.example.com'
     s3-bucket: 'unentropy-metrics'
     s3-region: 'us-east-1'
@@ -303,7 +296,6 @@ aws iam put-user-policy --user-name unentropy-metrics --policy-name UnentropyMet
 - name: Collect Metrics
   uses: ./actions/track-metrics
   with:
-    storage-type: 'sqlite-s3'
     s3-endpoint: 'https://nyc3.digitaloceanspaces.com'
     s3-bucket: 'my-unentropy-metrics'
     s3-region: 'nyc3'
@@ -318,7 +310,6 @@ aws iam put-user-policy --user-name unentropy-metrics --policy-name UnentropyMet
 - name: Collect Metrics
   uses: ./actions/track-metrics
   with:
-    storage-type: 'sqlite-s3'
     s3-endpoint: 'https://your-account-id.r2.cloudflarestorage.com'
     s3-bucket: 'unentropy-metrics'
     s3-region: 'auto'
@@ -350,7 +341,6 @@ Enable verbose logging:
 - name: Collect Metrics
   uses: ./actions/track-metrics
   with:
-    storage-type: 'sqlite-s3'
     s3-endpoint: ${{ secrets.S3_ENDPOINT }}
     s3-bucket: ${{ secrets.S3_BUCKET }}
     s3-region: ${{ secrets.S3_REGION }}
@@ -366,7 +356,6 @@ Enable verbose logging:
   uses: ./actions/track-metrics
   id: metrics
   with:
-    storage-type: 'sqlite-s3'
     s3-endpoint: ${{ secrets.S3_ENDPOINT }}
     s3-bucket: ${{ secrets.S3_BUCKET }}
     s3-region: ${{ secrets.S3_REGION }}

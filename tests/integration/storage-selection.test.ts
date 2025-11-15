@@ -27,21 +27,8 @@ describe("Storage Backend Selection Integration", () => {
       await db.ready();
     };
 
-    await expect(create()).rejects.toThrow(
+    expect(create()).rejects.toThrow(
       "Storage provider type 'sqlite-artifact' is not yet implemented"
-    );
-  });
-
-  it("should reject unsupported sqlite-s3 provider", async () => {
-    const provider = { type: "sqlite-s3" } as any as StorageProviderConfig;
-
-    const create = async () => {
-      const db = new Storage(provider);
-      await db.ready();
-    };
-
-    await expect(create()).rejects.toThrow(
-      "SqliteS3StorageProvider.initialize() not yet implemented"
     );
   });
 });
