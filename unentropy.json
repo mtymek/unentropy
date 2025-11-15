@@ -30,6 +30,6 @@
     }
   ],
   "storage": {
-    "type": "sqlite-local"
+    "type": "sqlite-s3"
   }
 }
