@@ -30,6 +30,10 @@ jobs:
             -e MINIO_ROOT_PASSWORD=minioadmin \
             minio/minio server /data --console-address ":9001"
 
+      - name: Wait for Minio and create test bucket
+        run: |
+          docker exec minio mc mb data/unentropy-test
+
 #      - name: Type check
 #        run: bun run typecheck
 
