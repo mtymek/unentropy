@@ -2,6 +2,7 @@ import * as core from "@actions/core";
 import { loadConfig } from "../config/loader";
 import { Storage } from "../storage/storage";
 import type { StorageProviderConfig } from "../storage/providers/interface";
+import { collectMetrics } from "../collector/collector";
 
 interface ActionInputs {
   storageType: string;
@@ -148,71 +149,7 @@ export async function runTrackMetricsAction(): Promise<void> {
       timestamp: new Date().toISOString(),
     });
 
-    // Collect metrics using existing storage connection
-    let successful = 0;
-    let failed = 0;
-    const failures: { metricName: string; reason: string }[] = [];
-
-    core.info(`Processing ${config.metrics.length} metrics...`);
-
-    for (const metric of config.metrics) {
-      core.info(`Processing metric: ${metric.name}`);
-        const { runCommand } = await import("../collector/runner");
-        const commandResult = await runCommand(metric.command, {}, metric.timeout ?? 60000);
-
-        if (!commandResult.success) {
-          const reason = commandResult.timedOut
-            ? `Command timed out after ${metric.timeout ?? 60000}ms`
-            : `Command failed with exit code ${commandResult.exitCode}`;
-
-          failed++;
-          failures.push({
-            metricName: metric.name,
-            reason,
-          });
-          continue;
-        }
-
-        // Parse result
-        const { parseMetricValue } = await import("../collector/collector");
-        const parseResult = parseMetricValue(commandResult.stdout, metric.type);
-
-        if (!parseResult.success) {
-          failed++;
-          failures.push({
-            metricName: metric.name,
-            reason: `Failed to parse output: ${parseResult.error}`,
-          });
-          continue;
-        }
-
-        // Store metric
-        const metricDef = storage.upsertMetricDefinition({
-          name: metric.name,
-          type: metric.type,
-          unit: metric.unit,
-          description: metric.description,
-        });
-
-        storage.insertMetricValue({
-          metric_id: metricDef.id,
-          build_id: buildId,
-          value_numeric: parseResult.numericValue,
-          value_label: parseResult.labelValue,
-          collected_at: new Date().toISOString(),
-          collection_duration_ms: commandResult.durationMs,
-        });
-
-        successful++;
-        core.info(`Successfully processed metric: ${metric.name}`);
-    }
-
-    const collectionResult = {
-      total: config.metrics.length,
-      successful,
-      failed,
-      failures,
-    };
+    const collectionResult = await collectMetrics(config.metrics, buildId, storage);
 
     core.info(
       `Metrics collection completed: ${collectionResult.successful}/${collectionResult.total} successful`

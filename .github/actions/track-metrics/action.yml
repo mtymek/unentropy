@@ -5,10 +5,6 @@ branding:
   icon: "bar-chart"
   color: "blue"
 inputs:
-  storage-type:
-    description: "Storage backend type (artifact or s3)"
-    required: true
-    default: "artifact"
   s3-endpoint:
     description: "S3-compatible endpoint URL (overrides config file)"
     required: false
@@ -68,5 +64,13 @@ outputs:
   error-message:
     description: "Error message (if failed)"
 runs:
-  using: "node20"
-  main: "dist/track-metrics.js"
+  using: "composite"
+  steps:
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: "1.2"
+    - name: Run metrics collection
+      shell: bash
+      run: |
+        bun "${{ github.action_path }}/dist/track-metrics.js"
