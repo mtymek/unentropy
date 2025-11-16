@@ -84,16 +84,10 @@ export async function run(): Promise<void> {
   // Collect metrics using dynamic import based on runtime
   const collectorModule = await import("../collector/collector");
 
-  const collectionResult = await collectorModule.collectMetrics(
-    config.metrics,
-    buildId,
-    inputs.databasePath
-  );
+  const collectionResult = await collectorModule.collectMetrics(config.metrics, buildId, db);
   core.info(
     `Metrics collection completed: ${collectionResult.successful} collected, ${collectionResult.failed} failed`
   );
-
-  await db.close();
 
   // Set outputs
   const outputs: ActionOutputs = {

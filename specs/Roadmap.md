@@ -33,6 +33,10 @@
 * Support for more robust, cloud databases (Postgres, MySQL, ...)
 * Garbage collection from metrics database
 
+## Technical improvements
+* [ ] Use DB transactions when collecting metrics
+* [ ] Make sure to keep the database connection open for as short a time as possible
+
 ## Long term ideas
 * Browsing the coverage report
 * Customizable templates

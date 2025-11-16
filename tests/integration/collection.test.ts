@@ -40,7 +40,7 @@ describe("End-to-end collection workflow", () => {
     ];
 
     const db = new Storage({ provider: { type: "sqlite-local", path: testDbPath } });
-    await db.initialize();
+    await db.ready();
 
     const buildId = db.insertBuildContext({
       commit_sha: "abc123def456abc123def456abc123def456abcd",
@@ -52,7 +52,7 @@ describe("End-to-end collection workflow", () => {
       timestamp: new Date().toISOString(),
     });
 
-    const result = await collectMetrics(metrics, buildId, testDbPath);
+    const result = await collectMetrics(metrics, buildId, db);
 
     expect(result.successful).toBe(2);
     expect(result.failed).toBe(0);
@@ -67,15 +67,13 @@ describe("End-to-end collection workflow", () => {
     const status = values.find((v) => v.metric_name === "build-status");
     expect(status).toBeDefined();
     expect(status?.value_label).toBe("passing");
-
-    await db.close();
   });
 
   test("creates metric definitions on first collection", async () => {
     const metrics: MetricConfig[] = [{ name: "new-metric", type: "numeric", command: 'echo "42"' }];
 
     const db = new Storage({ provider: { type: "sqlite-local", path: testDbPath } });
-    await db.initialize();
+    await db.ready();
 
     const buildId = db.insertBuildContext({
       commit_sha: "abc123def456abc123def456abc123def456abcd",
@@ -85,14 +83,12 @@ describe("End-to-end collection workflow", () => {
       timestamp: new Date().toISOString(),
     });
 
-    await collectMetrics(metrics, buildId, testDbPath);
+    await collectMetrics(metrics, buildId, db);
 
     const metricDef = db.getMetricDefinition("new-metric");
     expect(metricDef).toBeDefined();
     expect(metricDef?.name).toBe("new-metric");
     expect(metricDef?.type).toBe("numeric");
-
-    await db.close();
   });
 
   test("reuses existing metric definitions", async () => {
@@ -101,7 +97,7 @@ describe("End-to-end collection workflow", () => {
     ];
 
     const db = new Storage({ provider: { type: "sqlite-local", path: testDbPath } });
-    await db.initialize();
+    await db.ready();
 
     const buildId1 = db.insertBuildContext({
       commit_sha: "commit1commit1commit1commit1commit1commit1",
@@ -111,7 +107,7 @@ describe("End-to-end collection workflow", () => {
       timestamp: new Date().toISOString(),
     });
 
-    await collectMetrics(metrics, buildId1, testDbPath);
+    await collectMetrics(metrics, buildId1, db);
 
     const buildId2 = db.insertBuildContext({
       commit_sha: "commit2commit2commit2commit2commit2commit2",
@@ -125,7 +121,7 @@ describe("End-to-end collection workflow", () => {
       { name: "existing-metric", type: "numeric", command: 'echo "2"' },
     ];
 
-    await collectMetrics(metricsRun2, buildId2, testDbPath);
+    await collectMetrics(metricsRun2, buildId2, db);
 
     const allDefs = db.getAllMetricDefinitions();
     const existingMetrics = allDefs.filter((d) => d.name === "existing-metric");
@@ -134,8 +130,6 @@ describe("End-to-end collection workflow", () => {
     const values = db.getAllMetricValues();
     const existingValues = values.filter((v) => v.metric_name === "existing-metric");
     expect(existingValues).toHaveLength(2);
-
-    await db.close();
   });
 
   test("handles mixed success and failure gracefully", async () => {
@@ -146,7 +140,7 @@ describe("End-to-end collection workflow", () => {
     ];
 
     const db = new Storage({ provider: { type: "sqlite-local", path: testDbPath } });
-    await db.initialize();
+    await db.ready();
 
     const buildId = db.insertBuildContext({
       commit_sha: "abc123def456abc123def456abc123def456abcd",
@@ -156,7 +150,7 @@ describe("End-to-end collection workflow", () => {
       timestamp: new Date().toISOString(),
     });
 
-    const result = await collectMetrics(metrics, buildId, testDbPath);
+    const result = await collectMetrics(metrics, buildId, db);
 
     expect(result.successful).toBe(2);
     expect(result.failed).toBe(1);
@@ -164,15 +158,13 @@ describe("End-to-end collection workflow", () => {
 
     const values = db.getMetricValues(buildId);
     expect(values).toHaveLength(2);
-
-    await db.close();
   });
 
   test("associates metrics with correct build context", async () => {
     const metrics: MetricConfig[] = [{ name: "metric", type: "numeric", command: 'echo "5"' }];
 
     const db = new Storage({ provider: { type: "sqlite-local", path: testDbPath } });
-    await db.initialize();
+    await db.ready();
 
     const buildId = db.insertBuildContext({
       commit_sha: "testcommittestcommittestcommittestcommit1",
@@ -184,13 +176,11 @@ describe("End-to-end collection workflow", () => {
       timestamp: new Date().toISOString(),
     });
 
-    await collectMetrics(metrics, buildId, testDbPath);
+    await collectMetrics(metrics, buildId, db);
 
     const values = db.getMetricValues(buildId);
     expect(values).toHaveLength(1);
     expect(values[0]?.build_id).toBe(buildId);
-
-    await db.close();
   });
 
   test("stores collection duration for successful metrics", async () => {
@@ -199,7 +189,7 @@ describe("End-to-end collection workflow", () => {
     ];
 
     const db = new Storage({ provider: { type: "sqlite-local", path: testDbPath } });
-    await db.initialize();
+    await db.ready();
 
     const buildId = db.insertBuildContext({
       commit_sha: "abc123def456abc123def456abc123def456abcd",
@@ -209,12 +199,10 @@ describe("End-to-end collection workflow", () => {
       timestamp: new Date().toISOString(),
     });
 
-    await collectMetrics(metrics, buildId, testDbPath);
+    await collectMetrics(metrics, buildId, db);
 
     const values = db.getMetricValues(buildId);
     expect(values).toHaveLength(1);
     expect(values[0]?.collection_duration_ms).toBeGreaterThan(0);
-
-    await db.close();
   });
 });

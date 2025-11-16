@@ -55,7 +55,7 @@ export function parseMetricValue(output: string, type: "numeric" | "label"): Par
 export async function collectMetrics(
   metrics: MetricConfig[],
   buildId: number,
-  dbPath: string
+  storage: Storage
 ): Promise<CollectionResult> {
   const result: CollectionResult = {
     total: metrics.length,
@@ -68,13 +68,7 @@ export async function collectMetrics(
     return result;
   }
 
-  const db = new Storage({
-    provider: {
-      type: "sqlite-local",
-      path: dbPath,
-    },
-  });
-  await db.ready();
+  await storage.ready();
 
   for (const metric of metrics) {
     try {
@@ -104,14 +98,14 @@ export async function collectMetrics(
         continue;
       }
 
-      const metricDef = db.upsertMetricDefinition({
+      const metricDef = storage.upsertMetricDefinition({
         name: metric.name,
         type: metric.type,
         unit: metric.unit,
         description: metric.description,
       });
 
-      db.insertMetricValue({
+      storage.insertMetricValue({
         metric_id: metricDef.id,
         build_id: buildId,
         value_numeric: parseResult.numericValue,
@@ -130,6 +124,5 @@ export async function collectMetrics(
     }
   }
 
-  await db.close();
   return result;
 }
