@@ -31,6 +31,7 @@ jobs:
           s3-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           s3-bucket: ${{ secrets.AWS_BUCKET_NAME }}
           s3-region: ${{ secrets.AWS_REGION }}
+          database-key: "unentropy-metrics.db"
 
       - name: Start Minio container
         run: |
@@ -51,8 +52,6 @@ jobs:
 
       - name: Test
         run: bun test
-
-
 
       - name: Build GitHub Actions
         run: bun run build:actions
