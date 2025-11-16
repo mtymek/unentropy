@@ -40,6 +40,9 @@ jobs:
       - name: Test
         run: bun test
 
+      - name: Build actions
+        run: bun run build:actions
+
       - name: Test itself
         uses: ./.github/actions/track-metrics
         with:
