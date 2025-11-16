@@ -121,6 +121,7 @@ export async function runTrackMetricsAction(): Promise<void> {
   // Parse and validate inputs
   const inputs = parseInputs();
   console.log(inputs);
+  console.log(process.env);
   core.info(`Starting unified track-metrics action with storage: ${inputs.storageType}`);
 
   if (inputs.verbose) {
