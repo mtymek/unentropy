@@ -20,7 +20,7 @@ describe("Storage Backend Selection Integration", () => {
   });
 
   it("should reject unsupported sqlite-artifact provider", async () => {
-    const provider = { type: "sqlite-artifact" } as any as StorageProviderConfig;
+    const provider = { type: "sqlite-artifact" } as StorageProviderConfig;
 
     const create = async () => {
       const db = new Storage(provider);

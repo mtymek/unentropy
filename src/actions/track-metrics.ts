@@ -1,7 +1,5 @@
 import * as core from "@actions/core";
 import { loadConfig } from "../config/loader";
-import { createStorageProvider } from "../storage/providers/factory";
-import { extractBuildContext } from "../collector/context";
 
 interface ActionInputs {
   storageType: string;

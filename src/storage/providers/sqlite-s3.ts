@@ -1,4 +1,5 @@
 import { Database } from "bun:sqlite";
+import { S3Client } from "bun";
 import type { StorageProvider, SqliteS3Config } from "./interface";
 
 /**
@@ -10,7 +11,7 @@ import type { StorageProvider, SqliteS3Config } from "./interface";
 export class SqliteS3StorageProvider implements StorageProvider {
   private db: Database | null = null;
   private initialized = false;
-  private s3Client: any = null;
+  private s3Client: S3Client | null = null;
   private tempDbPath: string;
   private config: SqliteS3Config;
 
@@ -20,8 +21,8 @@ export class SqliteS3StorageProvider implements StorageProvider {
   }
 
   async initialize(): Promise<Database> {
-    if (this.initialized) {
-      return this.db!;
+    if (this.initialized && this.db) {
+      return this.db;
     }
 
     // Generate fresh temp path for each initialization to avoid conflicts
@@ -70,7 +71,7 @@ export class SqliteS3StorageProvider implements StorageProvider {
       await Bun.write(this.tempDbPath, ""); // Clear file
 
       this.initialized = false;
-    } catch (error) {
+    } catch {
       // Ignore cleanup errors
     }
   }
@@ -86,8 +87,6 @@ export class SqliteS3StorageProvider implements StorageProvider {
       );
     }
 
-    const { S3Client } = await import("bun");
-
     this.s3Client = new S3Client({
       accessKeyId: this.config.accessKeyId,
       secretAccessKey: this.config.secretAccessKey,
@@ -102,6 +101,9 @@ export class SqliteS3StorageProvider implements StorageProvider {
 
     try {
       // Try to download existing database
+      if (!this.s3Client) {
+        throw new Error("S3 client not initialized");
+      }
       const s3File = this.s3Client.file(databaseKey);
       if (await s3File.exists()) {
         const databaseData = await s3File.arrayBuffer();
@@ -122,6 +124,9 @@ export class SqliteS3StorageProvider implements StorageProvider {
     const databaseKey = this.getDatabaseKey();
     const databaseData = await Bun.file(this.tempDbPath).arrayBuffer();
 
+    if (!this.s3Client) {
+      throw new Error("S3 client not initialized");
+    }
     await this.s3Client.write(databaseKey, databaseData);
   }
 
@@ -145,7 +150,7 @@ export class SqliteS3StorageProvider implements StorageProvider {
   /**
    * Get S3 client for testing purposes
    */
-  getS3Client(): any {
+  getS3Client() {
     return this.s3Client;
   }
 

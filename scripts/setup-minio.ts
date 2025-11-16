@@ -13,11 +13,11 @@ const MINIO_CONSOLE_PORT = 9001;
 const MINIO_ACCESS_KEY = "minioadmin";
 const MINIO_SECRET_KEY = "minioadmin";
 const MINIO_BUCKET = "unentropy-test";
+const MINIO_CONTAINER_NAME = "unentropy-test-storage";
 
 async function startMinIO() {
   console.log("🚀 Starting MinIO container...");
   // Generate unique container name
-  const containerName = `unentropy-minio-${Date.now()}`;
   // Start MinIO container
   const dockerCmd = [
     "docker",
@@ -25,7 +25,7 @@ async function startMinIO() {
     "--rm",
     "-d",
     "--name",
-    containerName,
+    MINIO_CONTAINER_NAME,
     "-p",
     `${MINIO_PORT}:9000`,
     "-p",
@@ -43,7 +43,7 @@ async function startMinIO() {
 
   try {
     console.log(dockerCmd.join(" "));
-    const { stdout, stderr } = await execAsync(dockerCmd.join(" "));
+    const { stdout } = await execAsync(dockerCmd.join(" "));
     console.log(`✅ MinIO container started: ${stdout.trim()}`);
 
     // Wait for MinIO to be ready
@@ -52,10 +52,10 @@ async function startMinIO() {
 
     // Create test bucket
     console.log("🪣 Creating test bucket...");
-    await createBucket(containerName, MINIO_BUCKET);
+    await createBucket();
 
     // Print configuration for tests
-    printTestConfig(containerName);
+    printTestConfig();
   } catch (error) {
     console.error("❌ Failed to start MinIO:", error);
     process.exit(1);
@@ -73,7 +73,7 @@ async function waitForMinIO() {
         console.log("✅ MinIO is ready!");
         return;
       }
-    } catch (error) {
+    } catch {
       // MinIO not ready yet
     }
 
@@ -84,20 +84,20 @@ async function waitForMinIO() {
   throw new Error("MinIO failed to start after maximum attempts");
 }
 
-async function createBucket(containerName: string, bucketName: string) {
+async function createBucket() {
   // Use MinIO client directly instead of mc
-  const mcCmd = ["docker", "exec", containerName, "mc", "mb", `data/${bucketName}`];
+  const mcCmd = ["docker", "exec", MINIO_CONTAINER_NAME, "mc", "mb", `data/${MINIO_BUCKET}`];
 
   try {
     await execAsync(mcCmd.join(" "));
     console.log(`✅ Created bucket: ${MINIO_BUCKET}`);
-  } catch (error) {
+  } catch {
     // Bucket might already exist, that's ok
     console.log(`ℹ️ Bucket might already exist: ${MINIO_BUCKET}`);
   }
 }
 
-function printTestConfig(containerName: string) {
+function printTestConfig() {
   console.log("\n📋 Test Configuration:");
   console.log("========================");
   console.log(`S3_ENDPOINT: http://localhost:${MINIO_PORT}`);
@@ -105,15 +105,15 @@ function printTestConfig(containerName: string) {
   console.log(`S3_SECRET_ACCESS_KEY: ${MINIO_SECRET_KEY}`);
   console.log(`S3_BUCKET: ${MINIO_BUCKET}`);
   console.log(`S3_REGION: us-east-1`);
-  console.log(`CONTAINER_NAME: ${containerName}`);
+  console.log(`CONTAINER_NAME: ${MINIO_CONTAINER_NAME}`);
   console.log("\n🧪 Test Commands:");
   console.log("===================");
   console.log("# Start MinIO:");
   console.log("bun run scripts/setup-minio.ts start");
   console.log("\n# Stop MinIO:");
-  console.log(`docker stop ${containerName}`);
+  console.log(`docker stop ${MINIO_CONTAINER_NAME}`);
   console.log("\n# View logs:");
-  console.log(`docker logs -f ${containerName}`);
+  console.log(`docker logs -f ${MINIO_CONTAINER_NAME}`);
   console.log("\n# Access MinIO Console:");
   console.log(`http://localhost:${MINIO_CONSOLE_PORT}`);
   console.log(`User: ${MINIO_ACCESS_KEY}`);
@@ -138,14 +138,8 @@ const command = process.argv[2];
 if (command === "start") {
   startMinIO();
 } else if (command === "stop") {
-  const containerName = process.argv[3] || "unentropy-minio";
-  try {
-    await execAsync(`docker stop ${containerName}`);
-    await execAsync(`docker rm ${containerName}`);
-    console.log("✅ MinIO container stopped and removed");
-  } catch (error) {
-    console.error("❌ Failed to stop MinIO:", error);
-  }
+  await execAsync(`docker stop ${MINIO_CONTAINER_NAME}`);
+  console.log("✅ MinIO container stopped and removed");
 } else {
   console.log("Usage:");
   console.log("  bun run scripts/setup-minio.ts start   # Start MinIO container");

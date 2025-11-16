@@ -97,6 +97,9 @@ describe("SqliteS3StorageProvider", () => {
 
     // Verify file exists in S3
     const s3Client = provider.getS3Client();
+    if (!s3Client) {
+      throw new Error("S3 client not initialized");
+    }
     const s3File = s3Client.file(provider.getDatabaseKey());
     expect(await s3File.exists()).toBe(true);
   });
@@ -177,8 +180,8 @@ describe("SqliteS3StorageProvider", () => {
 
     const results = db3.query("SELECT value FROM metrics ORDER BY id").all() as { value: number }[];
     expect(results).toHaveLength(2);
-    expect(results[0]!.value).toBe(42);
-    expect(results[1]!.value).toBe(84);
+    expect(results[0]?.value).toBe(42);
+    expect(results[1]?.value).toBe(84);
 
     await provider3.cleanup();
   });
@@ -194,9 +197,9 @@ describe("SqliteS3StorageProvider", () => {
 
     const baseTime = 1600000000000;
     const testData = [
-      { text: "test1", number: 3.14, timestamp: baseTime },
-      { text: "test2", number: 2.71, timestamp: baseTime + 1000 },
-      { text: "test3", number: 1.618, timestamp: baseTime + 2000 },
+      { id: 1, text: "test1", number: 3.14, blob: null, timestamp: baseTime },
+      { id: 2, text: "test2", number: 2.71, blob: null, timestamp: baseTime + 1000 },
+      { id: 3, text: "test3", number: 1.618, blob: null, timestamp: baseTime + 2000 },
     ];
 
     for (const data of testData) {
@@ -225,14 +228,13 @@ describe("SqliteS3StorageProvider", () => {
     await provider2.initialize();
     const db2 = await provider2.initialize();
 
-    const results = db2.query("SELECT * FROM test_data ORDER BY id").all() as any[];
-    expect(results).toHaveLength(3);
-
-    for (let i = 0; i < results.length; i++) {
-      expect(results[i]!.text).toBe(testData[i]!.text);
-      expect(results[i]!.number).toBe(testData[i]!.number);
-      expect(results[i]!.timestamp).toBe(testData[i]!.timestamp);
-    }
+    const results = db2.query("SELECT * FROM test_data ORDER BY id").all() as {
+      text: string;
+      number: number;
+      timestamp: number;
+    }[];
+    // expect(results).toHaveLength(3);
+    expect(results).toEqual(testData);
 
     await provider2.cleanup();
   });
@@ -259,6 +261,9 @@ describe("SqliteS3StorageProvider", () => {
 
     // Verify file exists at custom path
     const s3Client = customProvider.getS3Client();
+    if (!s3Client) {
+      throw new Error("S3 client not initialized");
+    }
     const s3File = s3Client.file(customKey);
     expect(await s3File.exists()).toBe(true);
 
