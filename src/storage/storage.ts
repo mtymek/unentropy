@@ -43,6 +43,12 @@ export class Storage {
     return this.db;
   }
 
+  async persist(): Promise<void> {
+    if (this.provider) {
+      await this.provider.persist();
+    }
+  }
+
   async close(): Promise<void> {
     if (this.provider) {
       await this.provider.cleanup();

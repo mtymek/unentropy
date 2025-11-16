@@ -1,5 +1,7 @@
 import * as core from "@actions/core";
 import { loadConfig } from "../config/loader";
+import { Storage } from "../storage/storage";
+import type { StorageProviderConfig } from "../storage/providers/interface";
 
 interface ActionInputs {
   storageType: string;
@@ -83,6 +85,34 @@ function parseInputs(): ActionInputs {
   };
 }
 
+function createStorageConfig(inputs: ActionInputs, config: any): StorageProviderConfig {
+  // For sqlite-s3, merge S3 configuration from inputs
+  if (inputs.storageType === "sqlite-s3") {
+    return {
+      type: "sqlite-s3",
+      endpoint: inputs.s3Endpoint || config.storage?.s3?.endpoint,
+      bucket: inputs.s3Bucket || config.storage?.s3?.bucket,
+      region: inputs.s3Region || config.storage?.s3?.region,
+      accessKeyId: inputs.s3AccessKeyId,
+      secretAccessKey: inputs.s3SecretAccessKey,
+      databaseKey: inputs.databaseKey,
+    };
+  }
+
+  // For sqlite-local, use database key as path
+  if (inputs.storageType === "sqlite-local") {
+    return {
+      type: "sqlite-local",
+      path: inputs.databaseKey,
+    };
+  }
+
+  // For sqlite-artifact (not yet implemented)
+  return {
+    type: "sqlite-artifact",
+  };
+}
+
 export async function runTrackMetricsAction(): Promise<void> {
   const startTime = Date.now();
 
@@ -101,10 +131,123 @@ export async function runTrackMetricsAction(): Promise<void> {
     const config = await loadConfig(inputs.configFile);
     core.info(`Configuration loaded successfully with ${config.metrics.length} metrics`);
 
-    // TODO: Initialize storage provider based on storage type
-    // TODO: Implement workflow phases (download, collect, upload, report)
-    // TODO: Handle S3 credentials and configuration
-    // TODO: Generate and upload reports
+    // Phase 1: Initialize storage
+    core.info("Initializing storage provider...");
+    const storageConfig = createStorageConfig(inputs, config);
+    const storage = new Storage(storageConfig);
+    await storage.ready();
+    core.info("Storage provider initialized successfully");
+
+    // Phase 2: Collect metrics
+    core.info("Collecting metrics...");
+    const buildId = storage.insertBuildContext({
+      commit_sha: process.env.GITHUB_SHA || "unknown",
+      branch: process.env.GITHUB_REF_NAME || "unknown",
+      run_id: process.env.GITHUB_RUN_ID || "unknown",
+      run_number: parseInt(process.env.GITHUB_RUN_NUMBER || "0"),
+      timestamp: new Date().toISOString(),
+    });
+
+    // Collect metrics using existing storage connection
+    let successful = 0;
+    let failed = 0;
+    const failures: { metricName: string; reason: string }[] = [];
+
+    core.info(`Processing ${config.metrics.length} metrics...`);
+
+    for (const metric of config.metrics) {
+      core.info(`Processing metric: ${metric.name}`);
+        const { runCommand } = await import("../collector/runner");
+        const commandResult = await runCommand(metric.command, {}, metric.timeout ?? 60000);
+
+        if (!commandResult.success) {
+          const reason = commandResult.timedOut
+            ? `Command timed out after ${metric.timeout ?? 60000}ms`
+            : `Command failed with exit code ${commandResult.exitCode}`;
+
+          failed++;
+          failures.push({
+            metricName: metric.name,
+            reason,
+          });
+          continue;
+        }
+
+        // Parse result
+        const { parseMetricValue } = await import("../collector/collector");
+        const parseResult = parseMetricValue(commandResult.stdout, metric.type);
+
+        if (!parseResult.success) {
+          failed++;
+          failures.push({
+            metricName: metric.name,
+            reason: `Failed to parse output: ${parseResult.error}`,
+          });
+          continue;
+        }
+
+        // Store metric
+        const metricDef = storage.upsertMetricDefinition({
+          name: metric.name,
+          type: metric.type,
+          unit: metric.unit,
+          description: metric.description,
+        });
+
+        storage.insertMetricValue({
+          metric_id: metricDef.id,
+          build_id: buildId,
+          value_numeric: parseResult.numericValue,
+          value_label: parseResult.labelValue,
+          collected_at: new Date().toISOString(),
+          collection_duration_ms: commandResult.durationMs,
+        });
+
+        successful++;
+        core.info(`Successfully processed metric: ${metric.name}`);
+    }
+
+    const collectionResult = {
+      total: config.metrics.length,
+      successful,
+      failed,
+      failures,
+    };
+
+    core.info(
+      `Metrics collection completed: ${collectionResult.successful}/${collectionResult.total} successful`
+    );
+
+    if (collectionResult.failed > 0) {
+      core.warning(`${collectionResult.failed} metrics failed to collect`);
+      for (const failure of collectionResult.failures) {
+        core.warning(`  ${failure.metricName}: ${failure.reason}`);
+      }
+    }
+
+    // Phase 3: Persist storage (upload for S3)
+    if (inputs.storageType === "sqlite-s3") {
+      core.info("Uploading database to S3...");
+      await storage.persist();
+      core.info("Database uploaded successfully");
+    }
+
+    // Phase 4: Generate report
+    core.info("Generating HTML report...");
+    try {
+      const { generateReport } = await import("../reporter/generator");
+      const reportHtml = generateReport(storage, {
+        config,
+        repository: process.env.GITHUB_REPOSITORY || "unknown/repository",
+      });
+      await Bun.write(inputs.reportName, reportHtml);
+      core.info(`Report generated: ${inputs.reportName}`);
+    } catch (error) {
+      core.warning(
+        `Report generation failed: ${error instanceof Error ? error.message : String(error)}`
+      );
+      // Continue anyway - report generation failure shouldn't fail the whole action
+    }
 
     const duration = Date.now() - startTime;
 
@@ -113,7 +256,7 @@ export async function runTrackMetricsAction(): Promise<void> {
       success: true,
       storageType: inputs.storageType,
       databaseLocation: `storage://${inputs.storageType}/${inputs.databaseKey}`,
-      metricsCollected: 0, // TODO: Implement actual collection
+      metricsCollected: collectionResult.successful,
       duration,
     };
 
@@ -129,6 +272,9 @@ export async function runTrackMetricsAction(): Promise<void> {
     core.setOutput("duration", outputs.duration.toString());
 
     core.info("Track-metrics action completed successfully");
+
+    // Cleanup
+    await storage.close();
   } catch (error) {
     const duration = Date.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : String(error);
