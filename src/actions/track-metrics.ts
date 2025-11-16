@@ -34,7 +34,7 @@ interface ActionOutputs {
 
 function parseInputs(): ActionInputs {
   console.log('test');
-  console.log(core.getInput('s3-endpoint', { required: true}));
+  console.log(process.env)
   const storageType = core.getInput("storage-type") || "sqlite-local";
   const configFile = core.getInput("config-file") || "unentropy.json";
   const databaseKey = core.getInput("database-key") || "unentropy-metrics.db";
