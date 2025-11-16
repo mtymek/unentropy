@@ -74,3 +74,15 @@ runs:
       shell: bash
       run: |
         bun "${{ github.action_path }}/dist/track-metrics.js"
+      env:
+        INPUT_S3_ENDPOINT: ${{ inputs.s3-endpoint }}
+        INPUT_S3_BUCKET: ${{ inputs.s3-bucket }}
+        INPUT_S3_REGION: ${{ inputs.s3-region }}
+        INPUT_S3_ACCESS_KEY_ID: ${{ inputs.s3-access-key-id }}
+        INPUT_S3_SECRET_ACCESS_KEY: ${{ inputs.s3-secret-access-key }}
+        INPUT_CONFIG_FILE: ${{ inputs.config-file }}
+        INPUT_DATABASE_KEY: ${{ inputs.database-key }}
+        INPUT_REPORT_NAME: ${{ inputs.report-name }}
+        INPUT_TIMEOUT: ${{ inputs.timeout }}
+        INPUT_RETRY_ATTEMPTS: ${{ inputs.retry-attempts }}
+        INPUT_VERBOSE: ${{ inputs.verbose }}
