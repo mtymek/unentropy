@@ -19,6 +19,16 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+      - name: Build actions
+        run: bun run build:actions
+      - name: Test itself
+        uses: ./.github/actions/track-metrics
+        with:
+          s3-endpoint: ${{ secrets.AWS_ENDPOINT_URL }}
+          s3-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          s3-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          s3-bucket: ${{ secrets.AWS_BUCKET_NAME }}
+          s3-region: ${{ secrets.AWS_REGION }}
 
       - name: Start Minio container
         run: |
@@ -40,17 +50,7 @@ jobs:
       - name: Test
         run: bun test
 
-      - name: Build actions
-        run: bun run build:actions
 
-      - name: Test itself
-        uses: ./.github/actions/track-metrics
-        with:
-          s3-endpoint: ${{ secrets.AWS_ENDPOINT_URL }}
-          s3-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          s3-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          s3-bucket: ${{ secrets.AWS_BUCKET_NAME }}
-          s3-region: ${{ secrets.AWS_REGION }}
 
       - name: Build GitHub Actions
         run: bun run build:actions
