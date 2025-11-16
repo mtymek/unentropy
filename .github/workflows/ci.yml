@@ -24,6 +24,7 @@ jobs:
       - name: Test itself
         uses: ./.github/actions/track-metrics
         with:
+          verbose: true
 #          s3-endpoint: ${{ secrets.AWS_ENDPOINT_URL }}
           s3-endpoint: "test_endpoint"
           s3-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}

@@ -84,5 +84,4 @@ runs:
         INPUT_DATABASE-KEY: ${{ inputs.database-key }}
         INPUT_REPORT-NAME: ${{ inputs.report-name }}
         INPUT_TIMEOUT: ${{ inputs.timeout }}
-        INPUT_RETRY-ATTEMPTS: ${{ inputs.retry-attempts }}
         INPUT_VERBOSE: ${{ inputs.verbose }}

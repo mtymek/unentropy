@@ -29,17 +29,10 @@ export class SqliteS3StorageProvider implements StorageProvider {
     console.log("Generating temp path:", this.tempDbPath);
     // Generate fresh temp path for each initialization to avoid conflicts
     this.tempDbPath = `/tmp/unentropy-s3-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.db`;
-    // Initialize S3 client
-    console.log("Initializing S3 client...");
     await this.initializeS3Client();
-    // Download existing database from S3 or create new one
-    console.log("Downloading or creating database...");
     await this.downloadOrCreateDatabase();
 
-    // Open SQLite database
     this.db = new Database(this.tempDbPath, { create: true });
-
-    // Configure SQLite connection
     this.configureConnection();
 
     this.initialized = true;
@@ -51,13 +44,10 @@ export class SqliteS3StorageProvider implements StorageProvider {
       throw new Error("Storage provider not initialized");
     }
 
-    // Close database to ensure all changes are written
     this.db.close();
 
-    // Upload updated database to S3
     await this.uploadDatabase();
 
-    // Reopen database for continued use
     this.db = new Database(this.tempDbPath, { create: true });
     this.configureConnection();
   }
@@ -84,7 +74,6 @@ export class SqliteS3StorageProvider implements StorageProvider {
 
   private async initializeS3Client(): Promise<void> {
     if (!this.config.endpoint || !this.config.accessKeyId || !this.config.secretAccessKey) {
-      console.log(this.config.endpoint);
       throw new Error(
         "S3 configuration is incomplete: endpoint, accessKeyId, and secretAccessKey are required"
       );
