@@ -21,17 +21,19 @@ export class SqliteS3StorageProvider implements StorageProvider {
   }
 
   async initialize(): Promise<Database> {
+    console.log("Initializing SQLite S3 storage provider...");
     if (this.initialized && this.db) {
       return this.db;
     }
 
+    console.log("Generating temp path:", this.tempDbPath);
     // Generate fresh temp path for each initialization to avoid conflicts
     this.tempDbPath = `/tmp/unentropy-s3-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.db`;
-
     // Initialize S3 client
+    console.log("Initializing S3 client...");
     await this.initializeS3Client();
-
     // Download existing database from S3 or create new one
+    console.log("Downloading or creating database...");
     await this.downloadOrCreateDatabase();
 
     // Open SQLite database
@@ -116,6 +118,7 @@ export class SqliteS3StorageProvider implements StorageProvider {
     }
 
     // Create new empty database
+    console.log("No existing database found, creating new database...");
     const newDb = new Database(this.tempDbPath, { create: true });
     newDb.close();
   }
