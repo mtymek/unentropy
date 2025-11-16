@@ -82,7 +82,7 @@ description: "Task list for unified S3-compatible storage action implementation"
 
 - [ ] T015 [P] [US2] Add contract tests for unified track-metrics workflow inputs/outputs in `tests/contract/track-metrics-workflow.test.ts`
 - [ ] T016 [P] [US2] Add integration test covering end-to-end S3 workflow (download, collect, upload, report) in `tests/integration/s3-storage.test.ts`
-- [ ] T017 [P] [US2] Extend storage selection integration tests to cover sqlite-local, sqlite-artifact, and sqlite-s3 flows in `tests/integration/storage-selection.test.ts`
+- [x] T017 [P] [US2] Extend storage selection integration tests to cover sqlite-local, sqlite-artifact, and sqlite-s3 flows in `tests/integration/storage-selection.test.ts`
 
 ### Implementation for User Story 2
 
