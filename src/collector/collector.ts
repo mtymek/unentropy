@@ -68,8 +68,6 @@ export async function collectMetrics(
     return result;
   }
 
-  await storage.ready();
-
   for (const metric of metrics) {
     try {
       const commandResult = await runCommand(metric.command, {}, metric.timeout ?? 60000);
@@ -124,6 +122,5 @@ export async function collectMetrics(
     }
   }
 
-  await storage.close();
   return result;
 }

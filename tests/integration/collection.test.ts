@@ -8,15 +8,19 @@ import type { MetricConfig } from "../../src/config/schema";
 describe("End-to-end collection workflow", () => {
   const testDbPath = "/tmp/unentropy-integration-test.db";
   const originalEnv = process.env;
+  let storage: Storage;
 
   beforeEach(async () => {
     if (existsSync(testDbPath)) {
       await unlink(testDbPath);
     }
+    storage = new Storage({ type: "sqlite-local", path: testDbPath });
+    await storage.initialize();
   });
 
   afterEach(async () => {
     process.env = originalEnv;
+    await storage.close();
     if (existsSync(testDbPath)) {
       await unlink(testDbPath);
     }
@@ -39,10 +43,7 @@ describe("End-to-end collection workflow", () => {
       },
     ];
 
-    const db = new Storage({ type: "sqlite-local", path: testDbPath });
-    await db.initialize();
-
-    const buildId = db.insertBuildContext({
+    const buildId = storage.insertBuildContext({
       commit_sha: "abc123def456abc123def456abc123def456abcd",
       branch: "test-branch",
       run_id: "999",
@@ -52,12 +53,12 @@ describe("End-to-end collection workflow", () => {
       timestamp: new Date().toISOString(),
     });
 
-    const result = await collectMetrics(metrics, buildId, db);
+    const result = await collectMetrics(metrics, buildId, storage);
 
     expect(result.successful).toBe(2);
     expect(result.failed).toBe(0);
 
-    const values = db.getMetricValues(buildId);
+    const values = storage.getMetricValues(buildId);
     expect(values).toHaveLength(2);
 
     const coverage = values.find((v) => v.metric_name === "test-coverage");
