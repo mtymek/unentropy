@@ -84,6 +84,7 @@ export class SqliteS3StorageProvider implements StorageProvider {
 
   private async initializeS3Client(): Promise<void> {
     if (!this.config.endpoint || !this.config.accessKeyId || !this.config.secretAccessKey) {
+      console.log(this.config.endpoint);
       throw new Error(
         "S3 configuration is incomplete: endpoint, accessKeyId, and secretAccessKey are required"
       );

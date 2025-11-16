@@ -7,10 +7,10 @@ branding:
 inputs:
   s3-endpoint:
     description: "S3-compatible endpoint URL (overrides config file)"
-    required: true
+    required: false
   s3-bucket:
     description: "S3 bucket name (overrides config file)"
-    required: true
+    required: false
   s3-region:
     description: "S3 region (overrides config file)"
     required: false
