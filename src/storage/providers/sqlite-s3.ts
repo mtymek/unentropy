@@ -100,6 +100,7 @@ export class SqliteS3StorageProvider implements StorageProvider {
       if (await s3File.exists()) {
         const databaseData = await s3File.arrayBuffer();
         await Bun.write(this.tempDbPath, databaseData);
+        console.log(`Database downloaded from S3: ${databaseKey} and stored at ${this.tempDbPath}. Size: ${databaseData.byteLength} bytes`);
         return;
       }
     } catch (error) {
@@ -120,7 +121,8 @@ export class SqliteS3StorageProvider implements StorageProvider {
     if (!this.s3Client) {
       throw new Error("S3 client not initialized");
     }
-    await this.s3Client.write(databaseKey, databaseData);
+    const bytesWritten = await this.s3Client.write(databaseKey, databaseData);
+    console.log(`Database uploaded successfully: ${bytesWritten} bytes written`);
   }
 
   getDatabaseKey(): string {

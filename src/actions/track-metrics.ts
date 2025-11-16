@@ -164,11 +164,8 @@ export async function runTrackMetricsAction(): Promise<void> {
   }
 
   // Phase 3: Persist storage (upload for S3)
-  if (inputs.storageType === "sqlite-s3") {
-    core.info("Uploading database to S3...");
-    await storage.persist();
-    core.info("Database uploaded successfully");
-  }
+  core.info("Uploading database to S3...");
+  await storage.persist();
 
   // Phase 4: Generate report
   core.info("Generating HTML report...");
