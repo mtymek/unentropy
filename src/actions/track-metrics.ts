@@ -118,115 +118,100 @@ function createStorageConfig(inputs: ActionInputs, config: StorageConfig): Stora
 export async function runTrackMetricsAction(): Promise<void> {
   const startTime = Date.now();
 
-  try {
-    // Parse and validate inputs
-    const inputs = parseInputs();
-    core.info(`Starting unified track-metrics action with storage: ${inputs.storageType}`);
+  // Parse and validate inputs
+  const inputs = parseInputs();
+  core.info(`Starting unified track-metrics action with storage: ${inputs.storageType}`);
 
-    if (inputs.verbose) {
-      core.info(`Configuration file: ${inputs.configFile}`);
-      core.info(`Database key: ${inputs.databaseKey}`);
-      core.info(`Report name: ${inputs.reportName}`);
-    }
-
-    // Load configuration
-    const config = await loadConfig(inputs.configFile);
-    core.info(`Configuration loaded successfully with ${config.metrics.length} metrics`);
-
-    // Phase 1: Initialize storage
-    core.info("Initializing storage provider...");
-    const storageConfig = createStorageConfig(inputs, config.storage);
-    const storage = new Storage(storageConfig);
-    await storage.ready();
-    core.info("Storage provider initialized successfully");
-
-    // Phase 2: Collect metrics
-    core.info("Collecting metrics...");
-    const buildId = storage.insertBuildContext({
-      commit_sha: process.env.GITHUB_SHA || "unknown",
-      branch: process.env.GITHUB_REF_NAME || "unknown",
-      run_id: process.env.GITHUB_RUN_ID || "unknown",
-      run_number: parseInt(process.env.GITHUB_RUN_NUMBER || "0"),
-      timestamp: new Date().toISOString(),
-    });
-
-    const collectionResult = await collectMetrics(config.metrics, buildId, storage);
-
-    core.info(
-      `Metrics collection completed: ${collectionResult.successful}/${collectionResult.total} successful`
-    );
-
-    if (collectionResult.failed > 0) {
-      core.warning(`${collectionResult.failed} metrics failed to collect`);
-      for (const failure of collectionResult.failures) {
-        core.warning(`  ${failure.metricName}: ${failure.reason}`);
-      }
-    }
-
-    // Phase 3: Persist storage (upload for S3)
-    if (inputs.storageType === "sqlite-s3") {
-      core.info("Uploading database to S3...");
-      await storage.persist();
-      core.info("Database uploaded successfully");
-    }
-
-    // Phase 4: Generate report
-    core.info("Generating HTML report...");
-    try {
-      const { generateReport } = await import("../reporter/generator");
-      const reportHtml = generateReport(storage, {
-        config,
-        repository: process.env.GITHUB_REPOSITORY || "unknown/repository",
-      });
-      await Bun.write(inputs.reportName, reportHtml);
-      core.info(`Report generated: ${inputs.reportName}`);
-    } catch (error) {
-      core.warning(
-        `Report generation failed: ${error instanceof Error ? error.message : String(error)}`
-      );
-      // Continue anyway - report generation failure shouldn't fail the whole action
-    }
-
-    const duration = Date.now() - startTime;
-
-    // Set outputs
-    const outputs: ActionOutputs = {
-      success: true,
-      storageType: inputs.storageType,
-      databaseLocation: `storage://${inputs.storageType}/${inputs.databaseKey}`,
-      metricsCollected: collectionResult.successful,
-      duration,
-    };
-
-    core.setOutput("success", outputs.success.toString());
-    core.setOutput("storage-type", outputs.storageType);
-    core.setOutput("database-location", outputs.databaseLocation);
-    if (outputs.databaseSize !== undefined) {
-      core.setOutput("database-size", outputs.databaseSize.toString());
-    }
-    if (outputs.metricsCollected !== undefined) {
-      core.setOutput("metrics-collected", outputs.metricsCollected.toString());
-    }
-    core.setOutput("duration", outputs.duration.toString());
-
-    core.info("Track-metrics action completed successfully");
-
-    // Cleanup
-    await storage.close();
-  } catch (error) {
-    const duration = Date.now() - startTime;
-    const errorMessage = error instanceof Error ? error.message : String(error);
-
-    core.setFailed(`Track-metrics action failed: ${errorMessage}`);
-
-    // Set error outputs
-    core.setOutput("success", "false");
-    core.setOutput("duration", duration.toString());
-    core.setOutput("error-code", "ACTION_FAILED");
-    core.setOutput("error-message", errorMessage);
-
-    process.exit(1);
+  if (inputs.verbose) {
+    core.info(`Configuration file: ${inputs.configFile}`);
+    core.info(`Database key: ${inputs.databaseKey}`);
+    core.info(`Report name: ${inputs.reportName}`);
   }
+
+  // Load configuration
+  const config = await loadConfig(inputs.configFile);
+  core.info(`Configuration loaded successfully with ${config.metrics.length} metrics`);
+
+  // Phase 1: Initialize storage
+  core.info("Initializing storage provider...");
+  const storageConfig = createStorageConfig(inputs, config.storage);
+  const storage = new Storage(storageConfig);
+  await storage.ready();
+  core.info("Storage provider initialized successfully");
+
+  // Phase 2: Collect metrics
+  core.info("Collecting metrics...");
+  const buildId = storage.insertBuildContext({
+    commit_sha: process.env.GITHUB_SHA || "unknown",
+    branch: process.env.GITHUB_REF_NAME || "unknown",
+    run_id: process.env.GITHUB_RUN_ID || "unknown",
+    run_number: parseInt(process.env.GITHUB_RUN_NUMBER || "0"),
+    timestamp: new Date().toISOString(),
+  });
+
+  const collectionResult = await collectMetrics(config.metrics, buildId, storage);
+
+  core.info(
+    `Metrics collection completed: ${collectionResult.successful}/${collectionResult.total} successful`
+  );
+
+  if (collectionResult.failed > 0) {
+    core.warning(`${collectionResult.failed} metrics failed to collect`);
+    for (const failure of collectionResult.failures) {
+      core.warning(`  ${failure.metricName}: ${failure.reason}`);
+    }
+  }
+
+  // Phase 3: Persist storage (upload for S3)
+  if (inputs.storageType === "sqlite-s3") {
+    core.info("Uploading database to S3...");
+    await storage.persist();
+    core.info("Database uploaded successfully");
+  }
+
+  // Phase 4: Generate report
+  core.info("Generating HTML report...");
+  try {
+    const { generateReport } = await import("../reporter/generator");
+    const reportHtml = generateReport(storage, {
+      config,
+      repository: process.env.GITHUB_REPOSITORY || "unknown/repository",
+    });
+    await Bun.write(inputs.reportName, reportHtml);
+    core.info(`Report generated: ${inputs.reportName}`);
+  } catch (error) {
+    core.warning(
+      `Report generation failed: ${error instanceof Error ? error.message : String(error)}`
+    );
+    // Continue anyway - report generation failure shouldn't fail the whole action
+  }
+
+  const duration = Date.now() - startTime;
+
+  // Set outputs
+  const outputs: ActionOutputs = {
+    success: true,
+    storageType: inputs.storageType,
+    databaseLocation: `storage://${inputs.storageType}/${inputs.databaseKey}`,
+    metricsCollected: collectionResult.successful,
+    duration,
+  };
+
+  core.setOutput("success", outputs.success.toString());
+  core.setOutput("storage-type", outputs.storageType);
+  core.setOutput("database-location", outputs.databaseLocation);
+  if (outputs.databaseSize !== undefined) {
+    core.setOutput("database-size", outputs.databaseSize.toString());
+  }
+  if (outputs.metricsCollected !== undefined) {
+    core.setOutput("metrics-collected", outputs.metricsCollected.toString());
+  }
+  core.setOutput("duration", outputs.duration.toString());
+
+  core.info("Track-metrics action completed successfully");
+
+  // Cleanup
+  await storage.close();
 }
 
 // Run the action if this file is executed directly
