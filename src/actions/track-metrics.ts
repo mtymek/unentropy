@@ -1,8 +1,9 @@
 import * as core from "@actions/core";
 import { loadConfig } from "../config/loader";
 import { Storage } from "../storage/storage";
-import type { StorageProviderConfig } from "../storage/providers/interface";
 import { collectMetrics } from "../collector/collector";
+import { StorageConfig } from "../config/schema";
+import type { StorageProviderConfig } from "../storage/providers/interface";
 
 interface ActionInputs {
   storageType: string;
@@ -86,14 +87,14 @@ function parseInputs(): ActionInputs {
   };
 }
 
-function createStorageConfig(inputs: ActionInputs, config: any): StorageProviderConfig {
+function createStorageConfig(inputs: ActionInputs, config: StorageConfig): StorageProviderConfig {
   // For sqlite-s3, merge S3 configuration from inputs
-  if (inputs.storageType === "sqlite-s3") {
+  if (config.type === "sqlite-s3") {
     return {
       type: "sqlite-s3",
-      endpoint: inputs.s3Endpoint || config.storage?.s3?.endpoint,
-      bucket: inputs.s3Bucket || config.storage?.s3?.bucket,
-      region: inputs.s3Region || config.storage?.s3?.region,
+      endpoint: inputs.s3Endpoint,
+      bucket: inputs.s3Bucket,
+      region: inputs.s3Region,
       accessKeyId: inputs.s3AccessKeyId,
       secretAccessKey: inputs.s3SecretAccessKey,
       databaseKey: inputs.databaseKey,
@@ -101,7 +102,7 @@ function createStorageConfig(inputs: ActionInputs, config: any): StorageProvider
   }
 
   // For sqlite-local, use database key as path
-  if (inputs.storageType === "sqlite-local") {
+  if (config.type === "sqlite-local") {
     return {
       type: "sqlite-local",
       path: inputs.databaseKey,
@@ -134,7 +135,7 @@ export async function runTrackMetricsAction(): Promise<void> {
 
     // Phase 1: Initialize storage
     core.info("Initializing storage provider...");
-    const storageConfig = createStorageConfig(inputs, config);
+    const storageConfig = createStorageConfig(inputs, config.storage);
     const storage = new Storage(storageConfig);
     await storage.ready();
     core.info("Storage provider initialized successfully");
