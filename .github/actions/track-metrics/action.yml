@@ -81,7 +81,7 @@ runs:
       shell: bash
       run: |
         bun "${{ github.action_path }}/dist/track-metrics.js"
-       env:
+      env:
          INPUT_STORAGE-TYPE: ${{ inputs.storage-type }}
          INPUT_S3-ENDPOINT: ${{ inputs.s3-endpoint }}
          INPUT_S3-BUCKET: ${{ inputs.s3-bucket }}
