@@ -14,9 +14,7 @@ beforeAll(async () => {
     await unlink(TEST_DB_PATH);
   }
 
-  testStorage = new Storage({
-    provider: { type: "sqlite-local", path: TEST_DB_PATH },
-  });
+  testStorage = new Storage({ type: "sqlite-local", path: TEST_DB_PATH });
   await testStorage.initialize();
   testBuildId = testStorage.insertBuildContext({
     commit_sha: "test123test123test123test123test123test",
@@ -25,13 +23,6 @@ beforeAll(async () => {
     run_number: 1,
     timestamp: new Date().toISOString(),
   });
-});
-
-afterAll(async () => {
-  await testStorage.close();
-  if (existsSync(TEST_DB_PATH)) {
-    await unlink(TEST_DB_PATH);
-  }
 });
 
 afterAll(async () => {

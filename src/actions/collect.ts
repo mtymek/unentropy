@@ -60,10 +60,8 @@ export async function run(): Promise<void> {
 
   // Initialize database and get build context
   const db = new Storage({
-    provider: {
-      type: "sqlite-local",
-      path: inputs.databasePath,
-    },
+    type: "sqlite-local",
+    path: inputs.databasePath,
   });
   await db.ready();
   core.info("Database initialized successfully");
@@ -85,6 +83,7 @@ export async function run(): Promise<void> {
   const collectorModule = await import("../collector/collector");
 
   const collectionResult = await collectorModule.collectMetrics(config.metrics, buildId, db);
+  await db.close();
   core.info(
     `Metrics collection completed: ${collectionResult.successful} collected, ${collectionResult.failed} failed`
   );

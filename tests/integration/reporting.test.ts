@@ -13,9 +13,7 @@ describe("Full reporting workflow integration (Bun runtime)", () => {
       fs.unlinkSync(TEST_DB_PATH);
     }
 
-    db = new Storage({
-      provider: { type: "sqlite-local", path: TEST_DB_PATH },
-    });
+    db = new Storage({ type: "sqlite-local", path: TEST_DB_PATH });
     await db.initialize();
 
     const coverageMetric = db.upsertMetricDefinition({
@@ -44,6 +42,7 @@ describe("Full reporting workflow integration (Bun runtime)", () => {
         branch: "main",
         run_id: `run-${i}`,
         run_number: i + 1,
+        event_name: "push",
         timestamp: new Date(Date.UTC(2025, 9, i + 1, 12, 0, 0)).toISOString(),
       });
 
@@ -184,9 +183,7 @@ describe("Full reporting workflow integration (Bun runtime)", () => {
       fs.unlinkSync(emptyDbPath);
     }
 
-    const emptyDb = new Storage({
-      provider: { type: "sqlite-local", path: emptyDbPath },
-    });
+    const emptyDb = new Storage({ type: "sqlite-local", path: emptyDbPath });
     await emptyDb.initialize();
 
     const html = generateReport(emptyDb, {

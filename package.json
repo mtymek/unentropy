@@ -22,6 +22,7 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "check": "bun run lint && bun run typecheck && bun run format:check",
     "generate-fixtures": "bun run scripts/generate-fixtures.ts",
     "visual-review": "bun run scripts/generate-fixtures.ts && bun run scripts/open-reports.ts"
   },

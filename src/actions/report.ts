@@ -214,11 +214,9 @@ export async function run(): Promise<void> {
   let db;
   try {
     db = new Storage({
-      provider: {
-        type: "sqlite-local",
-        path: tempDbPath,
-        readonly: true,
-      },
+      type: "sqlite-local",
+      path: tempDbPath,
+      readonly: true,
     });
     await db.ready();
     core.info("Database initialized successfully");

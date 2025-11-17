@@ -11,10 +11,8 @@ describe("DatabaseQueries", () => {
 
   beforeEach(async () => {
     client = new Storage({
-      provider: {
-        type: "sqlite-local",
-        path: testDbPath,
-      },
+      type: "sqlite-local",
+      path: testDbPath,
     });
     await client.ready();
     initializeSchema(client);

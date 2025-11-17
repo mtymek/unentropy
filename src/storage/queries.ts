@@ -168,7 +168,7 @@ export class DatabaseQueries {
       FROM metric_values mv
       JOIN metric_definitions md ON mv.metric_id = md.id
       JOIN build_contexts bc ON mv.build_id = bc.id
-      WHERE md.name = ?
+      WHERE md.name = ? AND bc.event_name = 'push'
       ORDER BY bc.timestamp ASC
     `);
     return stmt.all(metricName);

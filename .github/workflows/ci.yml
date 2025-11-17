@@ -15,22 +15,41 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.2"
+          bun-version: "1.2.13"
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Type check
-        run: bun run typecheck
+      - name: Build actions
+        run: bun run build:actions
 
-      - name: Lint
-        run: bun run lint
+      #      - name: Test itself
+      #        uses: ./.github/actions/track-metrics
+      #        with:
+      #          verbose: true
+      #          s3-endpoint: ${{ secrets.AWS_ENDPOINT_URL }}
+      #          s3-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #          s3-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #          s3-bucket: ${{ secrets.AWS_BUCKET_NAME }}
+      #          s3-region: ${{ secrets.AWS_REGION }}
+      #          database-key: "unentropy-metrics.db"
 
-      - name: Format check
-        run: bun run format:check
+      - name: Start Minio container
+        run: |
+          docker run -d \
+            --name minio \
+            -p 9000:9000 \
+            -p 9001:9001 \
+            -e MINIO_ROOT_USER=minioadmin \
+            -e MINIO_ROOT_PASSWORD=minioadmin \
+            minio/minio server /data --console-address ":9001"
+
+      - name: Wait for Minio and create test bucket
+        run: |
+          docker exec minio mc mb data/unentropy-test
+
+      - name: Run checks
+        run: bun run check
 
       - name: Test
         run: bun test
-
-      - name: Build GitHub Actions
-        run: bun run build:actions

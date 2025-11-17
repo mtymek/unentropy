@@ -2,6 +2,8 @@ import type { Database } from "bun:sqlite";
 import type { StorageProvider, StorageProviderConfig } from "./providers/interface";
 import { createStorageProvider } from "./providers/factory";
 import { DatabaseQueries } from "./queries";
+import { initializeSchema } from "./migrations";
+
 import type {
   InsertBuildContext,
   InsertMetricDefinition,
@@ -10,34 +12,19 @@ import type {
   MetricValue,
 } from "./types";
 
-export interface DatabaseConfig {
-  provider: StorageProviderConfig;
-}
-
 export class Storage {
-  private provider: StorageProvider | null = null;
-  private db: Database | null = null;
-  private initPromise: Promise<void>;
+  private readonly provider: StorageProvider;
+  private readonly initPromise: Promise<void>;
   private queries: DatabaseQueries | null = null;
 
-  constructor(private config: DatabaseConfig) {
+  constructor(private config: StorageProviderConfig) {
+    this.provider = createStorageProvider(this.config);
     this.initPromise = this.initialize();
   }
 
   async initialize(): Promise<void> {
-    this.provider = await createStorageProvider(this.config.provider);
-    this.db = await this.provider.initialize();
-
-    const readonly =
-      this.config.provider.type === "sqlite-local"
-        ? (this.config.provider.readonly ?? false)
-        : false;
-
-    if (!readonly) {
-      const { initializeSchema } = await import("./migrations");
-      initializeSchema(this);
-    }
-
+    await this.provider.initialize();
+    initializeSchema(this);
     this.queries = new DatabaseQueries(this);
   }
 
@@ -46,20 +33,19 @@ export class Storage {
   }
 
   getConnection(): Database {
-    if (!this.db) throw new Error("Database not initialized");
-    return this.db;
+    return this.provider?.getDb();
+  }
+
+  async persist(): Promise<void> {
+    await this.provider.persist();
   }
 
   async close(): Promise<void> {
-    if (this.provider) {
-      await this.provider.cleanup();
-      this.db = null;
-    }
+    await this.provider.cleanup();
   }
 
   transaction<T>(fn: () => T): T {
-    if (!this.db) throw new Error("Database not initialized");
-    const tx = this.db.transaction(fn);
+    const tx = this.provider.getDb().transaction(fn);
     return tx();
   }
 

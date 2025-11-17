@@ -7,6 +7,7 @@
 * [ ] Support for S3-compatible storage (should it be a default?)
   * [ ] Storage configurable in the Unentropy config
   * [ ] A single, convenient GH action that does it all - downloads db from S3, runs analysis, uploads results back 
+* [ ] Quality gates / GH comments
 * [ ] Thresholds 
 
 ## 0.2
@@ -16,7 +17,6 @@
   * [ ] MetricCard may look differently based on the metric type.
 
 ## 0.3
-* [ ] Quality gates / GH comments
 * [ ] "Main branch"
 * [ ] Branch comparison (e.g. this PR changes metrics by X%)
 

@@ -1,0 +1,92 @@
+name: "Unentropy Track Metrics"
+description: "Complete metrics workflow with S3-compatible storage support"
+author: "Unentropy"
+branding:
+  icon: "bar-chart"
+  color: "blue"
+inputs:
+  storage-type:
+    description: "Storage backend type (sqlite-local, sqlite-s3, sqlite-artifact)"
+    required: false
+    default: "sqlite-local"
+  s3-endpoint:
+    description: "S3-compatible endpoint URL (overrides config file)"
+    required: false
+  s3-bucket:
+    description: "S3 bucket name (overrides config file)"
+    required: false
+  s3-region:
+    description: "S3 region (overrides config file)"
+    required: false
+  s3-access-key-id:
+    description: "S3 access key ID (from GitHub Secrets, required for S3)"
+    required: false
+  s3-secret-access-key:
+    description: "S3 secret access key (from GitHub Secrets, required for S3)"
+    required: false
+  config-file:
+    description: "Path to unentropy.json configuration file"
+    required: false
+    default: "unentropy.json"
+  database-key:
+    description: "Database file key in storage"
+    required: false
+    default: "unentropy.db"
+  report-name:
+    description: "Generated report file name"
+    required: false
+    default: "unentropy-report.html"
+  timeout:
+    description: "Action timeout in seconds"
+    required: false
+    default: "300"
+  retry-attempts:
+    description: "Number of retry attempts for storage operations"
+    required: false
+    default: "3"
+  verbose:
+    description: "Enable verbose logging"
+    required: false
+    default: "false"
+outputs:
+  success:
+    description: "Whether the workflow completed successfully"
+  storage-type:
+    description: "Storage backend type used"
+  database-location:
+    description: "Database storage location identifier"
+  database-size:
+    description: "Database file size in bytes"
+  report-url:
+    description: "URL to generated report (if available)"
+  metrics-collected:
+    description: "Number of metrics collected"
+  duration:
+    description: "Total workflow duration in milliseconds"
+  error-code:
+    description: "Error code (if failed)"
+  error-message:
+    description: "Error message (if failed)"
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: "1.2.13"
+    - name: Run metrics collection
+      shell: bash
+      run: |
+        bun "${{ github.action_path }}/dist/track-metrics.js"
+      env:
+        INPUT_STORAGE-TYPE: ${{ inputs.storage-type }}
+        INPUT_S3-ENDPOINT: ${{ inputs.s3-endpoint }}
+        INPUT_S3-BUCKET: ${{ inputs.s3-bucket }}
+        INPUT_S3-REGION: ${{ inputs.s3-region }}
+        INPUT_S3-ACCESS-KEY-ID: ${{ inputs.s3-access-key-id }}
+        INPUT_S3-SECRET-ACCESS-KEY: ${{ inputs.s3-secret-access-key }}
+        INPUT_CONFIG-FILE: ${{ inputs.config-file }}
+        INPUT_DATABASE-KEY: ${{ inputs.database-key }}
+        INPUT_REPORT-NAME: ${{ inputs.report-name }}
+        INPUT_TIMEOUT: ${{ inputs.timeout }}
+        INPUT_VERBOSE: ${{ inputs.verbose }}
