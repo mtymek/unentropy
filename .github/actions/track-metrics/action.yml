@@ -4,7 +4,7 @@ author: "Unentropy"
 branding:
   icon: "bar-chart"
   color: "blue"
- inputs:
+inputs:
   storage-type:
     description: "Storage backend type (sqlite-local, sqlite-s3, sqlite-artifact)"
     required: false
