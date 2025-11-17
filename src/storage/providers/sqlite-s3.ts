@@ -26,17 +26,16 @@ export class SqliteS3StorageProvider implements StorageProvider {
       return this.db;
     }
 
-    console.log("Generating temp path:", this.tempDbPath);
     // Generate fresh temp path for each initialization to avoid conflicts
+    console.log("Generating temp path:", this.tempDbPath);
     this.tempDbPath = `/tmp/unentropy-s3-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.db`;
     await this.initializeS3Client();
     await this.downloadOrCreateDatabase();
 
-    this.db = new Database(this.tempDbPath, { create: true });
-    this.configureConnection();
+    const db = this.configureConnection();
 
     this.initialized = true;
-    return this.db;
+    return db;
   }
 
   async persist(): Promise<void> {
@@ -48,7 +47,6 @@ export class SqliteS3StorageProvider implements StorageProvider {
 
     await this.uploadDatabase();
 
-    this.db = new Database(this.tempDbPath, { create: true });
     this.configureConnection();
   }
 
@@ -59,8 +57,7 @@ export class SqliteS3StorageProvider implements StorageProvider {
         this.db = null;
       }
 
-      // Clean up temporary database file
-      await Bun.write(this.tempDbPath, ""); // Clear file
+      await Bun.file(this.tempDbPath).delete();
 
       this.initialized = false;
     } catch {
@@ -132,9 +129,8 @@ export class SqliteS3StorageProvider implements StorageProvider {
     return this.config.databaseKey || "unentropy.db";
   }
 
-  private configureConnection(): void {
-    if (!this.db) return;
-
+  private configureConnection(): Database {
+    this.db = new Database(this.tempDbPath, { create: true });
     // Configure SQLite for optimal performance
     this.db.run("PRAGMA journal_mode = WAL");
     this.db.run("PRAGMA synchronous = NORMAL");
@@ -142,6 +138,8 @@ export class SqliteS3StorageProvider implements StorageProvider {
     this.db.run("PRAGMA busy_timeout = 5000");
     this.db.run("PRAGMA cache_size = -2000");
     this.db.run("PRAGMA temp_store = MEMORY");
+
+    return this.db;
   }
 
   /**
@@ -156,5 +154,10 @@ export class SqliteS3StorageProvider implements StorageProvider {
    */
   getTempDbPath(): string {
     return this.tempDbPath;
+  }
+
+  getDb(): Database {
+    if (!this.db) throw new Error("Database not initialized");
+    return this.db;
   }
 }

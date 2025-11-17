@@ -34,4 +34,5 @@ export interface StorageProvider {
   persist(): Promise<void>;
   cleanup(): Promise<void>;
   isInitialized(): boolean;
+  getDb(): Database;
 }

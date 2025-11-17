@@ -2,9 +2,7 @@ import type { StorageProvider, StorageProviderConfig } from "./interface";
 import { SqliteLocalStorageProvider } from "./sqlite-local";
 import { SqliteS3StorageProvider } from "./sqlite-s3";
 
-export async function createStorageProvider(
-  config: StorageProviderConfig
-): Promise<StorageProvider> {
+export function createStorageProvider(config: StorageProviderConfig): StorageProvider {
   const { type } = config;
 
   if (type === "sqlite-local") {

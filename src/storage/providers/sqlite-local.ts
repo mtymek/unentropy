@@ -45,4 +45,9 @@ export class SqliteLocalStorageProvider implements StorageProvider {
   isInitialized(): boolean {
     return this.db !== null;
   }
+
+  getDb(): Database {
+    if (!this.db) throw new Error("Database not initialized");
+    return this.db;
+  }
 }
