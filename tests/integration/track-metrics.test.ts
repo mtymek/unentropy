@@ -66,7 +66,40 @@ describe("track-metrics action integration", () => {
     // Run the action directly
     await runTrackMetricsAction();
 
-    // The action should complete without throwing errors
-    expect(true).toBe(true);
+    // Verify the HTML report was generated
+    expect(existsSync(testReportPath)).toBe(true);
+
+    // Read and verify the HTML report content
+    const html = await Bun.file(testReportPath).text();
+
+    // Basic HTML structure assertions
+    expect(html).toContain("<!DOCTYPE html>");
+    expect(html).toContain('<html lang="en">');
+    expect(html).toContain("Unentropy Metrics Report");
+    expect(html).toContain("test/repo"); // repository name
+
+    // Verify metric data is present
+    expect(html).toContain("test-metric"); // metric name
+    expect(html).toContain("Test metric"); // metric description
+
+    // Verify statistics are displayed (for numeric metrics)
+    expect(html).toContain("Latest");
+    expect(html).toContain("Min");
+    expect(html).toContain("Max");
+    expect(html).toContain("Trend");
+
+    // Verify the metric data is included in the chart configuration
+    expect(html).toContain("chartsData");
+
+    // Verify Chart.js scripts are included
+    expect(html).toContain("chart.js");
+    expect(html).toContain("chart-test-metric"); // canvas id for the chart
+
+    // Verify Tailwind CSS is loaded
+    expect(html).toContain("tailwindcss.com");
+
+    // Verify metric card structure
+    expect(html).toContain("metric-card");
+    expect(html).toContain("bg-white dark:bg-gray-800");
   });
 });
