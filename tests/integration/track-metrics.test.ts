@@ -14,14 +14,6 @@ describe("track-metrics action integration", () => {
     // Generate unique database name
     uniqueSuffix = Date.now() + "-" + Math.random().toString(36).substr(2, 9);
 
-    // Clean up any existing files
-    if (existsSync(testConfigPath)) {
-      await unlink(testConfigPath);
-    }
-    if (existsSync(testReportPath)) {
-      await unlink(testReportPath);
-    }
-
     // Create test config file
     const testConfig = {
       storage: {
