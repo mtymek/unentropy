@@ -1,12 +1,12 @@
 # Unentropy Roadmap
 
-## 0.1
-* [x] MVP
+## 0.1 - MVP
+* [x] MVP 3-step process
 * [x] Using GitHub action artifact for storing the metrics database
 * [x] JSX templating
-* [ ] Support for S3-compatible storage (should it be a default?)
-  * [ ] Storage configurable in the Unentropy config
-  * [ ] A single, convenient GH action that does it all - downloads db from S3, runs analysis, uploads results back 
+* [x] Support for S3-compatible storage (should it be a default?)
+  * [x] Storage configurable in the Unentropy config
+  * [x] A single, convenient GH action that does it all - downloads db from S3, runs analysis, uploads results back 
 * [ ] Quality gates / GH comments
 * [ ] Thresholds 
 
