@@ -135,7 +135,6 @@ export async function runTrackMetricsAction(): Promise<void> {
   // Phase 1: Initialize storage
   core.info("Initializing storage provider...");
   const storageConfig = createStorageConfig(inputs, config.storage);
-  console.log(storageConfig);
   const storage = new Storage(storageConfig);
   await storage.ready();
   core.info("Storage provider initialized successfully");

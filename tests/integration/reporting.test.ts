@@ -42,6 +42,7 @@ describe("Full reporting workflow integration (Bun runtime)", () => {
         branch: "main",
         run_id: `run-${i}`,
         run_number: i + 1,
+        event_name: "push",
         timestamp: new Date(Date.UTC(2025, 9, i + 1, 12, 0, 0)).toISOString(),
       });
 

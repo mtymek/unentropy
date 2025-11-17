@@ -100,7 +100,9 @@ export class SqliteS3StorageProvider implements StorageProvider {
       if (await s3File.exists()) {
         const databaseData = await s3File.arrayBuffer();
         await Bun.write(this.tempDbPath, databaseData);
-        console.log(`Database downloaded from S3: ${databaseKey} and stored at ${this.tempDbPath}. Size: ${databaseData.byteLength} bytes`);
+        console.log(
+          `Database downloaded from S3: ${databaseKey} and stored at ${this.tempDbPath}. Size: ${databaseData.byteLength} bytes`
+        );
         return;
       }
     } catch (error) {

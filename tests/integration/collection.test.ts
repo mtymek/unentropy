@@ -6,22 +6,35 @@ import { Storage } from "../../src/storage/storage";
 import type { MetricConfig } from "../../src/config/schema";
 
 describe("End-to-end collection workflow", () => {
-  const testDbPath = "/tmp/unentropy-integration-test.db";
   const originalEnv = process.env;
   let storage: Storage;
+  let testDbPath: string;
 
   beforeEach(async () => {
+    // Generate unique database name for each test to avoid conflicts
+    const uniqueSuffix = Date.now() + "-" + Math.random().toString(36).substr(2, 9);
+    testDbPath = `/tmp/unentropy-collection-${uniqueSuffix}.db`;
+
+    // Clean up any existing file with this path
     if (existsSync(testDbPath)) {
       await unlink(testDbPath);
     }
+
     storage = new Storage({ type: "sqlite-local", path: testDbPath });
     await storage.initialize();
   });
 
   afterEach(async () => {
+    // Always restore environment
     process.env = originalEnv;
-    await storage.close();
-    if (existsSync(testDbPath)) {
+
+    // Always close storage connection
+    if (storage) {
+      await storage.close();
+    }
+
+    // Always clean up database file
+    if (testDbPath && existsSync(testDbPath)) {
       await unlink(testDbPath);
     }
   });
@@ -68,7 +81,7 @@ describe("End-to-end collection workflow", () => {
     const status = values.find((v) => v.metric_name === "build-status");
     expect(status).toBeDefined();
     expect(status?.value_label).toBe("passing");
-  });
+  }, 10000); // 10 second timeout
 
   test("creates metric definitions on first collection", async () => {
     const metrics: MetricConfig[] = [{ name: "new-metric", type: "numeric", command: 'echo "42"' }];
@@ -97,41 +110,51 @@ describe("End-to-end collection workflow", () => {
       { name: "existing-metric", type: "numeric", command: 'echo "1"' },
     ];
 
-    const db = new Storage({ type: "sqlite-local", path: testDbPath });
+    // Use unique path for this specific test to avoid conflicts
+    const uniqueSuffix = Date.now() + "-" + Math.random().toString(36).substr(2, 9);
+    const testPath = `/tmp/unentropy-reuse-${uniqueSuffix}.db`;
+    const db = new Storage({ type: "sqlite-local", path: testPath });
     await db.initialize();
 
-    const buildId1 = db.insertBuildContext({
-      commit_sha: "commit1commit1commit1commit1commit1commit1",
-      branch: "test-branch",
-      run_id: "1",
-      run_number: 1,
-      timestamp: new Date().toISOString(),
-    });
+    try {
+      const buildId1 = db.insertBuildContext({
+        commit_sha: "commit1commit1commit1commit1commit1commit1",
+        branch: "test-branch",
+        run_id: "1",
+        run_number: 1,
+        timestamp: new Date().toISOString(),
+      });
 
-    await collectMetrics(metrics, buildId1, db);
+      await collectMetrics(metrics, buildId1, db);
 
-    const buildId2 = db.insertBuildContext({
-      commit_sha: "commit2commit2commit2commit2commit2commit2",
-      branch: "test-branch",
-      run_id: "2",
-      run_number: 2,
-      timestamp: new Date().toISOString(),
-    });
+      const buildId2 = db.insertBuildContext({
+        commit_sha: "commit2commit2commit2commit2commit2commit2",
+        branch: "test-branch",
+        run_id: "2",
+        run_number: 2,
+        timestamp: new Date().toISOString(),
+      });
 
-    const metricsRun2: MetricConfig[] = [
-      { name: "existing-metric", type: "numeric", command: 'echo "2"' },
-    ];
+      const metricsRun2: MetricConfig[] = [
+        { name: "existing-metric", type: "numeric", command: 'echo "2"' },
+      ];
 
-    await collectMetrics(metricsRun2, buildId2, db);
+      await collectMetrics(metricsRun2, buildId2, db);
 
-    const allDefs = db.getAllMetricDefinitions();
-    const existingMetrics = allDefs.filter((d) => d.name === "existing-metric");
-    expect(existingMetrics).toHaveLength(1);
+      const allDefs = db.getAllMetricDefinitions();
+      const existingMetrics = allDefs.filter((d) => d.name === "existing-metric");
+      expect(existingMetrics).toHaveLength(1);
 
-    const values = db.getAllMetricValues();
-    const existingValues = values.filter((v) => v.metric_name === "existing-metric");
-    expect(existingValues).toHaveLength(2);
-  });
+      const values = db.getAllMetricValues();
+      const existingValues = values.filter((v) => v.metric_name === "existing-metric");
+      expect(existingValues).toHaveLength(2);
+    } finally {
+      await db.close();
+      if (existsSync(testPath)) {
+        await unlink(testPath);
+      }
+    }
+  }, 10000); // 10 second timeout
 
   test("handles mixed success and failure gracefully", async () => {
     const metrics: MetricConfig[] = [
@@ -140,58 +163,83 @@ describe("End-to-end collection workflow", () => {
       { name: "success2", type: "label", command: 'echo "ok"' },
     ];
 
-    const db = new Storage({ type: "sqlite-local", path: testDbPath });
+    // Use unique path for this specific test to avoid conflicts
+    const uniqueSuffix = Date.now() + "-" + Math.random().toString(36).substr(2, 9);
+    const testPath = `/tmp/unentropy-mixed-${uniqueSuffix}.db`;
+    const db = new Storage({ type: "sqlite-local", path: testPath });
     await db.initialize();
 
-    const buildId = db.insertBuildContext({
-      commit_sha: "abc123def456abc123def456abc123def456abcd",
-      branch: "test-branch",
-      run_id: "999",
-      run_number: 1,
-      timestamp: new Date().toISOString(),
-    });
+    try {
+      const buildId = db.insertBuildContext({
+        commit_sha: "abc123def456abc123def456abc123def456abcd",
+        branch: "test-branch",
+        run_id: "999",
+        run_number: 1,
+        timestamp: new Date().toISOString(),
+      });
 
-    const result = await collectMetrics(metrics, buildId, db);
+      const result = await collectMetrics(metrics, buildId, db);
 
-    expect(result.successful).toBe(2);
-    expect(result.failed).toBe(1);
-    expect(result.failures[0]?.metricName).toBe("failure");
+      expect(result.successful).toBe(2);
+      expect(result.failed).toBe(1);
+      expect(result.failures[0]?.metricName).toBe("failure");
 
-    const values = db.getMetricValues(buildId);
-    expect(values).toHaveLength(2);
-  });
+      const values = db.getMetricValues(buildId);
+      expect(values).toHaveLength(2);
+    } finally {
+      await db.close();
+      if (existsSync(testPath)) {
+        await unlink(testPath);
+      }
+    }
+  }, 10000); // 10 second timeout
 
   test("associates metrics with correct build context", async () => {
     const metrics: MetricConfig[] = [{ name: "metric", type: "numeric", command: 'echo "5"' }];
 
-    const db = new Storage({ type: "sqlite-local", path: testDbPath });
+    // Use unique path for this specific test to avoid conflicts
+    const uniqueSuffix = Date.now() + "-" + Math.random().toString(36).substr(2, 9);
+    const testPath = `/tmp/unentropy-context-${uniqueSuffix}.db`;
+    const db = new Storage({ type: "sqlite-local", path: testPath });
     await db.initialize();
 
-    const buildId = db.insertBuildContext({
-      commit_sha: "testcommittestcommittestcommittestcommit1",
-      branch: "feature-branch",
-      run_id: "12345",
-      run_number: 42,
-      actor: "developer",
-      event_name: "pull_request",
-      timestamp: new Date().toISOString(),
-    });
+    try {
+      const buildId = db.insertBuildContext({
+        commit_sha: "testcommittestcommittestcommittestcommit1",
+        branch: "feature-branch",
+        run_id: "12345",
+        run_number: 42,
+        actor: "developer",
+        event_name: "pull_request",
+        timestamp: new Date().toISOString(),
+      });
 
-    await collectMetrics(metrics, buildId, db);
+      await collectMetrics(metrics, buildId, db);
 
-    const values = db.getMetricValues(buildId);
-    expect(values).toHaveLength(1);
-    expect(values[0]?.build_id).toBe(buildId);
-  });
+      const values = db.getMetricValues(buildId);
+      expect(values).toHaveLength(1);
+      expect(values[0]?.build_id).toBe(buildId);
+    } finally {
+      await db.close();
+      if (existsSync(testPath)) {
+        await unlink(testPath);
+      }
+    }
+  }, 10000); // 10 second timeout
+});
 
-  test("stores collection duration for successful metrics", async () => {
-    const metrics: MetricConfig[] = [
-      { name: "timed-metric", type: "numeric", command: 'echo "100"' },
-    ];
+test("stores collection duration for successful metrics", async () => {
+  const metrics: MetricConfig[] = [
+    { name: "timed-metric", type: "numeric", command: 'echo "100"' },
+  ];
 
-    const db = new Storage({ type: "sqlite-local", path: testDbPath });
-    await db.initialize();
+  // Use unique path for this specific test to avoid conflicts
+  const uniqueSuffix = Date.now() + "-" + Math.random().toString(36).substr(2, 9);
+  const testPath = `/tmp/unentropy-duration-${uniqueSuffix}.db`;
+  const db = new Storage({ type: "sqlite-local", path: testPath });
+  await db.initialize();
 
+  try {
     const buildId = db.insertBuildContext({
       commit_sha: "abc123def456abc123def456abc123def456abcd",
       branch: "test-branch",
@@ -205,5 +253,10 @@ describe("End-to-end collection workflow", () => {
     const values = db.getMetricValues(buildId);
     expect(values).toHaveLength(1);
     expect(values[0]?.collection_duration_ms).toBeGreaterThan(0);
-  });
-});
+  } finally {
+    await db.close();
+    if (existsSync(testPath)) {
+      await unlink(testPath);
+    }
+  }
+}, 10000); // 10 second timeout

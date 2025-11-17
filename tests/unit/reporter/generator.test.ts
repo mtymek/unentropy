@@ -25,6 +25,7 @@ describe("getMetricTimeSeries", () => {
       branch: "main",
       run_id: "1",
       run_number: 1,
+      event_name: "push",
       timestamp: "2025-10-01T12:00:00Z",
     });
 
@@ -33,6 +34,7 @@ describe("getMetricTimeSeries", () => {
       branch: "main",
       run_id: "2",
       run_number: 2,
+      event_name: "push",
       timestamp: "2025-10-02T12:00:00Z",
     });
 
@@ -41,6 +43,7 @@ describe("getMetricTimeSeries", () => {
       branch: "main",
       run_id: "3",
       run_number: 3,
+      event_name: "push",
       timestamp: "2025-10-03T12:00:00Z",
     });
 
@@ -130,6 +133,7 @@ describe("getMetricTimeSeries", () => {
           branch: "main",
           run_id: `run${i}`,
           run_number: i + 1,
+          event_name: "push",
           timestamp: `2025-10-0${i + 1}T12:00:00Z`,
         });
 
@@ -171,6 +175,7 @@ describe("getMetricTimeSeries", () => {
           branch: "main",
           run_id: `run${i}`,
           run_number: i + 1,
+          event_name: "push",
           timestamp: `2025-10-${String(i + 1).padStart(2, "0")}T12:00:00Z`,
         });
 
