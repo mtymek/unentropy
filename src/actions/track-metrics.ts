@@ -9,7 +9,7 @@ interface ActionInputs {
   storageType: string;
   configFile: string;
   databaseKey: string;
-  reportName: string;
+  reportDir: string;
   s3Endpoint?: string;
   s3Bucket?: string;
   s3Region?: string;
@@ -36,7 +36,7 @@ function parseInputs(): ActionInputs {
   const storageType = core.getInput("storage-type") || "sqlite-local";
   const configFile = core.getInput("config-file") || "unentropy.json";
   const databaseKey = core.getInput("database-key") || "unentropy-metrics.db";
-  const reportName = core.getInput("report-name") || "unentropy-report.html";
+  const reportDir = core.getInput("report-dir") || "unentropy-report";
 
   // S3 configuration (optional for non-S3 storage types)
   const s3Endpoint = core.getInput("s3-endpoint");
@@ -74,7 +74,7 @@ function parseInputs(): ActionInputs {
     storageType,
     configFile,
     databaseKey,
-    reportName,
+    reportDir,
     s3Endpoint,
     s3Bucket,
     s3Region,
@@ -125,7 +125,7 @@ export async function runTrackMetricsAction(): Promise<void> {
   if (inputs.verbose) {
     core.info(`Configuration file: ${inputs.configFile}`);
     core.info(`Database key: ${inputs.databaseKey}`);
-    core.info(`Report name: ${inputs.reportName}`);
+    core.info(`Report directory: ${inputs.reportDir}`);
   }
 
   // Load configuration
@@ -174,8 +174,10 @@ export async function runTrackMetricsAction(): Promise<void> {
       config,
       repository: process.env.GITHUB_REPOSITORY || "unknown/repository",
     });
-    await Bun.write(inputs.reportName, reportHtml);
-    core.info(`Report generated: ${inputs.reportName}`);
+
+    // Create report directory and write index.html
+    await Bun.write(`${inputs.reportDir}/index.html`, reportHtml);
+    core.info(`Report generated: ${inputs.reportDir}/index.html`);
   } catch (error) {
     core.warning(
       `Report generation failed: ${error instanceof Error ? error.message : String(error)}`

@@ -41,12 +41,7 @@ jobs:
           s3-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           s3-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           database-key: unentropy-metrics.db
-          report-name: unentropy-report.html
-
-      - name: Prepare Pages artifact
-        run: |
-          mkdir -p pages
-          cp ./unentropy-report.html pages/index.html
+          report-dir: pages
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

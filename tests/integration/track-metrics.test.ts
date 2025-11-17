@@ -6,7 +6,7 @@ import { runTrackMetricsAction } from "../../src/actions/track-metrics";
 
 describe("track-metrics action integration", () => {
   const testConfigPath = "/tmp/unentropy-track-test.json";
-  const testReportPath = "/tmp/test-report.html";
+  const testReportDir = "/tmp/test-report";
   const originalEnv = process.env;
   let uniqueSuffix: string;
 
@@ -42,7 +42,7 @@ describe("track-metrics action integration", () => {
       "INPUT_STORAGE-TYPE": "sqlite-s3",
       "INPUT_CONFIG-FILE": testConfigPath,
       "INPUT_DATABASE-KEY": `integration-test-${uniqueSuffix}.db`,
-      "INPUT_REPORT-NAME": testReportPath,
+      "INPUT_REPORT-DIR": testReportDir,
       "INPUT_S3-ENDPOINT": "http://localhost:9000",
       "INPUT_S3-BUCKET": "unentropy-test",
       "INPUT_S3-REGION": "us-east-1",
@@ -57,8 +57,8 @@ describe("track-metrics action integration", () => {
     if (existsSync(testConfigPath)) {
       await unlink(testConfigPath);
     }
-    if (existsSync(testReportPath)) {
-      await unlink(testReportPath);
+    if (existsSync(testReportDir)) {
+      await unlink(`${testReportDir}/index.html`);
     }
   });
 
@@ -67,10 +67,10 @@ describe("track-metrics action integration", () => {
     await runTrackMetricsAction();
 
     // Verify the HTML report was generated
-    expect(existsSync(testReportPath)).toBe(true);
+    expect(existsSync(`${testReportDir}/index.html`)).toBe(true);
 
     // Read and verify the HTML report content
-    const html = await Bun.file(testReportPath).text();
+    const html = await Bun.file(`${testReportDir}/index.html`).text();
 
     // Basic HTML structure assertions
     expect(html).toContain("<!DOCTYPE html>");

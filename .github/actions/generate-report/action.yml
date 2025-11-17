@@ -9,10 +9,10 @@ inputs:
   database-path:
     description: "Path to local database file (should be provided by find-database action)"
     required: true
-  output-path:
-    description: "Output path for generated HTML report"
+  output-dir:
+    description: "Output directory for generated HTML report"
     required: false
-    default: "./unentropy-report.html"
+    default: "./unentropy-report"
   time-range:
     description: 'Time range filter (e.g., "last-30-days", "all")'
     required: false
@@ -64,7 +64,7 @@ runs:
         fi
       env:
         INPUT_DATABASE_PATH: ${{ inputs.database-path }}
-        INPUT_OUTPUT_PATH: ${{ inputs.output-path }}
+        INPUT_OUTPUT_DIR: ${{ inputs.output-dir }}
         INPUT_TIME_RANGE: ${{ inputs.time-range }}
         INPUT_TITLE: ${{ inputs.title }}
         INPUT_CONFIG_PATH: ${{ inputs.config-path }}

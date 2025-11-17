@@ -1,13 +1,13 @@
 import * as core from "@actions/core";
 import { promises as fs } from "fs";
-import { dirname, resolve } from "path";
+import { resolve } from "path";
 import { Storage } from "../storage/storage";
 import { generateReport } from "../reporter/generator";
 import { loadConfig } from "../config/loader";
 
 interface ActionInputs {
   databasePath: string;
-  outputPath: string;
+  outputDir: string;
   timeRange: string;
   title: string;
   configPath: string;
@@ -28,7 +28,7 @@ interface TimeRangeFilter {
 
 function parseInputs(): ActionInputs {
   const databasePath = core.getInput("database-path") || "./unentropy-metrics.db";
-  const outputPath = core.getInput("output-path") || "./unentropy-report.html";
+  const outputDir = core.getInput("output-dir") || "./unentropy-report";
   const timeRange = core.getInput("time-range") || "all";
   const title = core.getInput("title") || "Metrics Report";
   const configPath = core.getInput("config-path") || "./unentropy.json";
@@ -36,10 +36,6 @@ function parseInputs(): ActionInputs {
   // Validate inputs
   if (!databasePath.endsWith(".db") && !databasePath.endsWith(".sqlite")) {
     throw new Error(`Invalid database-path: must end with .db or .sqlite. Got: ${databasePath}`);
-  }
-
-  if (!outputPath.endsWith(".html")) {
-    throw new Error(`Invalid output-path: must end with .html. Got: ${outputPath}`);
   }
 
   if (!/^(all|last-\d+-days|last-\d+-weeks|last-\d+-months)$/.test(timeRange)) {
@@ -56,7 +52,7 @@ function parseInputs(): ActionInputs {
 
   return {
     databasePath,
-    outputPath,
+    outputDir,
     timeRange,
     title,
     configPath,
@@ -84,8 +80,7 @@ function parseTimeRange(timeRange: string): TimeRangeFilter {
   };
 }
 
-async function ensureOutputDirectory(outputPath: string): Promise<void> {
-  const outputDir = dirname(outputPath);
+async function ensureOutputDirectory(outputDir: string): Promise<void> {
   await fs.mkdir(outputDir, { recursive: true });
 }
 
@@ -205,7 +200,7 @@ export async function run(): Promise<void> {
   }
 
   // Ensure output directory exists
-  await ensureOutputDirectory(inputs.outputPath);
+  await ensureOutputDirectory(inputs.outputDir);
 
   // Database is already downloaded by the action workflow
   const tempDbPath = inputs.databasePath;
@@ -240,10 +235,11 @@ export async function run(): Promise<void> {
       config,
     });
 
-    await fs.writeFile(inputs.outputPath, emptyReport, "utf-8");
+    const emptyReportPath = `${inputs.outputDir}/index.html`;
+    await fs.writeFile(emptyReportPath, emptyReport, "utf-8");
 
     // Set outputs for empty report
-    core.setOutput("report-path", inputs.outputPath);
+    core.setOutput("report-path", emptyReportPath);
     core.setOutput("metrics-count", "0");
     core.setOutput("data-points", "0");
 
@@ -268,13 +264,14 @@ export async function run(): Promise<void> {
       config,
     });
 
-    await fs.writeFile(inputs.outputPath, report, "utf-8");
+    const reportPath = `${inputs.outputDir}/index.html`;
+    await fs.writeFile(reportPath, report, "utf-8");
 
     // Set outputs
     const timeRangeBounds = getTimeRangeBounds(timeRangeFilter, db);
     const allValues = db.getAllMetricValues();
 
-    core.setOutput("report-path", inputs.outputPath);
+    core.setOutput("report-path", reportPath);
     core.setOutput("metrics-count", allMetrics.length.toString());
     core.setOutput("data-points", allValues.length.toString());
     if (timeRangeBounds.start) {
@@ -304,9 +301,10 @@ export async function run(): Promise<void> {
   }
 
   // Write report to file
+  const reportPath = `${inputs.outputDir}/index.html`;
   try {
-    await fs.writeFile(inputs.outputPath, report, "utf-8");
-    core.info(`Report written to: ${inputs.outputPath}`);
+    await fs.writeFile(reportPath, report, "utf-8");
+    core.info(`Report written to: ${reportPath}`);
   } catch (error) {
     throw new Error(`Output file error: ${error instanceof Error ? error.message : String(error)}`);
   }
@@ -322,7 +320,7 @@ export async function run(): Promise<void> {
   });
 
   const outputs: ActionOutputs = {
-    reportPath: inputs.outputPath,
+    reportPath: `${inputs.outputDir}/index.html`,
     metricsCount: filteredMetricNames.length,
     dataPoints: filteredValues.length,
     timeRangeStart: timeRangeBounds.start,

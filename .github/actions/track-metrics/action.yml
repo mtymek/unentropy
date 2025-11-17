@@ -32,10 +32,10 @@ inputs:
     description: "Database file key in storage"
     required: false
     default: "unentropy.db"
-  report-name:
-    description: "Generated report file name"
+  report-dir:
+    description: "Generated report directory path"
     required: false
-    default: "unentropy-report.html"
+    default: "unentropy-report"
   timeout:
     description: "Action timeout in seconds"
     required: false
@@ -87,6 +87,6 @@ runs:
         INPUT_S3-SECRET-ACCESS-KEY: ${{ inputs.s3-secret-access-key }}
         INPUT_CONFIG-FILE: ${{ inputs.config-file }}
         INPUT_DATABASE-KEY: ${{ inputs.database-key }}
-        INPUT_REPORT-NAME: ${{ inputs.report-name }}
+        INPUT_REPORT-DIR: ${{ inputs.report-dir }}
         INPUT_TIMEOUT: ${{ inputs.timeout }}
         INPUT_VERBOSE: ${{ inputs.verbose }}
