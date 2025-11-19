@@ -165,7 +165,9 @@ describe("extractBuildContext", () => {
     process.env.GITHUB_RUN_ID = "12345";
     process.env.GITHUB_RUN_NUMBER = "42";
     process.env.GITHUB_EVENT_NAME = "pull_request";
-    // GITHUB_BASE_REF and GITHUB_HEAD_REF are not set
+    // Explicitly clear GITHUB_BASE_REF and GITHUB_HEAD_REF
+    delete process.env.GITHUB_BASE_REF;
+    delete process.env.GITHUB_HEAD_REF;
 
     const context = extractBuildContext();
 
