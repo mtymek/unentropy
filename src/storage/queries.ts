@@ -20,11 +20,23 @@ export class DatabaseQueries {
     const db = this.getDb();
     const stmt = db.query<
       { id: number },
-      [string, string, string, number, string | null, string | null, string]
+      [
+        string,
+        string,
+        string,
+        number,
+        string | null,
+        string | null,
+        string,
+        number | null,
+        string | null,
+        string | null,
+      ]
     >(`
       INSERT INTO build_contexts (
-        commit_sha, branch, run_id, run_number, actor, event_name, timestamp
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        commit_sha, branch, run_id, run_number, actor, event_name, timestamp,
+        pull_request_number, pull_request_base, pull_request_head
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       RETURNING id
     `);
 
@@ -35,7 +47,10 @@ export class DatabaseQueries {
       data.run_number,
       data.actor ?? null,
       data.event_name ?? null,
-      data.timestamp
+      data.timestamp,
+      data.pull_request_number ?? null,
+      data.pull_request_base ?? null,
+      data.pull_request_head ?? null
     );
 
     if (!result) throw new Error("Failed to insert build context");
@@ -178,5 +193,46 @@ export class DatabaseQueries {
     const db = this.getDb();
     const stmt = db.query<BuildContext, []>("SELECT * FROM build_contexts ORDER BY timestamp");
     return stmt.all();
+  }
+
+  getBaselineMetricValues(
+    metricName: string,
+    referenceBranch: string = "main",
+    maxBuilds: number = 20,
+    maxAgeDays: number = 90
+  ): { value_numeric: number }[] {
+    const db = this.getDb();
+    const stmt = db.query<{ value_numeric: number }, [string, string, number, number]>(`
+      SELECT mv.value_numeric
+      FROM metric_values mv
+      JOIN metric_definitions md ON mv.metric_id = md.id
+      JOIN build_contexts bc ON mv.build_id = bc.id
+      WHERE md.name = ? 
+        AND bc.branch = ?
+        AND bc.event_name = 'push'
+        AND bc.timestamp >= datetime('now', '-' || ? || ' days')
+        AND mv.value_numeric IS NOT NULL
+      ORDER BY bc.timestamp DESC
+      LIMIT ?
+    `);
+
+    return stmt.all(metricName, referenceBranch, maxAgeDays, maxBuilds);
+  }
+
+  getPullRequestMetricValue(
+    metricName: string,
+    pullRequestBuildId: number
+  ): { value_numeric: number } | undefined {
+    const db = this.getDb();
+    const stmt = db.query<{ value_numeric: number }, [string, number]>(`
+      SELECT mv.value_numeric
+      FROM metric_values mv
+      JOIN metric_definitions md ON mv.metric_id = md.id
+      WHERE md.name = ? 
+        AND mv.build_id = ?
+        AND mv.value_numeric IS NOT NULL
+    `);
+
+    return stmt.get(metricName, pullRequestBuildId) ?? undefined;
   }
 }

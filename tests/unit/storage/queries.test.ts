@@ -254,4 +254,241 @@ describe("DatabaseQueries", () => {
       expect(metrics).toHaveLength(0);
     });
   });
+
+  describe("getBaselineMetricValues", () => {
+    it("returns baseline values for metric from reference branch", () => {
+      // Create reference branch builds
+      const refBuild1 = queries.insertBuildContext({
+        commit_sha: "ref1".repeat(40),
+        branch: "main",
+        run_id: "ref1",
+        run_number: 1,
+        event_name: "push",
+        timestamp: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+      });
+
+      const refBuild2 = queries.insertBuildContext({
+        commit_sha: "ref2".repeat(40),
+        branch: "main",
+        run_id: "ref2",
+        run_number: 2,
+        event_name: "push",
+        timestamp: new Date(Date.now() - 43200000).toISOString(), // 12 hours ago
+      });
+
+      const metric = queries.upsertMetricDefinition({
+        name: "test-metric",
+        type: "numeric",
+      });
+
+      // Insert baseline values
+      queries.insertMetricValue({
+        metric_id: metric.id,
+        build_id: refBuild1,
+        value_numeric: 85.5,
+        collected_at: new Date().toISOString(),
+      });
+
+      queries.insertMetricValue({
+        metric_id: metric.id,
+        build_id: refBuild2,
+        value_numeric: 87.2,
+        collected_at: new Date().toISOString(),
+      });
+
+      const baselineValues = queries.getBaselineMetricValues("test-metric", "main");
+
+      expect(baselineValues).toHaveLength(2);
+      expect(baselineValues[0]?.value_numeric).toBe(87.2); // Most recent first
+      expect(baselineValues[1]?.value_numeric).toBe(85.5);
+    });
+
+    it("filters by reference branch", () => {
+      const mainBuild = queries.insertBuildContext({
+        commit_sha: "main1".repeat(40),
+        branch: "main",
+        run_id: "main1",
+        run_number: 1,
+        event_name: "push",
+        timestamp: new Date().toISOString(),
+      });
+
+      const featureBuild = queries.insertBuildContext({
+        commit_sha: "feat1".repeat(40),
+        branch: "feature",
+        run_id: "feat1",
+        run_number: 1,
+        event_name: "push",
+        timestamp: new Date().toISOString(),
+      });
+
+      const metric = queries.upsertMetricDefinition({
+        name: "branch-test",
+        type: "numeric",
+      });
+
+      queries.insertMetricValue({
+        metric_id: metric.id,
+        build_id: mainBuild,
+        value_numeric: 100,
+        collected_at: new Date().toISOString(),
+      });
+
+      queries.insertMetricValue({
+        metric_id: metric.id,
+        build_id: featureBuild,
+        value_numeric: 200,
+        collected_at: new Date().toISOString(),
+      });
+
+      const baselineValues = queries.getBaselineMetricValues("branch-test", "main");
+
+      expect(baselineValues).toHaveLength(1);
+      expect(baselineValues[0]?.value_numeric).toBe(100);
+    });
+
+    it("excludes non-push events and old builds", () => {
+      const oldBuild = queries.insertBuildContext({
+        commit_sha: "old1".repeat(40),
+        branch: "main",
+        run_id: "old1",
+        run_number: 1,
+        event_name: "push",
+        timestamp: new Date(Date.now() - 86400000 * 100).toISOString(), // 100 days ago
+      });
+
+      const prBuild = queries.insertBuildContext({
+        commit_sha: "pr1".repeat(40),
+        branch: "main",
+        run_id: "pr1",
+        run_number: 1,
+        event_name: "pull_request",
+        timestamp: new Date().toISOString(),
+      });
+
+      const metric = queries.upsertMetricDefinition({
+        name: "filter-test",
+        type: "numeric",
+      });
+
+      queries.insertMetricValue({
+        metric_id: metric.id,
+        build_id: oldBuild,
+        value_numeric: 50,
+        collected_at: new Date().toISOString(),
+      });
+
+      queries.insertMetricValue({
+        metric_id: metric.id,
+        build_id: prBuild,
+        value_numeric: 75,
+        collected_at: new Date().toISOString(),
+      });
+
+      const baselineValues = queries.getBaselineMetricValues("filter-test", "main", 20, 90);
+
+      expect(baselineValues).toHaveLength(0); // Both filtered out
+    });
+
+    it("respects maxBuilds limit", () => {
+      const metric = queries.upsertMetricDefinition({
+        name: "limit-test",
+        type: "numeric",
+      });
+
+      // Create 5 builds on main branch
+      for (let i = 0; i < 5; i++) {
+        const buildId = queries.insertBuildContext({
+          commit_sha: `build${i}`.repeat(40),
+          branch: "main",
+          run_id: `build${i}`,
+          run_number: i + 1,
+          event_name: "push",
+          timestamp: new Date().toISOString(),
+        });
+
+        queries.insertMetricValue({
+          metric_id: metric.id,
+          build_id: buildId,
+          value_numeric: i * 10,
+          collected_at: new Date().toISOString(),
+        });
+      }
+
+      const baselineValues = queries.getBaselineMetricValues("limit-test", "main", 3, 90);
+
+      expect(baselineValues).toHaveLength(3); // Limited to 3
+    });
+  });
+
+  describe("getPullRequestMetricValue", () => {
+    it("returns metric value for specific PR build", () => {
+      const prBuild = queries.insertBuildContext({
+        commit_sha: "pr1".repeat(40),
+        branch: "feature/test",
+        run_id: "pr1",
+        run_number: 1,
+        event_name: "pull_request",
+        timestamp: new Date().toISOString(),
+      });
+
+      const metric = queries.upsertMetricDefinition({
+        name: "pr-test",
+        type: "numeric",
+      });
+
+      queries.insertMetricValue({
+        metric_id: metric.id,
+        build_id: prBuild,
+        value_numeric: 42.5,
+        collected_at: new Date().toISOString(),
+      });
+
+      const value = queries.getPullRequestMetricValue("pr-test", prBuild);
+
+      expect(value?.value_numeric).toBe(42.5);
+    });
+
+    it("returns undefined for non-existent metric", () => {
+      const prBuild = queries.insertBuildContext({
+        commit_sha: "pr2".repeat(40),
+        branch: "feature/test",
+        run_id: "pr2",
+        run_number: 1,
+        event_name: "pull_request",
+        timestamp: new Date().toISOString(),
+      });
+
+      const value = queries.getPullRequestMetricValue("non-existent", prBuild);
+
+      expect(value).toBeUndefined();
+    });
+
+    it("returns undefined for null values", () => {
+      const prBuild = queries.insertBuildContext({
+        commit_sha: "pr3".repeat(40),
+        branch: "feature/test",
+        run_id: "pr3",
+        run_number: 1,
+        event_name: "pull_request",
+        timestamp: new Date().toISOString(),
+      });
+
+      const metric = queries.upsertMetricDefinition({
+        name: "null-test",
+        type: "numeric",
+      });
+
+      queries.insertMetricValue({
+        metric_id: metric.id,
+        build_id: prBuild,
+        value_label: "some-label", // No numeric value
+        collected_at: new Date().toISOString(),
+      });
+
+      const value = queries.getPullRequestMetricValue("null-test", prBuild);
+
+      expect(value).toBeUndefined();
+    });
+  });
 });

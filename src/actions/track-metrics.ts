@@ -3,6 +3,7 @@ import * as github from "@actions/github";
 import { loadConfig } from "../config/loader";
 import { Storage } from "../storage/storage";
 import { collectMetrics } from "../collector/collector";
+import { extractBuildContext } from "../collector/context";
 import { StorageConfig } from "../config/schema";
 import type { StorageProviderConfig } from "../storage/providers/interface";
 
@@ -246,11 +247,9 @@ export async function runTrackMetricsAction(): Promise<void> {
 
   // Phase 2: Collect metrics
   core.info("Collecting metrics...");
+  const context = extractBuildContext();
   const buildId = storage.insertBuildContext({
-    commit_sha: process.env.GITHUB_SHA || "unknown",
-    branch: process.env.GITHUB_REF_NAME || "unknown",
-    run_id: process.env.GITHUB_RUN_ID || "unknown",
-    run_number: parseInt(process.env.GITHUB_RUN_NUMBER || "0"),
+    ...context,
     timestamp: new Date().toISOString(),
   });
 
