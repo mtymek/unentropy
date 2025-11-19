@@ -3,6 +3,11 @@ name: CI
 on:
   pull_request:
 
+permissions:
+  contents: read
+  pull-requests: write # Required for PR comments
+  actions: read # Required to access workflow runs and artifacts
+
 jobs:
   test-bun:
     name: Test (Bun)
@@ -11,29 +16,16 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.2.13"
-
       - name: Install dependencies
         run: bun install --frozen-lockfile
-
+      - name: Run checks
+        run: bun run check
       - name: Build actions
         run: bun run build:actions
-
-      #      - name: Test itself
-      #        uses: ./.github/actions/track-metrics
-      #        with:
-      #          verbose: true
-      #          s3-endpoint: ${{ secrets.AWS_ENDPOINT_URL }}
-      #          s3-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      #          s3-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      #          s3-bucket: ${{ secrets.AWS_BUCKET_NAME }}
-      #          s3-region: ${{ secrets.AWS_REGION }}
-      #          database-key: "unentropy-metrics.db"
-
       - name: Start Minio container
         run: |
           docker run -d \
@@ -43,13 +35,31 @@ jobs:
             -e MINIO_ROOT_USER=minioadmin \
             -e MINIO_ROOT_PASSWORD=minioadmin \
             minio/minio server /data --console-address ":9001"
-
       - name: Wait for Minio and create test bucket
-        run: |
-          docker exec minio mc mb data/unentropy-test
-
-      - name: Run checks
-        run: bun run check
-
+        run: docker exec minio mc mb data/unentropy-test
       - name: Test
         run: bun test
+
+      - name: Test track-metrics action
+        id: track-metrics
+        uses: ./.github/actions/track-metrics
+        with:
+          verbose: true
+          enable-pr-comment: true
+          s3-endpoint: ${{ secrets.AWS_ENDPOINT_URL }}
+          s3-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          s3-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          s3-bucket: ${{ secrets.AWS_BUCKET_NAME }}
+          s3-region: ${{ secrets.AWS_REGION }}
+          database-key: "unentropy-metrics.db"
+
+      - name: Report track-metrics summary
+        run: |
+          echo "## 📊 Track-Metrics Action Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Success**: ${{ steps.track-metrics.outputs.success }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Storage Type**: ${{ steps.track-metrics.outputs.storage-type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Database Location**: ${{ steps.track-metrics.outputs.database-location }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Metrics Collected**: ${{ steps.track-metrics.outputs.metrics-collected }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Duration**: ${{ steps.track-metrics.outputs.duration }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **PR Comment URL**: ${{ steps.track-metrics.outputs.pr-comment-url }}" >> $GITHUB_STEP_SUMMARY

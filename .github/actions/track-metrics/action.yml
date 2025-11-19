@@ -48,6 +48,14 @@ inputs:
     description: "Enable verbose logging"
     required: false
     default: "false"
+  enable-pr-comment:
+    description: "Whether to post or update a pull request comment with metrics summary"
+    required: false
+    default: "false"
+  pr-comment-marker:
+    description: "Custom HTML marker to identify canonical metrics comment"
+    required: false
+    default: "<!-- unentropy-metrics-quality-gate -->"
 outputs:
   success:
     description: "Whether the workflow completed successfully"
@@ -67,6 +75,8 @@ outputs:
     description: "Error code (if failed)"
   error-message:
     description: "Error message (if failed)"
+  pr-comment-url:
+    description: "URL of the pull request comment (if created)"
 runs:
   using: "composite"
   steps:
@@ -90,3 +100,6 @@ runs:
         INPUT_REPORT-DIR: ${{ inputs.report-dir }}
         INPUT_TIMEOUT: ${{ inputs.timeout }}
         INPUT_VERBOSE: ${{ inputs.verbose }}
+        INPUT_ENABLE-PR-COMMENT: ${{ inputs.enable-pr-comment }}
+        INPUT_PR-COMMENT-MARKER: ${{ inputs.pr-comment-marker }}
+        GITHUB_TOKEN: ${{ github.token }}

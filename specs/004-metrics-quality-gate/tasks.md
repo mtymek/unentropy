@@ -34,7 +34,7 @@ description: "Task list for Metrics Quality Gate feature"
 
 - [x] T001 Review metrics quality gate design docs in specs/004-metrics-quality-gate/
 - [x] T002 [P] Verify Bun build lint typecheck and test commands in package.json
-- [ ] T003 [P] Review existing metrics workflow entrypoint in src/actions/track-metrics.ts
+- [x] T003 [P] Review existing metrics workflow entrypoint in src/actions/track-metrics.ts
 
 ---
 
@@ -44,7 +44,7 @@ description: "Task list for Metrics Quality Gate feature"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 Implement basic pull request comment that outputs track-metrics run status and metrics count in src/actions/track-metrics.ts
+- [x] T004 Implement basic pull request comment that outputs track-metrics run status and metrics count in src/actions/track-metrics.ts
 - [ ] T005 [P] Wire minimal enable-pr-comment and pr-comment-marker inputs for basic status comment in .github/actions/track-metrics/action.yml and src/actions/track-metrics.ts
 - [ ] T006 [P] Implement baseline and pull request metric history queries used for diffs in src/storage/queries.ts
 - [ ] T007 [P] Add unit tests for baseline and pull request diff queries in tests/unit/storage/queries.test.ts
