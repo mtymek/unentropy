@@ -8,10 +8,10 @@
 This feature adds a "metrics quality gate" on top of the existing Unentropy metrics tracking workflow. Repository maintainers will be able to configure per-metric thresholds and have pull requests automatically evaluated against those thresholds, using the main branch (or configured reference) as the baseline. When running in a pull request context, the `track-metrics` workflow can optionally post or update a single pull request comment summarising metric deltas versus the reference branch and clearly flagging any threshold violations.
 
 At a high level, the implementation will:
-- Extend configuration to express threshold rules for numeric metrics and enable/disable the quality gate and pull request comment behaviour.
-- Use existing storage and reporting components to read baseline metrics from the reference branch and current metrics for the pull request.
-- Add evaluation logic that computes pass/fail status per metric and an overall quality gate result.
-- Integrate with the track-metrics GitHub Action to surface results via outputs and an optional pull request comment.
+- Use existing storage and reporting components to read baseline metrics from the reference branch and current metrics for the pull request and surface metric deltas in a single pull request comment.
+- Extend configuration to express optional threshold rules for numeric metrics and enable/disable the quality gate behaviour independently of the comment.
+- Add evaluation logic that computes pass/fail status per metric and an overall quality gate result based on configured thresholds and baselines.
+- Integrate with the track-metrics GitHub Action to surface gate results via action outputs and, when enabled, enrich the existing pull request comment with gate status.
 
 ## Technical Context
 

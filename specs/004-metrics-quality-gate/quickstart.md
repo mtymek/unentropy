@@ -8,15 +8,36 @@
 
 This guide outlines the concrete steps to implement the Metrics Quality Gate feature in the existing Unentropy codebase. It assumes the core metrics collection, storage, and reporting features are already in place.
 
-At a high level, implementation will:
-- Extend configuration and validation to support a `qualityGate` block with thresholds and mode.
-- Add evaluation logic that reads baseline data from the existing SQLite database and compares pull request metrics against configured thresholds.
-- Integrate gate evaluation into the `track-metrics` action and expose results via outputs and an optional pull request comment.
-- Add tests (unit, integration, and contract) to cover configuration, evaluation, and action behaviour.
+We will deliver this feature incrementally:
+- **Phase 1**: Add a pull request comment that shows how metrics have changed compared with the reference branch (diff-only, no thresholds or gate decisions).
+- **Later phases**: Introduce the `qualityGate` configuration block, evaluation logic, and optional hard/soft gate behaviour that can block or warn on pull requests.
 
-## Phase 1: Configuration and Schema
+## Phase 1: Pull Request Comment with Metric Diffs (No Gate)
 
-**Goal**: Represent and validate the `qualityGate` block in `unentropy.json`.
+**Goal**: When running on a pull request with comments enabled, post or update a single compact comment that summarises how each metric has changed compared with the reference branch, without making any pass/fail decisions.
+
+**Components**:
+1. `src/storage/queries.ts` – Add helper queries to:
+   - Fetch the latest successful metrics snapshot for the reference branch (for example, main) from the existing SQLite database.
+   - Fetch the current metrics for the pull request build.
+2. `src/actions/track-metrics.ts` – Implement logic to:
+   - Detect pull_request context and the reference branch.
+   - Compute per-metric deltas between baseline and pull request values.
+   - Build a compact comment payload (heading, summary line, and table of metric diffs).
+   - Use the configured marker (or default) to find or create the canonical comment and update it in place.
+3. `tests/integration/track-metrics.test.ts` – Add scenarios that:
+   - Simulate a pull_request run with changed metrics and verify that the diff payload is constructed correctly.
+   - Ensure no comment is posted when the workflow is not running in a pull_request context or comments are disabled.
+
+**Implementation Hints**:
+- Focus Phase 1 on **diff-only** output: show baseline value, pull request value, and delta (absolute and/or percent) for each relevant metric; do not reference thresholds or gate status yet.
+- Reuse existing build context helpers to determine branch names and commit SHAs.
+- Keep the comment small and skimmable by default (for example, highlight the most changed metrics first and summarise the rest).
+- Ensure comment failures (for example, permission errors) do not fail the job; log and continue.
+
+## Phase 2: Configuration and Schema for Quality Gate
+
+**Goal**: Represent and validate the optional `qualityGate` block in `unentropy.json`, without yet enforcing it in CI behaviour.
 
 **Components**:
 1. `src/config/schema.ts` – Extend the existing configuration schema with `qualityGate`, `baseline`, and `thresholds` fields.
@@ -27,14 +48,15 @@ At a high level, implementation will:
 - Mirror the structures defined in `specs/004-metrics-quality-gate/contracts/config-schema.md`.
 - Enforce that thresholds reference existing metric names and numeric metrics only.
 - Provide sensible defaults for optional values (for example, `mode: 'soft'`, `maxCommentMetrics: 30`, `baseline.maxBuilds: 20`).
+- Keep the system behaviour unchanged when `qualityGate` is omitted; Phase 1’s comment continues to work independently.
 
-## Phase 2: Evaluation Logic
+## Phase 3: Evaluation Logic (Soft Gate)
 
-**Goal**: Evaluate metric thresholds given the current pull request run and baseline data from the reference branch.
+**Goal**: Evaluate metric thresholds given the current pull request run and baseline data from the reference branch, producing a `QualityGateResult` that can be reported but does not yet have to block merges.
 
 **Components**:
-1. `src/storage/queries.ts` – Add helper queries to:
-   - Fetch recent successful builds for the reference branch within the baseline window.
+1. `src/storage/queries.ts` – Reuse or extend the Phase 1 queries to:
+   - Fetch recent successful builds for the reference branch within the configured baseline window.
    - Retrieve numeric metric values for those builds and for the current build.
 2. `src/actions/track-metrics.ts` (or a dedicated helper module) – Implement:
    - Construction of `MetricSample` and `MetricEvaluationResult` objects.
@@ -44,53 +66,39 @@ At a high level, implementation will:
 
 **Implementation Hints**:
 - Keep evaluation O(number of metrics) using batched queries over a limited history window (no full-table scans).
-- Treat missing baseline data as `unknown` for that metric and avoid hard-failing the job.
-- Reuse existing build context information to determine whether the current run is against a pull request and which branch is the reference.
+- Treat missing baseline data as `unknown` for that metric and avoid hard-failing the job at this phase.
+- Align behaviour with the decisions recorded in `research.md` for baseline windows and aggregation.
 
-## Phase 3: GitHub Action Integration and Outputs
+## Phase 4: GitHub Action Integration and Optional Hard Gate
 
-**Goal**: Wire the quality gate into the `track-metrics` GitHub Action and expose results.
+**Goal**: Wire the quality gate into the `track-metrics` GitHub Action so that gate results are exposed via inputs/outputs and, optionally, can influence job success or failure.
 
 **Components**:
-1. `.github/actions/track-metrics/action.yml` – Add the new inputs and outputs defined in `contracts/action-interface.md`.
+1. `.github/actions/track-metrics/action.yml` – Add or confirm the inputs and outputs defined in `contracts/action-interface.md` (gate mode, comment enable flag, gate status outputs, failing metrics list, comment URL).
 2. `src/actions/track-metrics.ts` –
    - Read gate-related inputs and merge them with configuration.
    - Invoke the evaluation logic after metrics have been collected.
    - Set outputs such as `quality-gate-status`, `quality-gate-mode`, and `quality-gate-failing-metrics`.
+   - Decide whether to fail the job when `mode` is `hard` and blocking thresholds are violated.
 3. `tests/contract/track-metrics-config.test.ts` – Extend contract tests to assert that inputs and outputs behave as specified.
 
 **Implementation Hints**:
 - Keep the main action entrypoint focused on orchestration; consider extracting gate evaluation into a small helper module to keep files readable.
-- Ensure that existing behaviour is preserved when `qualityGate` is not configured.
+- Ensure that existing behaviour is preserved when `qualityGate` is not configured or when `mode` is `off`.
 - Respect the `mode` (`off`, `soft`, `hard`) when deciding whether to fail the job.
-
-## Phase 4: Pull Request Comment Generation
-
-**Goal**: Generate and maintain a single, compact pull request comment that summarises metrics and gate status.
-
-**Components**:
-1. `src/actions/track-metrics.ts` or a new helper under `src/reporter/` – Implement comment payload construction based on `PullRequestFeedbackPayload` from `data-model.md`.
-2. A thin GitHub API integration layer (reusing existing patterns) to:
-   - Find or create the canonical Unentropy metrics comment using a marker.
-   - Update the comment with the latest payload.
-3. `tests/integration/track-metrics.test.ts` – Add scenarios that simulate pull_request runs and verify that the comment payload is built correctly (even if real API calls are mocked).
-
-**Implementation Hints**:
-- Keep the comment under the configured size and metric-count limits; summarise the rest.
-- Design the comment body as Markdown with a short heading, one-line summary, and a small table of metrics.
-- Ensure comment failures (for example, permission errors) do not cause the job to fail.
+- Reuse the Phase 1 comment so that, when comments are enabled, the gate status is simply added to the existing diff summary.
 
 ## Testing Strategy
 
 - **Unit tests**:
-  - Config schema and loader changes for the `qualityGate` block.
-  - Evaluation logic for each threshold mode and edge cases (missing baseline, missing PR value).
-  - Comment payload formatting and truncation rules.
+  - Comment diff calculation and payload formatting for Phase 1.
+  - Config schema and loader changes for the `qualityGate` block (Phase 2).
+  - Evaluation logic for each threshold mode and edge cases (missing baseline, missing PR value) (Phase 3).
 - **Integration tests**:
-  - End-to-end runs of `track-metrics` in soft and hard modes.
+  - End-to-end runs of `track-metrics` in PR mode with comments enabled (diff-only and with gate status once implemented).
   - Behaviour when thresholds are missing, when all metrics pass, and when at least one metric fails.
 - **Contract tests**:
-  - Inputs and outputs for the `track-metrics` GitHub Action, including gate-related values.
+  - Inputs and outputs for the `track-metrics` GitHub Action, including gate-related values and comment-related flags.
 
 ## Build and CI Notes
 
