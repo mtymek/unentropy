@@ -1,9 +1,10 @@
 import { Storage } from "./storage";
+import { Database } from "bun:sqlite";
 
 interface Migration {
   version: string;
   description: string;
-  up: (db: any) => void;
+  up: (db: Database) => void;
 }
 
 const migrations: Migration[] = [

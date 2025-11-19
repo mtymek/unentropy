@@ -139,7 +139,7 @@ describe("Schema Initialization", () => {
       // Create a mock storage object that returns our database
       const mockStorage = {
         getConnection: () => db,
-      } as any;
+      } as Storage;
 
       // Initialize to version 1.0.0 only
       initializeSchema(mockStorage, "1.0.0");

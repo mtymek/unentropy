@@ -45,9 +45,6 @@ export type MetricConfig = z.infer<typeof MetricConfigSchema>;
 export type StorageConfig = z.infer<typeof StorageConfigSchema>;
 export type UnentropyConfig = z.infer<typeof UnentropyConfigSchema>;
 
-// Quality Gate types
-export type { MetricThresholdConfig, QualityGateConfig, BaselineConfig } from "./quality-gate";
-
 export function validateConfig(config: unknown): UnentropyConfig {
   const result = UnentropyConfigSchema.safeParse(config);
 

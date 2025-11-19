@@ -1,9 +1,8 @@
-import { describe, test, expect, beforeEach, afterEach } from "bun:test";
+import { describe, test, beforeEach, afterEach } from "bun:test";
 import { unlink } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { writeFileSync } from "node:fs";
 import { runTrackMetricsAction } from "../../src/actions/track-metrics";
-import { Storage } from "../../src/storage/storage";
 
 describe("track-metrics action integration", () => {
   const testConfigPath = "/tmp/unentropy-track-test.json";

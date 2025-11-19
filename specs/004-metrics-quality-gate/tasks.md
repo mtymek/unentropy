@@ -50,7 +50,7 @@ description: "Task list for Metrics Quality Gate feature"
 - [x] T007 [P] Add unit tests for baseline and pull request diff queries in tests/unit/storage/queries.test.ts
 - [x] T008 [P] Ensure pull request and reference branch context fields are exposed for diff queries in src/collector/context.ts
 - [x] T009 [P] Confirm collector writes branch and pull request identifiers needed for diff queries in src/collector/collector.ts
-- [ ] T010 [P] Extend basic PR comment to include metric diffs when baseline data is available in src/actions/track-metrics.ts
+- [x] T010 [P] Extend basic PR comment to include metric diffs when baseline data is available in src/actions/track-metrics.ts
 - [ ] T011 Implement GitHub REST client helper to create or update canonical diff-aware metrics comment in src/actions/track-metrics.ts
 - [ ] T012 [P] Wire max-pr-comment-metrics input and sizing defaults for diff-aware comments in .github/actions/track-metrics/action.yml and src/actions/track-metrics.ts
 - [ ] T013 Add integration coverage for basic and diff-aware pull request metrics comments in tests/integration/track-metrics.test.ts

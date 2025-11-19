@@ -197,9 +197,9 @@ export class DatabaseQueries {
 
   getBaselineMetricValues(
     metricName: string,
-    referenceBranch: string = "main",
-    maxBuilds: number = 20,
-    maxAgeDays: number = 90
+    referenceBranch = "main",
+    maxBuilds = 20,
+    maxAgeDays = 90
   ): { value_numeric: number }[] {
     const db = this.getDb();
     const stmt = db.query<{ value_numeric: number }, [string, string, number, number]>(`
