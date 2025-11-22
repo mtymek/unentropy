@@ -192,8 +192,18 @@ interface MetricThresholdConfig {
 ```json
 {
   "metrics": [
-    { "name": "coverage", "type": "numeric", "command": "npm run coverage -- --json | jq -r '.total.lines.pct'", "unit": "%" },
-    { "name": "bundle-size", "type": "numeric", "command": "du -k dist/bundle.js | cut -f1", "unit": "KB" }
+    { 
+      "name": "coverage", 
+      "type": "numeric", 
+      "command": "npm run coverage -- --json | jq -r '.total.lines.pct'", 
+      "unit": "%" 
+    },
+    { 
+      "name": "bundle-size", 
+      "type": "numeric", 
+      "command": "du -k dist/bundle.js | cut -f1", 
+      "unit": "KB" 
+    }
   ],
   "qualityGate": {
     "mode": "soft",
@@ -211,7 +221,12 @@ interface MetricThresholdConfig {
 ```json
 {
   "metrics": [
-    { "name": "coverage", "type": "numeric", "command": "npm run coverage -- --json | jq -r '.total.lines.pct'", "unit": "%" }
+    { 
+      "name": "coverage", 
+      "type": "numeric", 
+      "command": "npm run coverage -- --json | jq -r '.total.lines.pct'", 
+      "unit": "%" 
+    }
   ],
   "qualityGate": {
     "mode": "hard",
@@ -233,7 +248,11 @@ interface MetricThresholdConfig {
 ```json
 {
   "metrics": [
-    { "name": "perf-score", "type": "numeric", "command": "./scripts/measure-perf-score.sh" }
+    { 
+      "name": "perf-score", 
+      "type": "numeric", 
+      "command": "./scripts/measure-perf-score.sh" 
+    }
   ],
   "qualityGate": {
     "mode": "soft",

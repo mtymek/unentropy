@@ -32,10 +32,10 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 Create MetricTemplate interface in src/metrics/types.ts
-- [ ] T005 Create built-in metrics registry structure in src/metrics/registry.ts
-- [ ] T006 Create resolver module skeleton in src/metrics/resolver.ts
-- [ ] T007 Extend MetricConfig schema to support optional $ref in src/config/schema.ts
+- [x] T004 Create MetricTemplate interface in src/metrics/types.ts
+- [x] T005 Create built-in metrics registry structure in src/metrics/registry.ts
+- [x] T006 Create resolver module skeleton in src/metrics/resolver.ts
+- [x] T007 Extend MetricConfig schema to support optional $ref in src/config/schema.ts
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -49,13 +49,13 @@
 
 ### Implementation for User Story 1
 
-- [ ] T008 [P] [US1] Define coverage built-in metric in src/metrics/registry.ts
-- [ ] T009 [P] [US1] Define function-coverage built-in metric in src/metrics/registry.ts
-- [ ] T010 [P] [US1] Define loc built-in metric in src/metrics/registry.ts
-- [ ] T011 [P] [US1] Define bundle-size built-in metric in src/metrics/registry.ts
-- [ ] T012 [P] [US1] Define build-time built-in metric in src/metrics/registry.ts
-- [ ] T013 [P] [US1] Define test-time built-in metric in src/metrics/registry.ts
-- [ ] T014 [P] [US1] Define dependencies-count built-in metric in src/metrics/registry.ts
+- [x] T008 [P] [US1] Define coverage built-in metric in src/metrics/registry.ts
+- [x] T009 [P] [US1] Define function-coverage built-in metric in src/metrics/registry.ts
+- [x] T010 [P] [US1] Define loc built-in metric in src/metrics/registry.ts
+- [x] T011 [P] [US1] Define bundle-size built-in metric in src/metrics/registry.ts
+- [x] T012 [P] [US1] Define build-time built-in metric in src/metrics/registry.ts
+- [x] T013 [P] [US1] Define test-time built-in metric in src/metrics/registry.ts
+- [x] T014 [P] [US1] Define dependencies-count built-in metric in src/metrics/registry.ts
 - [ ] T015 [US1] Implement getBuiltInMetric lookup function in src/metrics/registry.ts
 - [ ] T016 [US1] Implement listAvailableMetricIds function in src/metrics/registry.ts
 - [ ] T017 [US1] Implement resolveMetricReference function in src/metrics/resolver.ts

@@ -22,12 +22,14 @@ The base configuration schema is defined in `/specs/001-mvp-metrics-tracking/con
 
 This feature extends `MetricConfig` to support an optional `$ref` property for built-in metric references.
 
+**Important**: The `command` field is ALWAYS required, regardless of whether `$ref` is used. Built-in metrics are metadata templates only and do not provide commands. This ensures Unentropy remains technology-agnostic and supports diverse project setups.
+
 ```typescript
 interface MetricConfig {
   $ref?: string;                  // NEW: Optional built-in metric ID
   name?: string;                  // Required when no $ref, optional override when $ref present
   type?: 'numeric' | 'label';     // Required when no $ref, inherited when $ref present
-  command?: string;               // Required when no $ref, optional override when $ref present
+  command: string;                // ALWAYS required (user must provide project-specific command)
   description?: string;           // Optional
   unit?: string;                  // Optional
   timeout?: number;               // Optional
@@ -67,23 +69,23 @@ interface UnentropyConfig {
 - `test-time` - Test suite duration
 - `dependencies-count` - Dependency count
 
-### Override Properties (optional for built-in metric references)
+### Required and Override Properties
 
-When using `$ref`, all `MetricConfig` properties can be provided as overrides:
+When using `$ref`, the following rules apply:
 
-| Property | Type | Constraints | Effect |
-|----------|------|-------------|--------|
-| `name` | string | Pattern: `^[a-z0-9-]+$`, Length: 1-64 chars | Overrides built-in metric name |
-| `description` | string | Max 256 characters | Overrides built-in description |
-| `command` | string | Non-empty, Max 1024 characters | Overrides built-in command |
-| `unit` | string | Max 10 characters | Overrides built-in unit |
-| `timeout` | number | Positive integer, Max 300000 ms | Adds/overrides timeout |
+| Property | Required | Constraints | Effect |
+|----------|----------|-------------|--------|
+| `command` | **Yes** | Non-empty, Max 1024 characters | **Always required** - must be provided by user for project-specific execution |
+| `name` | No | Pattern: `^[a-z0-9-]+$`, Length: 1-64 chars | Optional override of built-in metric name |
+| `description` | No | Max 256 characters | Optional override of built-in description |
+| `unit` | No | Max 10 characters | Optional override of built-in unit |
+| `timeout` | No | Positive integer, Max 300000 ms | Optional timeout specification |
 
-**Override Behavior**:
-- Properties specified alongside `$ref` take precedence over built-in defaults
-- Unspecified properties use built-in defaults
-- All overrides are validated against MetricConfig schema rules
-- Type field (`numeric` | `label`) cannot be overridden (inherited from built-in metric)
+**Inheritance and Override Behavior**:
+- `type` field (`numeric` | `label`) is inherited from built-in metric and cannot be overridden
+- `name`, `description`, and `unit` use built-in defaults unless explicitly overridden
+- `command` is NEVER inherited - must always be provided by the user
+- All properties are validated against MetricConfig schema rules
 
 ## JSON Schema (Extended)
 
@@ -136,7 +138,7 @@ When using `$ref`, all `MetricConfig` properties can be provided as overrides:
           },
           {
             "type": "object",
-            "required": ["$ref"],
+            "required": ["$ref", "command"],
             "properties": {
               "$ref": {
                 "type": "string",
@@ -197,20 +199,30 @@ When using `$ref`, all `MetricConfig` properties can be provided as overrides:
 ```json
 {
   "metrics": [
-    {"$ref": "coverage"},
-    {"$ref": "bundle-size"},
-    {"$ref": "loc"}
+    {
+      "$ref": "coverage",
+      "command": "bun test --coverage --coverage-reporter=json | jq -r '.total.lines.pct'"
+    },
+    {
+      "$ref": "bundle-size",
+      "command": "du -k dist/bundle.js | cut -f1"
+    },
+    {
+      "$ref": "loc",
+      "command": "find src/ -name '*.ts' | xargs wc -l | tail -1 | awk '{print $1}'"
+    }
   ]
 }
 ```
 
-### 2. Built-in Metrics with Overrides
+### 2. Built-in Metrics with Property Overrides
 
 ```json
 {
   "metrics": [
     {
       "$ref": "coverage",
+      "command": "npm run test:coverage -- --json | jq -r '.coverage.total'",
       "name": "unit-test-coverage"
     },
     {
@@ -227,8 +239,14 @@ When using `$ref`, all `MetricConfig` properties can be provided as overrides:
 ```json
 {
   "metrics": [
-    {"$ref": "coverage"},
-    {"$ref": "loc"},
+    {
+      "$ref": "coverage",
+      "command": "bun test --coverage --coverage-reporter=json | jq -r '.total.lines.pct'"
+    },
+    {
+      "$ref": "loc",
+      "command": "find src/ -name '*.ts' | xargs wc -l | tail -1 | awk '{print $1}'"
+    },
     {
       "name": "custom-score",
       "type": "numeric",
@@ -238,13 +256,19 @@ When using `$ref`, all `MetricConfig` properties can be provided as overrides:
 }
 ```
 
-### 4. Complete Configuration
+### 4. Complete Configuration with Quality Gate
 
 ```json
 {
   "metrics": [
-    {"$ref": "coverage"},
-    {"$ref": "bundle-size"}
+    {
+      "$ref": "coverage",
+      "command": "bun test --coverage --coverage-reporter=json | jq -r '.total.lines.pct'"
+    },
+    {
+      "$ref": "bundle-size",
+      "command": "du -k dist/bundle.js | cut -f1"
+    }
   ],
   "storage": {
     "type": "sqlite-s3"
@@ -267,9 +291,10 @@ When using `$ref`, all `MetricConfig` properties can be provided as overrides:
 ### Reference Validation
 
 1. **Valid $ref**: Must match one of the built-in metric IDs (case-sensitive)
-2. **No type override**: Type is inherited from built-in metric and cannot be overridden
-3. **Override validation**: All override properties must pass MetricConfig validation
-4. **Name uniqueness**: Resolved metric names must be unique (applies after override)
+2. **Command required**: `command` field must always be provided, regardless of `$ref` usage
+3. **No type override**: Type is inherited from built-in metric and cannot be overridden
+4. **Property validation**: All properties must pass MetricConfig validation
+5. **Name uniqueness**: Resolved metric names must be unique (applies after override)
 
 ### Resolution Order
 
@@ -282,7 +307,15 @@ When using `$ref`, all `MetricConfig` properties can be provided as overrides:
 3. Check for duplicate metric names across all resolved metrics
 4. Return validated configuration
 
-## Error Messages
+### Error Messages
+
+### Missing Command Field
+
+```
+Error in metric with "$ref: coverage": command field is required
+Built-in metrics are templates only and do not provide commands.
+You must specify a command appropriate for your project's technology and setup.
+```
 
 ### Invalid Built-in Metric Reference
 
