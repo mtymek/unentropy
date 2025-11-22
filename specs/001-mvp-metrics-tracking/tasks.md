@@ -119,7 +119,7 @@ This separation enables:
 - [x] T013 [P] Write unit tests for provider factory in tests/unit/storage/providers/factory.test.ts
 - [x] T013b [P] Write unit tests for SqliteDatabaseAdapter in tests/unit/storage/adapters/sqlite.test.ts
 - [x] T014 [P] Write unit tests for MetricsRepository in tests/unit/storage/repository.test.ts
-- [x] T015 [P] Write unit tests for Storage orchestrator in tests/unit/storage/client.test.ts
+- [x] T015 [P] Write unit tests for Storage orchestrator in tests/unit/storage/storage.test.ts
 - [x] T016 [P] Write unit tests for schema initialization in tests/unit/storage/migrations.test.ts
 
 **Checkpoint**: Storage layer ready with three-layer architecture - user story implementation can now begin

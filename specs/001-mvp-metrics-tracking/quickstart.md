@@ -258,7 +258,7 @@ export function initializeSchema(db: Database): void {
 - Provider tests: `providers/sqlite-local.test.ts`, `providers/factory.test.ts`
 - Adapter tests: `adapters/sqlite.test.ts`
 - Repository tests: `repository.test.ts`
-- Storage tests: `client.test.ts`
+- Storage tests: `storage.test.ts`
 - Schema tests: `migrations.test.ts`
 
 **Key Benefits**:

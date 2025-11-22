@@ -117,9 +117,9 @@ function filterMetricsByTimeRange(
   const filteredMetrics: string[] = [];
   for (const metricName of metricNames) {
     try {
-      const timeSeries = db.getMetricTimeSeries(metricName);
+      const timeSeries = db.getRepository().queries.getMetricTimeSeries(metricName);
       const hasRecentData = timeSeries.some(
-        (point) => new Date(point.build_timestamp) >= cutoffDate
+        (point: { build_timestamp: string }) => new Date(point.build_timestamp) >= cutoffDate
       );
 
       if (hasRecentData) {
@@ -141,12 +141,12 @@ function getTimeRangeBounds(
   db: Storage
 ): { start?: string; end?: string } {
   if (timeRangeFilter.type === "all") {
-    const allBuilds = db.getAllBuildContexts();
+    const allBuilds = db.getRepository().queries.getAllBuildContexts();
     if (allBuilds.length === 0) {
       return {};
     }
 
-    const timestamps = allBuilds.map((b) => b.timestamp).sort();
+    const timestamps = allBuilds.map((b: { timestamp: string }) => b.timestamp).sort();
     return {
       start: timestamps[0] ?? undefined,
       end: timestamps[timestamps.length - 1] ?? undefined,
@@ -224,7 +224,7 @@ export async function run(): Promise<void> {
   core.info(`Using time range filter: ${JSON.stringify(timeRangeFilter)}`);
 
   // Get all available metrics
-  const allMetrics = db.getAllMetricDefinitions();
+  const allMetrics = db.getRepository().queries.getAllMetricDefinitions();
   if (allMetrics.length === 0) {
     core.warning("No metrics found in database");
 
@@ -249,7 +249,7 @@ export async function run(): Promise<void> {
 
   // Filter metrics by time range
   const filteredMetricNames = filterMetricsByTimeRange(
-    allMetrics.map((m) => m.name),
+    allMetrics.map((m: { name: string }) => m.name),
     timeRangeFilter,
     db
   );
@@ -260,7 +260,7 @@ export async function run(): Promise<void> {
     // Generate report with all metrics but note the time range
     const report = generateReport(db, {
       repository: process.env.GITHUB_REPOSITORY || "unknown/repository",
-      metricNames: allMetrics.map((m) => m.name),
+      metricNames: allMetrics.map((m: { name: string }) => m.name),
       config,
     });
 
@@ -269,7 +269,7 @@ export async function run(): Promise<void> {
 
     // Set outputs
     const timeRangeBounds = getTimeRangeBounds(timeRangeFilter, db);
-    const allValues = db.getAllMetricValues();
+    const allValues = db.getRepository().queries.getAllMetricValues();
 
     core.setOutput("report-path", reportPath);
     core.setOutput("metrics-count", allMetrics.length.toString());
@@ -313,7 +313,7 @@ export async function run(): Promise<void> {
   const timeRangeBounds = getTimeRangeBounds(timeRangeFilter, db);
   const filteredValues = filteredMetricNames.flatMap((metricName) => {
     try {
-      return db.getMetricTimeSeries(metricName);
+      return db.getRepository().queries.getMetricTimeSeries(metricName);
     } catch {
       return [];
     }

@@ -14,12 +14,13 @@ import type {
 } from "./types";
 
 export function getMetricTimeSeries(db: Storage, metricName: string): TimeSeriesData {
-  const metricDef = db.getMetricDefinition(metricName);
+  const repository = db.getRepository();
+  const metricDef = repository.queries.getMetricDefinition(metricName);
   if (!metricDef) {
     throw new Error(`Metric '${metricName}' not found`);
   }
 
-  const rows = db.getMetricTimeSeries(metricName);
+  const rows = repository.queries.getMetricTimeSeries(metricName);
 
   const dataPoints: TimeSeriesDataPoint[] = rows.map((row) => ({
     timestamp: row.build_timestamp,
@@ -112,7 +113,7 @@ export function calculateSummaryStats(data: TimeSeriesData): SummaryStats {
 }
 
 function getReportMetadata(db: Storage, repository: string): ReportMetadata {
-  const allBuilds = db.getAllBuildContexts();
+  const allBuilds = db.getRepository().queries.getAllBuildContexts();
 
   if (allBuilds.length === 0) {
     const now = new Date().toISOString();
@@ -158,12 +159,12 @@ function getReportMetadata(db: Storage, repository: string): ReportMetadata {
 export function generateReport(db: Storage, options: GenerateReportOptions = {}): string {
   const repository = options.repository || "unknown/repository";
 
-  const allMetrics = db.getAllMetricDefinitions();
+  const allMetrics = db.getRepository().queries.getAllMetricDefinitions();
 
   // If config is provided, only show metrics that are configured
   let metricNames: string[];
   if (options.config) {
-    const configuredMetricNames = options.config.metrics.map((m) => m.name);
+    const configuredMetricNames = options.config.metrics.map((m: { name: string }) => m.name);
     if (options.metricNames) {
       // Filter both by config and explicit metricNames
       metricNames = options.metricNames.filter((name) => configuredMetricNames.includes(name));

@@ -146,8 +146,8 @@ async function createOrUpdatePullRequestComment(
   totalMetrics: number,
   failures: { metricName: string; reason: string }[],
   marker: string,
-  storage?: Storage,
-  buildId?: number
+  storage: Storage,
+  buildId: number
 ): Promise<string | null> {
   const token = process.env.GITHUB_TOKEN;
   if (!token) {
@@ -173,56 +173,46 @@ async function createOrUpdatePullRequestComment(
 
   // Calculate metric diffs if storage and buildId are available
   let metricDiffsSection = "";
-  if (storage && buildId) {
-    try {
-      const repository = storage.getRepository();
-      const metricValues = repository.queries.getMetricValuesByBuildId(buildId);
+  try {
+    const repository = storage.getRepository();
+    const metricValues = repository.queries.getMetricValuesByBuildId(buildId);
 
-      const diffs: MetricDiff[] = [];
+    const diffs: MetricDiff[] = [];
 
-      for (const metricValue of metricValues) {
-        if (metricValue.value_numeric !== null) {
-          // Get baseline values from main branch
-          const baselineValues = repository.queries.getBaselineMetricValues(
-            metricValue.metric_name
-          );
+    for (const metricValue of metricValues) {
+      if (metricValue.value_numeric !== null) {
+        // Get baseline values from main branch
+        const baselineValues = repository.queries.getBaselineMetricValues(metricValue.metric_name);
 
-          if (baselineValues.length > 0) {
-            // Calculate median baseline
-            const sortedValues = baselineValues.map((bv) => bv.value_numeric).sort((a, b) => a - b);
-            const medianBaseline = sortedValues[Math.floor(sortedValues.length / 2)];
+        if (baselineValues.length > 0) {
+          // Calculate median baseline
+          const sortedValues = baselineValues.map((bv) => bv.value_numeric).sort((a, b) => a - b);
+          const medianBaseline = sortedValues[Math.floor(sortedValues.length / 2)];
 
-            if (medianBaseline !== undefined) {
-              const absoluteDelta = metricValue.value_numeric - medianBaseline;
-              const relativeDeltaPercent =
-                medianBaseline !== 0 ? (absoluteDelta / medianBaseline) * 100 : 0;
+          if (medianBaseline !== undefined) {
+            const absoluteDelta = metricValue.value_numeric - medianBaseline;
+            const relativeDeltaPercent =
+              medianBaseline !== 0 ? (absoluteDelta / medianBaseline) * 100 : 0;
 
-              let status: "improved" | "degraded" | "unchanged";
-              if (Math.abs(relativeDeltaPercent) < 0.1) {
-                status = "unchanged";
-              } else if (relativeDeltaPercent > 0) {
-                // For most metrics, higher is better, but this is a simplistic approach
-                // In a full implementation, this would depend on the metric type
-                status = "degraded";
-              } else {
-                status = "improved";
-              }
-
-              diffs.push({
-                metricName: metricValue.metric_name,
-                baselineValue: medianBaseline,
-                pullRequestValue: metricValue.value_numeric,
-                absoluteDelta,
-                relativeDeltaPercent,
-                status,
-              });
+            let status: "improved" | "degraded" | "unchanged";
+            if (Math.abs(relativeDeltaPercent) < 0.1) {
+              status = "unchanged";
+            } else if (relativeDeltaPercent > 0) {
+              // For most metrics, higher is better, but this is a simplistic approach
+              // In a full implementation, this would depend on the metric type
+              status = "degraded";
             } else {
-              diffs.push({
-                metricName: metricValue.metric_name,
-                pullRequestValue: metricValue.value_numeric,
-                status: "no-baseline",
-              });
+              status = "improved";
             }
+
+            diffs.push({
+              metricName: metricValue.metric_name,
+              baselineValue: medianBaseline,
+              pullRequestValue: metricValue.value_numeric,
+              absoluteDelta,
+              relativeDeltaPercent,
+              status,
+            });
           } else {
             diffs.push({
               metricName: metricValue.metric_name,
@@ -230,35 +220,42 @@ async function createOrUpdatePullRequestComment(
               status: "no-baseline",
             });
           }
+        } else {
+          diffs.push({
+            metricName: metricValue.metric_name,
+            pullRequestValue: metricValue.value_numeric,
+            status: "no-baseline",
+          });
         }
       }
+    }
 
-      if (diffs.length > 0) {
-        const diffRows = diffs
-          .map((diff) => {
-            const statusIcon =
-              diff.status === "improved"
-                ? "🟢"
-                : diff.status === "degraded"
-                  ? "🔴"
-                  : diff.status === "unchanged"
-                    ? "⚪"
-                    : "⚪";
+    if (diffs.length > 0) {
+      const diffRows = diffs
+        .map((diff) => {
+          const statusIcon =
+            diff.status === "improved"
+              ? "🟢"
+              : diff.status === "degraded"
+                ? "🔴"
+                : diff.status === "unchanged"
+                  ? "⚪"
+                  : "⚪";
 
-            const baselineStr =
-              diff.baselineValue !== undefined ? diff.baselineValue.toFixed(2) : "N/A";
-            const prStr =
-              diff.pullRequestValue !== undefined ? diff.pullRequestValue.toFixed(2) : "N/A";
-            const deltaStr =
-              diff.relativeDeltaPercent !== undefined
-                ? `${diff.relativeDeltaPercent >= 0 ? "+" : ""}${diff.relativeDeltaPercent.toFixed(1)}%`
-                : "N/A";
+          const baselineStr =
+            diff.baselineValue !== undefined ? diff.baselineValue.toFixed(2) : "N/A";
+          const prStr =
+            diff.pullRequestValue !== undefined ? diff.pullRequestValue.toFixed(2) : "N/A";
+          const deltaStr =
+            diff.relativeDeltaPercent !== undefined
+              ? `${diff.relativeDeltaPercent >= 0 ? "+" : ""}${diff.relativeDeltaPercent.toFixed(1)}%`
+              : "N/A";
 
-            return `| ${statusIcon} ${diff.metricName} | ${baselineStr} | ${prStr} | ${deltaStr} |`;
-          })
-          .join("\n");
+          return `| ${statusIcon} ${diff.metricName} | ${baselineStr} | ${prStr} | ${deltaStr} |`;
+        })
+        .join("\n");
 
-        metricDiffsSection = `
+      metricDiffsSection = `
 ### 📈 Metric Changes vs Baseline
 
 | Metric | Baseline | PR | Δ |
@@ -266,12 +263,11 @@ async function createOrUpdatePullRequestComment(
 ${diffRows}
 
 `;
-      }
-    } catch (error) {
-      core.warning(
-        `Failed to calculate metric diffs: ${error instanceof Error ? error.message : String(error)}`
-      );
     }
+  } catch (error) {
+    core.warning(
+      `Failed to calculate metric diffs: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 
   const commentBody = `${marker}

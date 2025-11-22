@@ -188,9 +188,9 @@ async function logDatabaseStats(databasePath: string): Promise<void> {
     });
     await dbClient.ready();
 
-    const buildContexts = dbClient.getAllBuildContexts();
-    const metricDefinitions = dbClient.getAllMetricDefinitions();
-    const metricValues = dbClient.getAllMetricValues();
+    const buildContexts = dbClient.getRepository().queries.getAllBuildContexts();
+    const metricDefinitions = dbClient.getRepository().queries.getAllMetricDefinitions();
+    const metricValues = dbClient.getRepository().queries.getAllMetricValues();
 
     core.info(`Database statistics:`);
     core.info(`- Build contexts: ${buildContexts.length}`);
@@ -206,7 +206,7 @@ async function logDatabaseStats(databasePath: string): Promise<void> {
     }
 
     if (metricDefinitions.length > 0) {
-      const metricNames = metricDefinitions.map((md) => md.name).join(", ");
+      const metricNames = metricDefinitions.map((md: { name: string }) => md.name).join(", ");
       core.info(`- Metrics: ${metricNames}`);
     }
 

@@ -74,7 +74,7 @@ describe("End-to-end collection workflow", () => {
 
     const buildId = await repository.recordBuild(buildContext, result.collectedMetrics);
 
-    const values = storage.getMetricValues(buildId);
+    const values = storage.getRepository().queries.getMetricValuesByBuildId(buildId);
     expect(values).toHaveLength(2);
 
     const coverage = values.find((v) => v.metric_name === "test-coverage");
@@ -104,7 +104,7 @@ describe("End-to-end collection workflow", () => {
     const result = await collectMetrics(metrics);
     await repository.recordBuild(buildContext, result.collectedMetrics);
 
-    const metricDef = db.getMetricDefinition("new-metric");
+    const metricDef = db.getRepository().queries.getMetricDefinition("new-metric");
     expect(metricDef).toBeDefined();
     expect(metricDef?.name).toBe("new-metric");
     expect(metricDef?.type).toBe("numeric");
@@ -150,12 +150,14 @@ describe("End-to-end collection workflow", () => {
       const result2 = await collectMetrics(metricsRun2);
       await repository.recordBuild(buildContext2, result2.collectedMetrics);
 
-      const allDefs = db.getAllMetricDefinitions();
-      const existingMetrics = allDefs.filter((d) => d.name === "existing-metric");
+      const allDefs = db.getRepository().queries.getAllMetricDefinitions();
+      const existingMetrics = allDefs.filter((d: { name: string }) => d.name === "existing-metric");
       expect(existingMetrics).toHaveLength(1);
 
-      const values = db.getAllMetricValues();
-      const existingValues = values.filter((v) => v.metric_name === "existing-metric");
+      const values = db.getRepository().queries.getAllMetricValues();
+      const existingValues = values.filter(
+        (v: { metric_name: string }) => v.metric_name === "existing-metric"
+      );
       expect(existingValues).toHaveLength(2);
     } finally {
       await db.close();
@@ -196,7 +198,7 @@ describe("End-to-end collection workflow", () => {
 
       const buildId = await repository.recordBuild(buildContext, result.collectedMetrics);
 
-      const values = db.getMetricValues(buildId);
+      const values = db.getRepository().queries.getMetricValuesByBuildId(buildId);
       expect(values).toHaveLength(2);
     } finally {
       await db.close();
@@ -230,7 +232,7 @@ describe("End-to-end collection workflow", () => {
       const result = await collectMetrics(metrics);
       const buildId = await repository.recordBuild(buildContext, result.collectedMetrics);
 
-      const values = db.getMetricValues(buildId);
+      const values = db.getRepository().queries.getMetricValuesByBuildId(buildId);
       expect(values).toHaveLength(1);
       expect(values[0]?.build_id).toBe(buildId);
     } finally {
@@ -266,7 +268,7 @@ test("stores collection duration for successful metrics", async () => {
     const result = await collectMetrics(metrics);
     const buildId = await repository.recordBuild(buildContext, result.collectedMetrics);
 
-    const values = db.getMetricValues(buildId);
+    const values = db.getRepository().queries.getMetricValuesByBuildId(buildId);
     expect(values).toHaveLength(1);
     expect(values[0]?.collection_duration_ms).toBeGreaterThan(0);
   } finally {

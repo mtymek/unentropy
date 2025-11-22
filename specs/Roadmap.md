@@ -38,6 +38,7 @@
 * [ ] Cleanup queries.js - clear contract
 * [ ] Use DB transactions when collecting metrics
 * [ ] Make sure to keep the database connection open for as short a time as possible
+* [ ] Proper tests for Storage class
 
 ## Long term ideas
 * Browsing the coverage report
