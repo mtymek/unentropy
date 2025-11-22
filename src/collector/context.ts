@@ -1,17 +1,6 @@
-export interface BuildContext {
-  commit_sha: string;
-  branch: string;
-  run_id: string;
-  run_number: number;
-  actor?: string;
-  event_name?: string;
-  // Additional fields for PR diff functionality
-  pull_request_number?: number;
-  pull_request_base?: string;
-  pull_request_head?: string;
-}
+import type { InsertBuildContext } from "../storage/types";
 
-export function extractBuildContext(): BuildContext {
+export function extractBuildContext(): InsertBuildContext {
   const commitSha = process.env.GITHUB_SHA;
   const ref = process.env.GITHUB_REF;
   const runId = process.env.GITHUB_RUN_ID;
@@ -74,6 +63,7 @@ export function extractBuildContext(): BuildContext {
     run_number: parsedRunNumber,
     actor: actor || undefined,
     event_name: eventName || undefined,
+    timestamp: new Date().toISOString(),
     pull_request_number: pullRequestNumber,
     pull_request_base: pullRequestBase,
     pull_request_head: pullRequestHead,

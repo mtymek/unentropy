@@ -75,18 +75,7 @@ export async function run(): Promise<void> {
   const collectionResult = await collectorModule.collectMetrics(config.metrics);
 
   // Record build with all collected metrics
-  const buildId = await repository.recordBuild(
-    {
-      commit_sha: buildContext.commit_sha,
-      branch: buildContext.branch,
-      run_id: buildContext.run_id,
-      run_number: buildContext.run_number,
-      actor: buildContext.actor,
-      event_name: buildContext.event_name,
-      timestamp: new Date().toISOString(),
-    },
-    collectionResult.collectedMetrics
-  );
+  const buildId = await repository.recordBuild(buildContext, collectionResult.collectedMetrics);
   core.info(`Build context created with ID: ${buildId}`);
 
   await db.close();

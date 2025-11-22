@@ -365,13 +365,7 @@ export async function runTrackMetricsAction(): Promise<void> {
   const collectionResult = await collectMetrics(config.metrics);
 
   // Record build with all collected metrics in one operation
-  const buildId = await repository.recordBuild(
-    {
-      ...context,
-      timestamp: new Date().toISOString(),
-    },
-    collectionResult.collectedMetrics
-  );
+  const buildId = await repository.recordBuild(context, collectionResult.collectedMetrics);
 
   core.info(
     `Metrics collection completed: ${collectionResult.successful}/${collectionResult.total} successful`
