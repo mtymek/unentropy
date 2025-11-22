@@ -32,10 +32,10 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 Create MetricTemplate interface in src/metrics/types.ts
-- [ ] T005 Create built-in metrics registry structure in src/metrics/registry.ts
-- [ ] T006 Create resolver module skeleton in src/metrics/resolver.ts
-- [ ] T007 Extend MetricConfig schema to support optional $ref in src/config/schema.ts
+- [x] T004 Create MetricTemplate interface in src/metrics/types.ts
+- [x] T005 Create built-in metrics registry structure in src/metrics/registry.ts
+- [x] T006 Create resolver module skeleton in src/metrics/resolver.ts
+- [x] T007 Extend MetricConfig schema to support optional $ref in src/config/schema.ts
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 

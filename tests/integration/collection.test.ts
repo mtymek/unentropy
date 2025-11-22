@@ -3,7 +3,7 @@ import { unlink } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { collectMetrics } from "../../src/collector/collector";
 import { Storage } from "../../src/storage/storage";
-import type { MetricConfig } from "../../src/config/schema";
+import type { ResolvedMetricConfig } from "../../src/config/schema";
 
 describe("End-to-end collection workflow", () => {
   const originalEnv = process.env;
@@ -13,34 +13,40 @@ describe("End-to-end collection workflow", () => {
   beforeEach(async () => {
     // Generate unique database name for each test to avoid conflicts
     const uniqueSuffix = Date.now() + "-" + Math.random().toString(36).substr(2, 9);
-    testDbPath = `/tmp/unentropy-collection-${uniqueSuffix}.db`;
+    testDbPath = `/tmp/unentropy-test-${uniqueSuffix}.db`;
 
-    // Clean up any existing file with this path
-    if (existsSync(testDbPath)) {
-      await unlink(testDbPath);
-    }
+    process.env = {
+      ...originalEnv,
+      GITHUB_REPOSITORY: "user/repo",
+      GITHUB_SHA: "abc123",
+      GITHUB_REF: "refs/heads/main",
+      GITHUB_RUN_ID: "42",
+      GITHUB_RUN_NUMBER: "1",
+      GITHUB_EVENT_NAME: "push",
+      GITHUB_ACTOR: "testuser",
+    };
 
-    storage = new Storage({ type: "sqlite-local", path: testDbPath });
+    storage = new Storage({
+      type: "sqlite-local",
+      path: testDbPath,
+    });
+
     await storage.initialize();
   });
 
   afterEach(async () => {
-    // Always restore environment
     process.env = originalEnv;
-
-    // Always close storage connection
-    if (storage) {
-      await storage.close();
-    }
-
-    // Always clean up database file
-    if (testDbPath && existsSync(testDbPath)) {
-      await unlink(testDbPath);
+    if (existsSync(testDbPath)) {
+      try {
+        await unlink(testDbPath);
+      } catch {
+        // Ignore cleanup errors
+      }
     }
   });
 
-  test("collects metrics and stores them in database", async () => {
-    const metrics: MetricConfig[] = [
+  test("should collect metrics and return results", async () => {
+    const metrics: ResolvedMetricConfig[] = [
       {
         name: "test-coverage",
         type: "numeric",
@@ -87,7 +93,9 @@ describe("End-to-end collection workflow", () => {
   }, 10000); // 10 second timeout
 
   test("creates metric definitions on first collection", async () => {
-    const metrics: MetricConfig[] = [{ name: "new-metric", type: "numeric", command: 'echo "42"' }];
+    const metrics: ResolvedMetricConfig[] = [
+      { name: "new-metric", type: "numeric", command: 'echo "42"' },
+    ];
 
     const db = new Storage({ type: "sqlite-local", path: testDbPath });
     await db.initialize();
@@ -111,7 +119,7 @@ describe("End-to-end collection workflow", () => {
   });
 
   test("reuses existing metric definitions", async () => {
-    const metrics: MetricConfig[] = [
+    const metrics: ResolvedMetricConfig[] = [
       { name: "existing-metric", type: "numeric", command: 'echo "1"' },
     ];
 
@@ -143,7 +151,7 @@ describe("End-to-end collection workflow", () => {
         timestamp: new Date().toISOString(),
       };
 
-      const metricsRun2: MetricConfig[] = [
+      const metricsRun2: ResolvedMetricConfig[] = [
         { name: "existing-metric", type: "numeric", command: 'echo "2"' },
       ];
 
@@ -168,7 +176,7 @@ describe("End-to-end collection workflow", () => {
   }, 10000); // 10 second timeout
 
   test("handles mixed success and failure gracefully", async () => {
-    const metrics: MetricConfig[] = [
+    const metrics: ResolvedMetricConfig[] = [
       { name: "success1", type: "numeric", command: 'echo "10"' },
       { name: "failure", type: "numeric", command: "exit 1" },
       { name: "success2", type: "label", command: 'echo "ok"' },
@@ -209,7 +217,9 @@ describe("End-to-end collection workflow", () => {
   }, 10000); // 10 second timeout
 
   test("associates metrics with correct build context", async () => {
-    const metrics: MetricConfig[] = [{ name: "metric", type: "numeric", command: 'echo "5"' }];
+    const metrics: ResolvedMetricConfig[] = [
+      { name: "metric", type: "numeric", command: 'echo "5"' },
+    ];
 
     // Use unique path for this specific test to avoid conflicts
     const uniqueSuffix = Date.now() + "-" + Math.random().toString(36).substr(2, 9);
@@ -245,7 +255,7 @@ describe("End-to-end collection workflow", () => {
 });
 
 test("stores collection duration for successful metrics", async () => {
-  const metrics: MetricConfig[] = [
+  const metrics: ResolvedMetricConfig[] = [
     { name: "timed-metric", type: "numeric", command: 'echo "100"' },
   ];
 

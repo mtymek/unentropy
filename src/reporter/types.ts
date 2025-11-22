@@ -55,5 +55,5 @@ export interface ReportData {
 export interface GenerateReportOptions {
   repository?: string;
   metricNames?: string[];
-  config?: import("../config/schema").UnentropyConfig;
+  config?: import("../config/loader").ResolvedUnentropyConfig;
 }
