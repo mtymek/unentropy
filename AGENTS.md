@@ -12,8 +12,8 @@ This project follows Specification-Driven Development (SDD) principles as define
 
 ## General instructions
 
-* Use read tool on need-to-know basis to reference `.specify/memory/constitution.md` for full details
-* DO NOT jump into modifying code when not explicitly instructed to do so - for example, when asked to "plan" or "analyze" or "update the spec", just run the analysis, report the results and wait for further instructions.
+- Use read tool on need-to-know basis to reference `.specify/memory/constitution.md` for full details
+- DO NOT jump into modifying code when not explicitly instructed to do so - for example, when asked to "plan" or "analyze" or "update the spec", just run the analysis, report the results and wait for further instructions.
 
 ## Development Workflow
 

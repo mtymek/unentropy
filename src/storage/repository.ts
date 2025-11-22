@@ -4,7 +4,8 @@ import type {
   InsertBuildContext,
   InsertMetricDefinition,
   InsertMetricValue,
-  MetricDefinition, MetricValue,
+  MetricDefinition,
+  MetricValue,
 } from "./types";
 
 /**
