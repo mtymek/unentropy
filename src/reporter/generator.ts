@@ -15,12 +15,12 @@ import type {
 
 export function getMetricTimeSeries(db: Storage, metricName: string): TimeSeriesData {
   const repository = db.getRepository();
-  const metricDef = repository.queries.getMetricDefinition(metricName);
+  const metricDef = repository.getMetricDefinition(metricName);
   if (!metricDef) {
     throw new Error(`Metric '${metricName}' not found`);
   }
 
-  const rows = repository.queries.getMetricTimeSeries(metricName);
+  const rows = repository.getMetricTimeSeries(metricName);
 
   const dataPoints: TimeSeriesDataPoint[] = rows.map((row) => ({
     timestamp: row.build_timestamp,
@@ -113,7 +113,7 @@ export function calculateSummaryStats(data: TimeSeriesData): SummaryStats {
 }
 
 function getReportMetadata(db: Storage, repository: string): ReportMetadata {
-  const allBuilds = db.getRepository().queries.getAllBuildContexts();
+  const allBuilds = db.getRepository().getAllBuildContexts();
 
   if (allBuilds.length === 0) {
     const now = new Date().toISOString();

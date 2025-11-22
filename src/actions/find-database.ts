@@ -188,9 +188,9 @@ async function logDatabaseStats(databasePath: string): Promise<void> {
     });
     await dbClient.ready();
 
-    const buildContexts = dbClient.getRepository().queries.getAllBuildContexts();
+    const buildContexts = dbClient.getRepository().getAllBuildContexts();
     const metricDefinitions = dbClient.getRepository().getAllMetricDefinitions();
-    const metricValues = dbClient.getRepository().queries.getAllMetricValues();
+    const metricValues = dbClient.getRepository().getAllMetricValues();
 
     core.info(`Database statistics:`);
     core.info(`- Build contexts: ${buildContexts.length}`);

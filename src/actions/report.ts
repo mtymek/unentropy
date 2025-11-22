@@ -117,7 +117,7 @@ function filterMetricsByTimeRange(
   const filteredMetrics: string[] = [];
   for (const metricName of metricNames) {
     try {
-      const timeSeries = db.getRepository().queries.getMetricTimeSeries(metricName);
+      const timeSeries = db.getRepository().getMetricTimeSeries(metricName);
       const hasRecentData = timeSeries.some(
         (point: { build_timestamp: string }) => new Date(point.build_timestamp) >= cutoffDate
       );
@@ -141,7 +141,7 @@ function getTimeRangeBounds(
   db: Storage
 ): { start?: string; end?: string } {
   if (timeRangeFilter.type === "all") {
-    const allBuilds = db.getRepository().queries.getAllBuildContexts();
+    const allBuilds = db.getRepository().getAllBuildContexts();
     if (allBuilds.length === 0) {
       return {};
     }
@@ -206,14 +206,14 @@ export async function run(): Promise<void> {
   const tempDbPath = inputs.databasePath;
 
   // Initialize database
-  let db;
+  let storage;
   try {
-    db = new Storage({
+    storage = new Storage({
       type: "sqlite-local",
       path: tempDbPath,
       readonly: true,
     });
-    await db.ready();
+    await storage.ready();
     core.info("Database initialized successfully");
   } catch (error) {
     throw new Error(`Database error: ${error instanceof Error ? error.message : String(error)}`);
@@ -224,12 +224,12 @@ export async function run(): Promise<void> {
   core.info(`Using time range filter: ${JSON.stringify(timeRangeFilter)}`);
 
   // Get all available metrics
-  const allMetrics = db.getRepository().getAllMetricDefinitions();
+  const allMetrics = storage.getRepository().getAllMetricDefinitions();
   if (allMetrics.length === 0) {
     core.warning("No metrics found in database");
 
     // Generate empty report
-    const emptyReport = generateReport(db, {
+    const emptyReport = generateReport(storage, {
       repository: process.env.GITHUB_REPOSITORY || "unknown/repository",
       metricNames: [],
       config,
@@ -251,14 +251,14 @@ export async function run(): Promise<void> {
   const filteredMetricNames = filterMetricsByTimeRange(
     allMetrics.map((m: { name: string }) => m.name),
     timeRangeFilter,
-    db
+    storage
   );
 
   if (filteredMetricNames.length === 0) {
     core.warning(`No metrics found in time range: ${inputs.timeRange}`);
 
     // Generate report with all metrics but note the time range
-    const report = generateReport(db, {
+    const report = generateReport(storage, {
       repository: process.env.GITHUB_REPOSITORY || "unknown/repository",
       metricNames: allMetrics.map((m: { name: string }) => m.name),
       config,
@@ -268,8 +268,8 @@ export async function run(): Promise<void> {
     await fs.writeFile(reportPath, report, "utf-8");
 
     // Set outputs
-    const timeRangeBounds = getTimeRangeBounds(timeRangeFilter, db);
-    const allValues = db.getRepository().queries.getAllMetricValues();
+    const timeRangeBounds = getTimeRangeBounds(timeRangeFilter, storage);
+    const allValues = storage.getRepository().getAllMetricValues();
 
     core.setOutput("report-path", reportPath);
     core.setOutput("metrics-count", allMetrics.length.toString());
@@ -288,7 +288,7 @@ export async function run(): Promise<void> {
   // Generate report
   let report;
   try {
-    report = generateReport(db, {
+    report = generateReport(storage, {
       repository: process.env.GITHUB_REPOSITORY || "unknown/repository",
       metricNames: filteredMetricNames,
       config,
@@ -310,10 +310,10 @@ export async function run(): Promise<void> {
   }
 
   // Calculate outputs
-  const timeRangeBounds = getTimeRangeBounds(timeRangeFilter, db);
+  const timeRangeBounds = getTimeRangeBounds(timeRangeFilter, storage);
   const filteredValues = filteredMetricNames.flatMap((metricName) => {
     try {
-      return db.getRepository().queries.getMetricTimeSeries(metricName);
+      return storage.getRepository().getMetricTimeSeries(metricName);
     } catch {
       return [];
     }
@@ -358,7 +358,7 @@ export async function run(): Promise<void> {
   }
 
   // Close database connection after all operations are complete
-  await db.close();
+  await storage.close();
 
   core.info("Action completed successfully");
 }

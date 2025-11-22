@@ -1,9 +1,10 @@
 import type { DatabaseAdapter } from "./adapters/interface";
 import type {
+  BuildContext,
   InsertBuildContext,
   InsertMetricDefinition,
   InsertMetricValue,
-  MetricDefinition,
+  MetricDefinition, MetricValue,
 } from "./types";
 
 /**
@@ -16,13 +17,6 @@ import type {
 export class MetricsRepository {
   constructor(private adapter: DatabaseAdapter) {}
 
-  /**
-   * Record a complete build with all its metrics in a single operation.
-   *
-   * @param buildContext - Build metadata (commit, branch, run info)
-   * @param metrics - Array of metrics to record for this build
-   * @returns Build ID
-   */
   async recordBuild(
     buildContext: InsertBuildContext,
     metrics: {
@@ -55,109 +49,42 @@ export class MetricsRepository {
     return buildId;
   }
 
-  /**
-   * Get metric comparison between two commits.
-   *
-   * Note: Full commit-specific comparison will be implemented in Phase 2.
-   * Currently returns baseline from reference branch.
-   *
-   * @param metricName - Name of the metric to compare
-   * @returns Comparison object with baseline and current values
-   */
-  async getMetricComparison(metricName: string): Promise<{
-    metric: MetricDefinition;
-    baseline?: { value: number; commit_sha: string };
-    current?: { value: number; commit_sha: string };
-    delta?: number;
-    deltaPercent?: number;
-  }> {
-    const metricDef = this.adapter.getMetricDefinition(metricName);
-    if (!metricDef) {
-      throw new Error(`Metric not found: ${metricName}`);
-    }
-
-    // Get baseline values (latest from reference branch)
-    const baselineValues = this.adapter.getBaselineMetricValues(metricName, "main", 1);
-    const baseline = baselineValues.length > 0 ? baselineValues[0] : undefined;
-
-    // For now, return structure with baseline
-    // Full implementation would query by specific commits
-    return {
-      metric: metricDef,
-      baseline: baseline
-        ? {
-            value: baseline.value_numeric,
-            commit_sha: "latest", // Will use _baseCommit in future
-          }
-        : undefined,
-    };
-  }
-
-  /**
-   * Get metric history with optional filtering.
-   *
-   * @param metricName - Name of the metric
-   * @param options - Filtering options (branch, time range, limit)
-   * @returns Array of metric values with build context
-   */
-  async getMetricHistory(
-    metricName: string,
-    options?: {
-      branch?: string;
-      limit?: number;
-      startDate?: Date;
-      endDate?: Date;
-    }
-  ): Promise<
-    {
-      value_numeric?: number;
-      value_label?: string;
-      commit_sha: string;
-      branch: string;
-      run_number: number;
-      build_timestamp: string;
-    }[]
-  > {
-    // Get time series data
-    const timeSeries = this.adapter.getMetricTimeSeries(metricName);
-
-    // Apply filtering if needed
-    let filtered = timeSeries;
-
-    if (options?.branch) {
-      filtered = filtered.filter((v) => v.branch === options.branch);
-    }
-
-    if (options?.limit) {
-      filtered = filtered.slice(0, options.limit);
-    }
-
-    return filtered.map((v) => ({
-      value_numeric: v.value_numeric ?? undefined,
-      value_label: v.value_label ?? undefined,
-      commit_sha: v.commit_sha,
-      branch: v.branch,
-      run_number: v.run_number,
-      build_timestamp: v.build_timestamp,
-    }));
-  }
-
-  /**
-   * Get all metric definitions.
-   *
-   * @returns Array of all metric definitions
-   */
   getAllMetricDefinitions(): MetricDefinition[] {
     return this.adapter.getAllMetricDefinitions();
   }
 
-  /**
-   * Expose adapter for test assertions.
-   *
-   * This allows tests to verify database state directly while keeping
-   * production code using the clean repository API.
-   */
-  get queries(): DatabaseAdapter {
-    return this.adapter;
+  getAllBuildContexts(): BuildContext[] {
+    return this.adapter.getAllBuildContexts();
+  }
+
+  getAllMetricValues(): (MetricValue & { metric_name: string })[] {
+    return this.adapter.getAllMetricValues();
+  }
+
+  getMetricDefinition(name: string): MetricDefinition | undefined {
+    return this.adapter.getMetricDefinition(name);
+  }
+
+  getMetricValuesByBuildId(buildId: number): (MetricValue & { metric_name: string })[] {
+    return this.adapter.getMetricValuesByBuildId(buildId);
+  }
+
+  getMetricTimeSeries(metricName: string): (MetricValue & {
+    metric_name: string;
+    commit_sha: string;
+    branch: string;
+    run_number: number;
+    build_timestamp: string;
+  })[] {
+    return this.adapter.getMetricTimeSeries(metricName);
+  }
+
+  getBaselineMetricValues(
+    metricName: string,
+    referenceBranch?: string,
+    maxBuilds?: number,
+    maxAgeDays?: number
+  ): { value_numeric: number }[] {
+    return this.adapter.getBaselineMetricValues(metricName, referenceBranch, maxBuilds, maxAgeDays);
   }
 }
