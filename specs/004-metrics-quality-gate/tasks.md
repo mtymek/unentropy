@@ -46,8 +46,8 @@ description: "Task list for Metrics Quality Gate feature"
 
 - [x] T004 Implement basic pull request comment that outputs track-metrics run status and metrics count in src/actions/track-metrics.ts
 - [x] T005 [P] Wire minimal enable-pr-comment and pr-comment-marker inputs for basic status comment in .github/actions/track-metrics/action.yml and src/actions/track-metrics.ts
-- [x] T006 [P] Implement baseline and pull request metric history queries used for diffs in src/storage/queries.ts
-- [x] T007 [P] Add unit tests for baseline and pull request diff queries in tests/unit/storage/queries.test.ts
+- [x] T006 [P] Implement baseline and pull request metric history domain methods for diffs in src/storage/repository.ts (e.g., getMetricComparison)
+- [x] T007 [P] Add unit tests for baseline and pull request diff repository methods in tests/unit/storage/repository.test.ts
 - [x] T008 [P] Ensure pull request and reference branch context fields are exposed for diff queries in src/collector/context.ts
 - [x] T009 [P] Confirm collector writes branch and pull request identifiers needed for diff queries in src/collector/collector.ts
 - [x] T010 [P] Extend basic PR comment to include metric diffs when baseline data is available in src/actions/track-metrics.ts

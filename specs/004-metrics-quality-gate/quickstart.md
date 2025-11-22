@@ -17,12 +17,13 @@ We will deliver this feature incrementally:
 **Goal**: When running on a pull request with comments enabled, post or update a single compact comment that summarises how each metric has changed compared with the reference branch, without making any pass/fail decisions.
 
 **Components**:
-1. `src/storage/queries.ts` – Add helper queries to:
+1. `src/storage/repository.ts` – Add domain methods to:
    - Fetch the latest successful metrics snapshot for the reference branch (for example, main) from the existing SQLite database.
    - Fetch the current metrics for the pull request build.
+   - Example: `getMetricComparison(name, baseCommit, currentCommit)`
 2. `src/actions/track-metrics.ts` – Implement logic to:
    - Detect pull_request context and the reference branch.
-   - Compute per-metric deltas between baseline and pull request values.
+   - Use repository methods to compute per-metric deltas between baseline and pull request values.
    - Build a compact comment payload (heading, summary line, and table of metric diffs).
    - Use the configured marker (or default) to find or create the canonical comment and update it in place.
 3. `tests/integration/track-metrics.test.ts` – Add scenarios that:
@@ -55,13 +56,14 @@ We will deliver this feature incrementally:
 **Goal**: Evaluate metric thresholds given the current pull request run and baseline data from the reference branch, producing a `QualityGateResult` that can be reported but does not yet have to block merges.
 
 **Components**:
-1. `src/storage/queries.ts` – Reuse or extend the Phase 1 queries to:
+1. `src/storage/repository.ts` – Add or extend domain methods to:
    - Fetch recent successful builds for the reference branch within the configured baseline window.
    - Retrieve numeric metric values for those builds and for the current build.
+   - Example: `getMetricHistory(name, options)` with filtering by branch and time window
 2. `src/actions/track-metrics.ts` (or a dedicated helper module) – Implement:
-   - Construction of `MetricSample` and `MetricEvaluationResult` objects.
+   - Construction of `MetricSample` and `MetricEvaluationResult` objects using repository.
    - Aggregation into a `QualityGateResult` as described in `data-model.md`.
-3. `tests/unit/storage/` and `tests/unit/collector/` – Add unit tests for the new queries and evaluation helpers.
+3. `tests/unit/storage/` and `tests/unit/collector/` – Add unit tests for the new repository methods and evaluation helpers.
 4. `tests/integration/track-metrics.test.ts` – Extend integration tests to cover gate evaluation for simple scenarios (all pass, some fail, missing baselines).
 
 **Implementation Hints**:

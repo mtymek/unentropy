@@ -99,8 +99,18 @@ src/
 │   └── templates/...     # HTML/React templates for reports
 └── storage/
     ├── storage.ts        # Storage orchestration and provider selection
-    ├── queries.ts        # Database queries for metrics/history
-    └── providers/...
+    ├── repository.ts     # Domain operations (metric history, comparison)
+    ├── adapters/
+    │   ├── interface.ts  # DatabaseAdapter interface
+    │   └── sqlite.ts     # SQLite adapter implementation
+    ├── providers/
+    │   ├── interface.ts  # StorageProvider interface
+    │   ├── factory.ts    # Provider factory
+    │   ├── sqlite-local.ts  # Local file provider
+    │   └── sqlite-s3.ts     # S3-compatible provider
+    ├── migrations.ts     # Schema initialization
+    ├── queries.ts        # Low-level SQL queries (used by adapter)
+    └── types.ts          # Storage entity types
 
 tests/
 ├── contract/
@@ -117,7 +127,7 @@ tests/
     └── storage/
 ```
 
-**Structure Decision**: Reuse the existing single-project structure under `src/` and `tests/`, adding quality gate evaluation and pull request comment logic primarily to `src/actions/track-metrics.ts`, configuration extensions in `src/config/schema.ts`, and any necessary query helpers in `src/storage/queries.ts`. No new top-level packages or projects are introduced; documentation and contracts for this feature live exclusively under `specs/004-metrics-quality-gate/`.
+**Structure Decision**: Reuse the existing single-project structure under `src/` and `tests/`, adding quality gate evaluation and pull request comment logic primarily to `src/actions/track-metrics.ts`, configuration extensions in `src/config/schema.ts`, and leveraging the existing three-layer storage architecture (`repository.ts` for domain operations, adapters for queries, providers for storage location). No new top-level packages or projects are introduced; documentation and contracts for this feature live exclusively under `specs/004-metrics-quality-gate/`.
 
 ## Complexity Tracking
 

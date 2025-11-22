@@ -13,44 +13,96 @@ Defines the interface contract for storage providers that abstract where SQLite 
 ### Class Dependency Diagram
 
 ```
-┌─────────────────────────────────────────────────────┐
-│ Storage                                             │
-│ - Business logic methods                            │
-│ - Uses DatabaseQueries                              │
-└────────────────┬────────────────────────────────────┘
-                 │
-                 │ uses
-                 ▼
-┌─────────────────────────────────────────────────────┐
-│ StorageProvider (interface)                         │
-│ + initialize(): Promise<Database>                   │
-│ + persist(): Promise<void>                          │
-│ + cleanup(): void                                   │
-└────────────────┬────────────────────────────────────┘
-                 │
-                 │ implements
-                 ▼
-    ┌────────────┴────────────┬──────────────────────┬───────────────────┐
-    │                         │                      │                   │
-┌───▼──────────────┐  ┌──────▼──────────┐  ┌───────▼────────┐  ┌──────▼────────┐
-│ SqliteLocal      │  │ SqliteArtifact  │  │ SqliteS3       │  │ Postgres      │
-│ StorageProvider  │  │ StorageProvider │  │ StorageProvider│  │ StorageProvider│
-│ (MVP)            │  │ (future)        │  │ (future)       │  │ (future)      │
-└───┬──────────────┘  └──────────┬──────┘  └───────────┬────┘  └──────┬────────┘
-    │                            │                      │               │
-    │ all return                 │                      │               │
-    ▼                            ▼                      ▼               ▼
-┌───────────────────────────────────────────────────────────────────────────┐
-│ Database (from bun:sqlite) or PostgreSQL Connection                       │
-│ - query(), run(), exec(), transaction(), close()                          │
-└───────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           Action Layer                                   │
+│                     (track-metrics.ts, etc.)                             │
+└───────────────────────────────────┬─────────────────────────────────────┘
+                                    │
+                                    │ Uses
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                            Storage                                       │
+│                (Orchestrates provider + repository)                      │
+└──────────────┬────────────────────────────────────────┬─────────────────┘
+               │                                        │
+               │ Manages                                │ Exposes
+               ▼                                        ▼
+┌──────────────────────────────┐          ┌───────────────────────────────┐
+│   StorageProvider            │          │  MetricsRepository            │
+│   (interface)                │          │  (domain operations)          │
+│   + initialize()             │          │  + recordBuild()              │
+│   + getDb()                  │          │  + getMetricComparison()      │
+│   + persist()                │          └───────────┬───────────────────┘
+│   + cleanup()                │                      │
+│   + isInitialized()          │                      │ Uses
+└───────────┬──────────────────┘                      ▼
+            │                          ┌──────────────────────────────────┐
+            │ implements               │  DatabaseAdapter                 │
+            ▼                          │  (interface)                     │
+┌───────────┴───────────┬──────────────┤  + insertBuildContext()         │
+│                       │              │  + getMetricTimeSeries()         │
+│                       │              │  + upsertMetricDefinition()      │
+│                       │              └──────────────┬───────────────────┘
+│                       │                             │
+│                       │                             │ implements
+▼                       ▼                             ▼
+┌──────────────┐  ┌─────────────┐  ┌──────────────┐  ┌──────────────────┐
+│ SqliteLocal  │  │  SqliteS3   │  │  Artifact    │  │  Postgres        │
+│ Provider     │  │  Provider   │  │  Provider    │  │  Provider        │
+│ (MVP)        │  │  (future)   │  │  (future)    │  │  (future)        │
+└──────┬───────┘  └──────┬──────┘  └──────┬───────┘  └────────┬─────────┘
+       │                 │                │                    │
+       │ all return Database instance     │                    │
+       └─────────────────┴────────────────┴────────────────────┘
+                         │
+                         ▼
+       ┌──────────────────────────────────────┐
+       │  Database (bun:sqlite)               │
+       │  - query(), run(), exec()            │
+       │  - transaction(), close()            │
+       └─────────────────┬────────────────────┘
+                         │
+                         │ passed to adapter implementations
+                         ▼
+              ┌──────────┴───────────┐
+              │                      │
+              ▼                      ▼
+   ┌──────────────────────┐  ┌─────────────────────────┐
+   │ SqliteDatabaseAdapter│  │ PostgresDatabaseAdapter │
+   │ (MVP)                │  │ (future)                │
+   │ implements           │  │ implements              │
+   │ DatabaseAdapter      │  │ DatabaseAdapter         │
+   └──────────────────────┘  └─────────────────────────┘
 ```
 
 **Key Design Principles:**
-- **Storage**: High-level API for application code, uses StorageProvider
-- **StorageProvider**: Abstract interface for WHERE the database is stored/accessed
-- **Concrete Providers**: Handle specific storage scenarios (local file, artifacts, S3, remote DB)
-- **Database Instance**: Direct use of bun:sqlite or database client (no wrapper)
+
+1. **Storage (Orchestration Layer)**: 
+   - Coordinates provider initialization and repository creation
+   - Manages the lifecycle: initialize provider → get database → create adapter → create repository
+   - Public API for application code
+
+2. **StorageProvider (Infrastructure Layer)**:
+   - Abstract interface for **WHERE** the database is stored (local file, S3, artifact)
+   - Manages database lifecycle: download/open → persist/upload → cleanup
+   - Returns raw Database connection for use by adapters
+
+3. **DatabaseAdapter (Query Layer)**:
+   - Abstract interface for **WHAT** queries to execute
+   - Handles database-specific SQL (SQLite queries vs Postgres queries)
+   - Takes Database connection from provider, executes queries
+   - Enables future multi-database support (SQLite, Postgres, etc.)
+
+4. **MetricsRepository (Domain Layer)**:
+   - High-level business operations (recordBuild, getMetricComparison)
+   - Encapsulates domain logic and orchestrates adapter queries
+   - Primary API for actions and business logic
+   - Exposes adapter via `queries` accessor for advanced/test use
+
+**Key Separation:**
+- Provider knows **WHERE** (location/lifecycle) but not **WHAT** (queries)
+- Adapter knows **WHAT** (queries) but not **WHERE** (location/lifecycle)
+- Repository knows **WHY** (business operations) and uses adapter for data access
 
 ## Interface Definition
 
@@ -234,26 +286,72 @@ provider.cleanup();
 
 ## Integration with Storage
 
+The Storage class orchestrates the provider, adapter, and repository:
+
 ```typescript
+import type { Database } from "bun:sqlite";
+import type { StorageProvider, StorageProviderConfig } from "./providers/interface";
+import { createStorageProvider } from "./providers/factory";
+import { SqliteDatabaseAdapter } from "./adapters/sqlite";
+import type { DatabaseAdapter } from "./adapters/interface";
+import { MetricsRepository } from "./repository";
+import { initializeSchema } from "./migrations";
+
 class Storage {
-  private provider: StorageProvider | null = null;
-  private db: Database | null = null;
+  private readonly provider: StorageProvider;
+  private adapter: DatabaseAdapter | null = null;
+  private repository: MetricsRepository | null = null;
 
   constructor(private config: StorageProviderConfig) {
+    this.provider = createStorageProvider(this.config);
     this.initPromise = this.initialize();
   }
 
   async initialize(): Promise<void> {
-    // Create provider using factory
-    this.provider = await createStorageProvider(this.config);
-    
-    // Initialize provider to get Database instance
-    this.db = await this.provider.initialize();
-    
-    // Initialize schema if needed
-    if (!this.config.readonly) {
-      initializeSchema(this);
+    // Step 1: Initialize provider (creates/downloads database)
+    await this.provider.initialize();
+
+    // Step 2: Get database connection and run migrations
+    const db = this.provider.getDb();
+    initializeSchema(db);
+
+    // Step 3: Create adapter with database connection
+    this.adapter = this.createAdapter(db, this.config.type);
+
+    // Step 4: Create repository with adapter
+    this.repository = new MetricsRepository(this.adapter);
+  }
+
+  private createAdapter(db: Database, type: string): DatabaseAdapter {
+    // Future: switch based on database type
+    switch (type) {
+      case "sqlite-local":
+      case "sqlite-s3":
+      case "sqlite-artifact":
+        return new SqliteDatabaseAdapter(db);
+      // Future support:
+      // case "postgres":
+      //   return new PostgresDatabaseAdapter(db);
+      default:
+        return new SqliteDatabaseAdapter(db);
     }
+  }
+
+  /**
+   * Get repository for domain operations
+   * This is the primary API for business logic
+   */
+  getRepository(): MetricsRepository {
+    if (!this.repository) throw new Error("Database not initialized");
+    return this.repository;
+  }
+
+  /**
+   * Get raw database connection
+   * Use sparingly - prefer repository methods
+   */
+  getConnection(): Database {
+    return this.provider?.getDb();
   }
 
   async close(): Promise<void> {
@@ -266,31 +364,111 @@ class Storage {
     }
   }
 
-  getConnection(): Database {
-    if (!this.db) throw new Error("Database not initialized");
-    return this.db;
+  transaction<T>(fn: () => T): T {
+    const tx = this.provider.getDb().transaction(fn);
+    return tx();
   }
 }
 ```
 
+**Usage in Actions:**
+
+```typescript
+// Initialize storage
+const storage = new Storage({ type: 'sqlite-local', path: './metrics.db' });
+await storage.ready();
+
+// Use repository for domain operations
+const repo = storage.getRepository();
+const buildId = repo.recordBuild(context, metrics);
+
+// For advanced queries (tests)
+const values = repo.queries.getMetricValuesByBuildId(buildId);
+
+// Clean up
+await storage.close();
+```
+
 ## Design Rationale
 
-### Why No Adapter Wrapper Around bun:sqlite?
+### Why DatabaseAdapter Interface?
 
-The original design included a `DatabaseAdapter` interface wrapping `bun:sqlite` operations. This was removed because:
+The system includes a `DatabaseAdapter` interface that abstracts query execution:
 
-1. **Unnecessary abstraction**: We only use bun:sqlite for all storage backends
-2. **Simpler code**: Direct use of `Database` API is clearer and more maintainable
-3. **Full API access**: No need to wrap/proxy every bun:sqlite method
-4. **Provider solves the real problem**: The abstraction is about **where** the DB file lives, not **how** to interact with SQLite
+1. **Multi-database support**: Enables future support for PostgreSQL, MySQL, etc. without rewriting business logic
+2. **Query abstraction**: Different databases use different SQL dialects (SQLite vs Postgres)
+3. **Testability**: Can mock adapter for testing repository without real database
+4. **Separation of concerns**: Query execution is separate from storage location management
+5. **Clean architecture**: Adapter knows **WHAT** to query, Provider knows **WHERE** database lives
+
+**Example: Future Postgres Support**
+```typescript
+class PostgresDatabaseAdapter implements DatabaseAdapter {
+  constructor(private readonly connection: PostgresConnection) {}
+  
+  insertBuildContext(data: InsertBuildContext): number {
+    // Postgres SQL with $1, $2 placeholders instead of ?
+    const result = this.connection.query(
+      'INSERT INTO build_contexts (...) VALUES ($1, $2, ...) RETURNING id',
+      [data.commit_sha, data.branch, ...]
+    );
+    return result.rows[0].id;
+  }
+}
+```
+
+### Why MetricsRepository Layer?
+
+The repository provides domain-level operations above the adapter:
+
+1. **Business logic encapsulation**: High-level operations like `recordBuild()` and `getMetricComparison()`
+2. **Query orchestration**: Combines multiple adapter queries into single business operation
+3. **Consistent API**: Actions use repository methods instead of raw queries
+4. **Testability**: Repository exposes `queries` accessor for testing while keeping production API clean
+5. **Domain focus**: Repository speaks the language of metrics, not SQL
+
+**Example: Domain Operation**
+```typescript
+// Instead of multiple low-level queries:
+const buildId = adapter.insertBuildContext(context);
+for (const metric of metrics) {
+  const def = adapter.upsertMetricDefinition({...});
+  adapter.insertMetricValue({...});
+}
+
+// Use single domain operation:
+const buildId = repository.recordBuild(context, metrics);
+```
 
 ### Why Storage Provider Pattern?
 
-1. **Separation of concerns**: Storage location vs. database operations
-2. **Future extensibility**: Easy to add GitHub Artifacts, S3, or other storage backends
-3. **Simple MVP**: LocalStorageProvider is trivial (just opens a file)
-4. **No premature optimization**: Don't build complexity we don't need yet
+The provider manages database lifecycle and location:
+
+1. **Location abstraction**: Storage location (local file, S3, artifact) vs. database operations
+2. **Lifecycle management**: Download → open → close → upload lifecycle for remote storage
+3. **Future extensibility**: Easy to add GitHub Artifacts, S3, or other storage backends
+4. **Simple MVP**: LocalStorageProvider is trivial (just opens a file)
 5. **Clear interface**: initialize → use → persist → cleanup lifecycle
+
+**Provider is separate from Adapter:**
+- Provider: "Download from S3, open file" → returns Database connection
+- Adapter: Receives Database connection → executes queries
+- Clean separation: Provider doesn't know about queries, Adapter doesn't know about S3
+
+### Why Three Layers?
+
+The three-layer separation provides clear responsibilities:
+
+| Layer | Responsibility | Knows About | Doesn't Know About |
+|-------|---------------|-------------|-------------------|
+| **StorageProvider** | WHERE to store | S3, local files, artifacts | Queries, business logic |
+| **DatabaseAdapter** | WHAT queries to run | SQL, database schema | Storage location, business logic |
+| **MetricsRepository** | WHY (business ops) | Domain concepts, metrics | Storage location, SQL details |
+
+This enables:
+- Switching from SQLite to Postgres without changing business logic
+- Switching from local file to S3 without changing queries
+- Adding new domain operations without modifying infrastructure
 
 ### Why Async initialize()?
 
@@ -357,11 +535,18 @@ For future storage providers:
 - Or creating a separate `PostgresStorageProvider` interface that returns PostgreSQL connection
 - Or using a higher-level abstraction that works across both SQLite and PostgreSQL
 
-No changes needed to:
-- Storage (uses StorageProvider interface)
-- DatabaseQueries (uses Database directly)
-- Migrations (uses Database directly)
+When adding new storage providers, no changes needed to:
+- Storage orchestration logic (uses StorageProvider interface)
+- DatabaseAdapter implementations (use Database connection from provider)
+- MetricsRepository (uses DatabaseAdapter interface)
+- Migrations (run against Database directly)
 - Existing tests (if they use interface abstractions)
+
+When adding new database engines:
+- Implement new DatabaseAdapter (e.g., PostgresDatabaseAdapter)
+- Implement corresponding StorageProvider (e.g., PostgresStorageProvider)
+- Update Storage.createAdapter() to handle new type
+- No changes to MetricsRepository or business logic
 
 ## Examples
 

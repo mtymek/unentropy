@@ -96,16 +96,20 @@ specs/001-mvp-metrics-tracking/
  src/
  ├── config/
  │   ├── schema.ts           # Zod schema for unentropy.json
- │   ├── loader.ts           # Config file reading and validation
- │   └── types.ts            # TypeScript types for configuration
+ │   └── loader.ts           # Config file reading and validation
  ├── storage/
  │   ├── providers/
  │   │   ├── interface.ts    # StorageProvider interface + config types
  │   │   ├── factory.ts      # createStorageProvider() factory function
- │   │   └── sqlite-local.ts # SqliteLocalStorageProvider (MVP)
- │   ├── storage.ts          # Storage (uses StorageProvider)
+ │   │   ├── sqlite-local.ts # SqliteLocalStorageProvider (local file)
+ │   │   └── sqlite-s3.ts    # SqliteS3StorageProvider (S3-compatible)
+ │   ├── adapters/
+ │   │   ├── interface.ts    # DatabaseAdapter interface
+ │   │   └── sqlite.ts       # SqliteDatabaseAdapter implementation
+ │   ├── storage.ts          # Storage orchestrator (coordinates provider + adapter + repository)
+ │   ├── repository.ts       # MetricsRepository (domain operations: recordBuild, getMetricComparison)
  │   ├── migrations.ts       # Schema initialization
- │   ├── queries.ts          # Data access functions
+ │   ├── queries.ts          # Low-level SQL query functions (used by adapter)
  │   └── types.ts            # Database entity types
  ├── collector/
  │   ├── runner.ts           # Execute metric collection commands
@@ -113,14 +117,14 @@ specs/001-mvp-metrics-tracking/
  │   └── context.ts          # Build context extraction (git SHA, etc.)
  ├── reporter/
  │   ├── generator.ts        # HTML report generation
- │   ├── charts.ts           # Chart.js configuration build**Primary Dependencies**: @aws-sdk/client-s3 (NEEDS CLARIFICATION: specific S3 SDK choice), existing Unentropy collector and reporter modules  
-**Storage**: SQLite database files stored in either GitHub Artifacts or S3-compatible storage  
-**Testing**: Bun test framework (per constitution), unit/integration/contract tests  er
- │   └── templates.ts        # HTML templates
-  ├── actions/
-  │   ├── collect.ts          # GitHub Action entrypoint for collection
-  │   └── report.ts           # GitHub Action entrypoint for reporting
-  └── index.ts                # Main library exports
+ │   ├── charts.ts           # Chart.js configuration builder
+ │   └── templates/          # HTML component templates (TSX)
+ ├── actions/
+ │   ├── collect.ts          # GitHub Action entrypoint for collection
+ │   ├── report.ts           # GitHub Action entrypoint for reporting
+ │   ├── find-database.ts    # GitHub Action for artifact discovery
+ │   └── track-metrics.ts    # GitHub Action combining collection + reporting
+ └── index.ts                # Main library exports
 
 tests/
  ├── unit/
@@ -148,9 +152,34 @@ tests/
 unentropy.json               # Self-monitoring configuration (test coverage + LoC)
 ```
 
-**Structure Decision**: Using single project structure as this is a CLI tool/library with GitHub Action wrappers. All components are TypeScript/Bun. Clear separation of concerns: config parsing, storage abstraction (providers pattern for future extensibility), database operations, collection logic, and reporting are independent modules that can be tested separately. Two-action architecture provides atomic operations: metric collection and report generation.
+**Structure Decision**: Using single project structure as this is a CLI tool/library with GitHub Action wrappers. All components are TypeScript/Bun. Clear separation of concerns follows a three-layer architecture:
 
-**Storage Architecture**: The `storage/` directory implements a Provider Pattern to abstract where SQLite database files are stored. For MVP, only `SqliteLocalStorageProvider` is implemented (local file system). The pattern enables future extensions for GitHub Artifacts (`sqlite-artifact`), S3 (`sqlite-s3`), or even PostgreSQL (`postgres`) without changing database operations code. Provider type format: `<database-engine>-<storage-location>`. See `contracts/storage-provider-interface.md` for detailed interface contract.
+1. **Configuration Layer** (`config/`): Schema validation and file loading
+2. **Storage Layer** (`storage/`): Three-layer separation of concerns:
+   - **Providers** (`providers/`): Database lifecycle & location (WHERE to store)
+   - **Adapters** (`adapters/`): Query execution engine (WHAT queries to run)
+   - **Repository** (`repository.ts`): Domain operations (WHY - business logic)
+   - **Storage** (`storage.ts`): Orchestration layer that coordinates provider, adapter, and repository
+3. **Collection Layer** (`collector/`): Metric extraction and command execution
+4. **Reporting Layer** (`reporter/`): HTML generation and visualization
+5. **Action Layer** (`actions/`): GitHub Actions entrypoints
+
+This architecture enables independent testing of each layer and future extensibility (e.g., PostgreSQL adapter, alternative storage providers).
+
+**Storage Architecture**: The `storage/` directory implements a three-layer separation:
+
+1. **StorageProvider** (`providers/`): Manages database lifecycle and storage location (local file, S3, GitHub Artifacts). Handles initialization, open/close, and persistence.
+2. **DatabaseAdapter** (`adapters/`): Abstracts database query execution. SQLite adapter provides SQL-based operations; future PostgreSQL adapter would provide Postgres-specific queries.
+3. **MetricsRepository** (`repository.ts`): Exposes domain-specific operations (`recordBuild()`, `getMetricComparison()`) that use the adapter internally.
+4. **Storage** (`storage.ts`): Orchestrates the three layers, providing a unified API.
+
+This separation enables:
+- Future database engines (PostgreSQL) via new adapters
+- Alternative storage locations (S3, Artifacts) via new providers
+- Clean business logic in repository without coupling to SQL or storage details
+- Independent testing of each layer
+
+Provider naming: `<database-engine>-<storage-location>` (e.g., `sqlite-local`, `sqlite-s3`). See `contracts/storage-provider-interface.md` and `contracts/database-adapter-interface.md` for detailed contracts.
 
 ## User Story 4 Implementation: Self-Monitoring
 
