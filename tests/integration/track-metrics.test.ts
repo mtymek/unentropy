@@ -77,12 +77,6 @@ describe("track-metrics action integration", () => {
 
     // The function should complete without throwing an error
     await runTrackMetricsAction();
-
-    // Reset environment for other tests
-    process.env.GITHUB_EVENT_NAME = "push";
-    process.env.GITHUB_REF = "refs/heads/main";
-    delete process.env.GITHUB_BASE_REF;
-    delete process.env.GITHUB_HEAD_REF;
   });
 
   test("verifies PR data is stored in database", async () => {
@@ -98,11 +92,5 @@ describe("track-metrics action integration", () => {
     // For PR context, database is not uploaded, so we can't easily verify it
     // The fact that the action completed without error means PR data was processed
     // In a real scenario, the PR data would be available in the local database
-
-    // Reset environment for other tests
-    process.env.GITHUB_EVENT_NAME = "push";
-    process.env.GITHUB_REF = "refs/heads/main";
-    delete process.env.GITHUB_BASE_REF;
-    delete process.env.GITHUB_HEAD_REF;
   });
 });
