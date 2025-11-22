@@ -1,5 +1,5 @@
 import { runCommand } from "./runner";
-import type { MetricConfig } from "../config/schema";
+import type { ResolvedMetricConfig } from "../config/schema";
 
 export interface ParseResult {
   success: boolean;
@@ -58,7 +58,7 @@ export function parseMetricValue(output: string, type: "numeric" | "label"): Par
  * @param metrics - Array of metric configurations to collect
  * @returns Collection result with successful metrics and failures
  */
-export async function collectMetrics(metrics: MetricConfig[]): Promise<
+export async function collectMetrics(metrics: ResolvedMetricConfig[]): Promise<
   CollectionResult & {
     collectedMetrics: {
       definition: {

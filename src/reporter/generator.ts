@@ -164,7 +164,7 @@ export function generateReport(db: Storage, options: GenerateReportOptions = {})
   // If config is provided, only show metrics that are configured
   let metricNames: string[];
   if (options.config) {
-    const configuredMetricNames = options.config.metrics.map((m: { name: string }) => m.name);
+    const configuredMetricNames = options.config.metrics.map((m) => m.name);
     if (options.metricNames) {
       // Filter both by config and explicit metricNames
       metricNames = options.metricNames.filter((name) => configuredMetricNames.includes(name));

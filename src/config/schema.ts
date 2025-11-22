@@ -1,23 +1,55 @@
 import { z } from "zod";
 
+export const ResolvedMetricConfigSchema = z.object({
+  name: z
+    .string()
+    .min(1)
+    .max(64)
+    .regex(/^[a-z0-9-]+$/, {
+      message: "name must be lowercase with hyphens only (pattern: ^[a-z0-9-]+$)",
+    }),
+  type: z.enum(["numeric", "label"], {
+    message: "type must be either 'numeric' or 'label'",
+  }),
+  description: z.string().max(256).optional(),
+  command: z.string().min(1, { message: "command cannot be empty" }).max(1024),
+  unit: z.string().max(10).optional(),
+  timeout: z.number().int().positive().max(300000).optional(),
+});
+
 export const MetricConfigSchema = z
   .object({
+    $ref: z.string().optional(),
     name: z
       .string()
       .min(1)
       .max(64)
       .regex(/^[a-z0-9-]+$/, {
         message: "name must be lowercase with hyphens only (pattern: ^[a-z0-9-]+$)",
-      }),
-    type: z.enum(["numeric", "label"], {
-      message: "type must be either 'numeric' or 'label'",
-    }),
+      })
+      .optional(),
+    type: z
+      .enum(["numeric", "label"], {
+        message: "type must be either 'numeric' or 'label'",
+      })
+      .optional(),
     description: z.string().max(256).optional(),
-    command: z.string().min(1, { message: "command cannot be empty" }).max(1024),
+    command: z.string().min(1, { message: "command cannot be empty" }).max(1024).optional(),
     unit: z.string().max(10).optional(),
     timeout: z.number().int().positive().max(300000).optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (data) => {
+      if (data.$ref) {
+        return true;
+      }
+      return data.name && data.type && data.command;
+    },
+    {
+      message: "Metric must either have $ref or provide name, type, and command",
+    }
+  );
 
 export const StorageConfigSchema = z
   .object({
@@ -42,6 +74,7 @@ export const UnentropyConfigSchema = z
   }));
 
 export type MetricConfig = z.infer<typeof MetricConfigSchema>;
+export type ResolvedMetricConfig = z.infer<typeof ResolvedMetricConfigSchema>;
 export type StorageConfig = z.infer<typeof StorageConfigSchema>;
 export type UnentropyConfig = z.infer<typeof UnentropyConfigSchema>;
 
@@ -55,12 +88,14 @@ export function validateConfig(config: unknown): UnentropyConfig {
 
   const metricNames = new Set<string>();
   for (const metric of result.data.metrics) {
-    if (metricNames.has(metric.name)) {
-      throw new Error(
-        `Duplicate metric name "${metric.name}" found. Metric names must be unique within the configuration`
-      );
+    if (metric.name) {
+      if (metricNames.has(metric.name)) {
+        throw new Error(
+          `Duplicate metric name "${metric.name}" found. Metric names must be unique within the configuration`
+        );
+      }
+      metricNames.add(metric.name);
     }
-    metricNames.add(metric.name);
   }
 
   return result.data;
