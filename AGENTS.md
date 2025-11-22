@@ -10,7 +10,10 @@ This project follows Specification-Driven Development (SDD) principles as define
 - **Security Best Practices**: Never log/expose secrets, follow security guidelines
 - **Testing Discipline**: Comprehensive unit, integration, and contract tests
 
-_Use read tool on need-to-know basis to reference `.specify/memory/constitution.md` for full details_
+## General instructions
+
+* Use read tool on need-to-know basis to reference `.specify/memory/constitution.md` for full details
+* DO NOT jump into modifying code when not explicitly instructed to do so - for example, when asked to "plan" or "analyze" or "update the spec", just run the analysis, report the results and wait for further instructions.
 
 ## Development Workflow
 
