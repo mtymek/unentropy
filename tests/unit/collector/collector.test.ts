@@ -6,7 +6,6 @@ import { unlink } from "node:fs/promises";
 import { existsSync } from "node:fs";
 
 const TEST_DB_PATH = "/tmp/test-collector.db";
-let testBuildId: number;
 let testStorage: Storage;
 
 beforeAll(async () => {
@@ -16,13 +15,6 @@ beforeAll(async () => {
 
   testStorage = new Storage({ type: "sqlite-local", path: TEST_DB_PATH });
   await testStorage.initialize();
-  testBuildId = testStorage.insertBuildContext({
-    commit_sha: "test123test123test123test123test123test",
-    branch: "test-branch",
-    run_id: "1",
-    run_number: 1,
-    timestamp: new Date().toISOString(),
-  });
 });
 
 afterAll(async () => {
@@ -156,7 +148,7 @@ describe("collectMetrics - partial failure handling", () => {
       { name: "another-working", type: "label", command: 'echo "green"' },
     ];
 
-    const result = await collectMetrics(metrics, testBuildId, testStorage);
+    const result = await collectMetrics(metrics);
 
     expect(result.total).toBe(3);
     expect(result.successful).toBe(2);
@@ -175,7 +167,7 @@ describe("collectMetrics - partial failure handling", () => {
       },
     ];
 
-    const result = await collectMetrics(metrics, testBuildId, testStorage);
+    const result = await collectMetrics(metrics);
 
     expect(result.successful).toBe(0);
     expect(result.failed).toBe(1);
@@ -188,7 +180,7 @@ describe("collectMetrics - partial failure handling", () => {
       { name: "fail2", type: "numeric", command: "exit 1" },
     ];
 
-    const result = await collectMetrics(metrics, testBuildId, testStorage);
+    const result = await collectMetrics(metrics);
 
     expect(result.total).toBe(2);
     expect(result.successful).toBe(0);
@@ -203,7 +195,7 @@ describe("collectMetrics - partial failure handling", () => {
       { name: "metric3", type: "label", command: 'echo "label"' },
     ];
 
-    const result = await collectMetrics(metrics, testBuildId, testStorage);
+    const result = await collectMetrics(metrics);
 
     expect(result.total).toBe(3);
     expect(result.successful).toBe(3);
@@ -216,7 +208,7 @@ describe("collectMetrics - partial failure handling", () => {
       { name: "parse-fail", type: "numeric", command: 'echo "not-a-number"' },
     ];
 
-    const result = await collectMetrics(metrics, testBuildId, testStorage);
+    const result = await collectMetrics(metrics);
 
     expect(result.successful).toBe(0);
     expect(result.failed).toBe(1);
@@ -230,7 +222,7 @@ describe("collectMetrics - partial failure handling", () => {
       { name: "third", type: "label", command: 'echo "3"' },
     ];
 
-    const result = await collectMetrics(metrics, testBuildId, testStorage);
+    const result = await collectMetrics(metrics);
 
     expect(result.successful).toBe(3);
   });
@@ -238,7 +230,7 @@ describe("collectMetrics - partial failure handling", () => {
   test("handles empty metrics array", async () => {
     const metrics: MetricConfig[] = [];
 
-    const result = await collectMetrics(metrics, testBuildId, testStorage);
+    const result = await collectMetrics(metrics);
 
     expect(result.total).toBe(0);
     expect(result.successful).toBe(0);

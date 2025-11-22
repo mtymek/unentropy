@@ -58,8 +58,9 @@ describe("track-metrics action integration", () => {
     if (existsSync(testConfigPath)) {
       await unlink(testConfigPath);
     }
-    if (existsSync(testReportDir)) {
-      await unlink(`${testReportDir}/index.html`);
+    const reportFile = `${testReportDir}/index.html`;
+    if (existsSync(reportFile)) {
+      await unlink(reportFile);
     }
   });
 

@@ -58,7 +58,7 @@ export async function run(): Promise<void> {
   const config = await loadConfig(inputs.configPath);
   core.info(`Configuration loaded successfully with ${config.metrics.length} metrics`);
 
-  // Initialize database and get build context
+  // Initialize database and get repository
   const db = new Storage({
     type: "sqlite-local",
     path: inputs.databasePath,
@@ -66,23 +66,29 @@ export async function run(): Promise<void> {
   await db.ready();
   core.info("Database initialized successfully");
 
-  // Create build context
+  // Get repository for domain operations
+  const repository = db.getRepository();
   const buildContext = extractBuildContext();
-  const buildId = db.insertBuildContext({
-    commit_sha: buildContext.commit_sha,
-    branch: buildContext.branch,
-    run_id: buildContext.run_id,
-    run_number: buildContext.run_number,
-    actor: buildContext.actor,
-    event_name: buildContext.event_name,
-    timestamp: new Date().toISOString(),
-  });
-  core.info(`Build context created with ID: ${buildId}`);
 
   // Collect metrics using dynamic import based on runtime
   const collectorModule = await import("../collector/collector");
+  const collectionResult = await collectorModule.collectMetrics(config.metrics);
 
-  const collectionResult = await collectorModule.collectMetrics(config.metrics, buildId, db);
+  // Record build with all collected metrics
+  const buildId = await repository.recordBuild(
+    {
+      commit_sha: buildContext.commit_sha,
+      branch: buildContext.branch,
+      run_id: buildContext.run_id,
+      run_number: buildContext.run_number,
+      actor: buildContext.actor,
+      event_name: buildContext.event_name,
+      timestamp: new Date().toISOString(),
+    },
+    collectionResult.collectedMetrics
+  );
+  core.info(`Build context created with ID: ${buildId}`);
+
   await db.close();
   core.info(
     `Metrics collection completed: ${collectionResult.successful} collected, ${collectionResult.failed} failed`

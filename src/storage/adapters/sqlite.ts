@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import { Storage } from "./storage";
+import type { DatabaseAdapter } from "./interface";
 import type {
   BuildContext,
   InsertBuildContext,
@@ -7,18 +7,19 @@ import type {
   InsertMetricValue,
   MetricDefinition,
   MetricValue,
-} from "./types";
+} from "../types";
 
-export class DatabaseQueries {
-  constructor(private storage: Storage) {}
-
-  private getDb(): Database {
-    return this.storage.getConnection();
-  }
+/**
+ * SqliteDatabaseAdapter implements DatabaseAdapter using SQLite-specific SQL queries.
+ *
+ * This adapter uses bun:sqlite prepared statements for efficient query execution.
+ * All queries are SQLite-specific; a PostgreSQL adapter would use different SQL dialects.
+ */
+export class SqliteDatabaseAdapter implements DatabaseAdapter {
+  constructor(private db: Database) {}
 
   insertBuildContext(data: InsertBuildContext): number {
-    const db = this.getDb();
-    const stmt = db.query<
+    const stmt = this.db.query<
       { id: number },
       [
         string,
@@ -58,8 +59,7 @@ export class DatabaseQueries {
   }
 
   upsertMetricDefinition(data: InsertMetricDefinition): MetricDefinition {
-    const db = this.getDb();
-    const stmt = db.query<MetricDefinition, [string, string, string | null, string | null]>(`
+    const stmt = this.db.query<MetricDefinition, [string, string, string | null, string | null]>(`
       INSERT INTO metric_definitions (name, type, unit, description)
       VALUES (?, ?, ?, ?)
       ON CONFLICT(name) DO UPDATE SET
@@ -75,8 +75,7 @@ export class DatabaseQueries {
   }
 
   insertMetricValue(data: InsertMetricValue): number {
-    const db = this.getDb();
-    const stmt = db.query<
+    const stmt = this.db.query<
       { id: number },
       [number, number, number | null, string | null, string, number | null]
     >(`
@@ -105,30 +104,26 @@ export class DatabaseQueries {
   }
 
   getBuildContext(id: number): BuildContext | undefined {
-    const db = this.getDb();
-    const stmt = db.query<BuildContext, [number]>("SELECT * FROM build_contexts WHERE id = ?");
+    const stmt = this.db.query<BuildContext, [number]>("SELECT * FROM build_contexts WHERE id = ?");
     return stmt.get(id) ?? undefined;
   }
 
   getMetricDefinition(name: string): MetricDefinition | undefined {
-    const db = this.getDb();
-    const stmt = db.query<MetricDefinition, [string]>(
+    const stmt = this.db.query<MetricDefinition, [string]>(
       "SELECT * FROM metric_definitions WHERE name = ?"
     );
     return stmt.get(name) ?? undefined;
   }
 
   getMetricValues(metricId: number, buildId: number): MetricValue | undefined {
-    const db = this.getDb();
-    const stmt = db.query<MetricValue, [number, number]>(
+    const stmt = this.db.query<MetricValue, [number, number]>(
       "SELECT * FROM metric_values WHERE metric_id = ? AND build_id = ?"
     );
     return stmt.get(metricId, buildId) ?? undefined;
   }
 
   getMetricValuesByBuildId(buildId: number): (MetricValue & { metric_name: string })[] {
-    const db = this.getDb();
-    const stmt = db.query<MetricValue & { metric_name: string }, [number]>(`
+    const stmt = this.db.query<MetricValue & { metric_name: string }, [number]>(`
       SELECT mv.*, md.name as metric_name
       FROM metric_values mv
       JOIN metric_definitions md ON mv.metric_id = md.id
@@ -139,14 +134,14 @@ export class DatabaseQueries {
   }
 
   getAllMetricDefinitions(): MetricDefinition[] {
-    const db = this.getDb();
-    const stmt = db.query<MetricDefinition, []>("SELECT * FROM metric_definitions ORDER BY name");
+    const stmt = this.db.query<MetricDefinition, []>(
+      "SELECT * FROM metric_definitions ORDER BY name"
+    );
     return stmt.all();
   }
 
   getAllMetricValues(): (MetricValue & { metric_name: string })[] {
-    const db = this.getDb();
-    const stmt = db.query<MetricValue & { metric_name: string }, []>(`
+    const stmt = this.db.query<MetricValue & { metric_name: string }, []>(`
       SELECT mv.*, md.name as metric_name
       FROM metric_values mv
       JOIN metric_definitions md ON mv.metric_id = md.id
@@ -162,8 +157,7 @@ export class DatabaseQueries {
     run_number: number;
     build_timestamp: string;
   })[] {
-    const db = this.getDb();
-    const stmt = db.query<
+    const stmt = this.db.query<
       MetricValue & {
         metric_name: string;
         commit_sha: string;
@@ -190,8 +184,7 @@ export class DatabaseQueries {
   }
 
   getAllBuildContexts(): BuildContext[] {
-    const db = this.getDb();
-    const stmt = db.query<BuildContext, []>("SELECT * FROM build_contexts ORDER BY timestamp");
+    const stmt = this.db.query<BuildContext, []>("SELECT * FROM build_contexts ORDER BY timestamp");
     return stmt.all();
   }
 
@@ -201,8 +194,7 @@ export class DatabaseQueries {
     maxBuilds = 20,
     maxAgeDays = 90
   ): { value_numeric: number }[] {
-    const db = this.getDb();
-    const stmt = db.query<{ value_numeric: number }, [string, string, number, number]>(`
+    const stmt = this.db.query<{ value_numeric: number }, [string, string, number, number]>(`
       SELECT mv.value_numeric
       FROM metric_values mv
       JOIN metric_definitions md ON mv.metric_id = md.id
@@ -223,8 +215,7 @@ export class DatabaseQueries {
     metricName: string,
     pullRequestBuildId: number
   ): { value_numeric: number } | undefined {
-    const db = this.getDb();
-    const stmt = db.query<{ value_numeric: number }, [string, number]>(`
+    const stmt = this.db.query<{ value_numeric: number }, [string, number]>(`
       SELECT mv.value_numeric
       FROM metric_values mv
       JOIN metric_definitions md ON mv.metric_id = md.id

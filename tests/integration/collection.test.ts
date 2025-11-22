@@ -56,7 +56,7 @@ describe("End-to-end collection workflow", () => {
       },
     ];
 
-    const buildId = storage.insertBuildContext({
+    const buildContext = {
       commit_sha: "abc123def456abc123def456abc123def456abcd",
       branch: "test-branch",
       run_id: "999",
@@ -64,12 +64,15 @@ describe("End-to-end collection workflow", () => {
       actor: "test-user",
       event_name: "push",
       timestamp: new Date().toISOString(),
-    });
+    };
 
-    const result = await collectMetrics(metrics, buildId, storage);
+    const repository = storage.getRepository();
+    const result = await collectMetrics(metrics);
 
     expect(result.successful).toBe(2);
     expect(result.failed).toBe(0);
+
+    const buildId = await repository.recordBuild(buildContext, result.collectedMetrics);
 
     const values = storage.getMetricValues(buildId);
     expect(values).toHaveLength(2);
@@ -89,15 +92,17 @@ describe("End-to-end collection workflow", () => {
     const db = new Storage({ type: "sqlite-local", path: testDbPath });
     await db.initialize();
 
-    const buildId = db.insertBuildContext({
+    const buildContext = {
       commit_sha: "abc123def456abc123def456abc123def456abcd",
       branch: "test-branch",
       run_id: "999",
       run_number: 1,
       timestamp: new Date().toISOString(),
-    });
+    };
 
-    await collectMetrics(metrics, buildId, db);
+    const repository = db.getRepository();
+    const result = await collectMetrics(metrics);
+    await repository.recordBuild(buildContext, result.collectedMetrics);
 
     const metricDef = db.getMetricDefinition("new-metric");
     expect(metricDef).toBeDefined();
@@ -117,29 +122,33 @@ describe("End-to-end collection workflow", () => {
     await db.initialize();
 
     try {
-      const buildId1 = db.insertBuildContext({
+      const repository = db.getRepository();
+
+      const buildContext1 = {
         commit_sha: "commit1commit1commit1commit1commit1commit1",
         branch: "test-branch",
         run_id: "1",
         run_number: 1,
         timestamp: new Date().toISOString(),
-      });
+      };
 
-      await collectMetrics(metrics, buildId1, db);
+      const result1 = await collectMetrics(metrics);
+      await repository.recordBuild(buildContext1, result1.collectedMetrics);
 
-      const buildId2 = db.insertBuildContext({
+      const buildContext2 = {
         commit_sha: "commit2commit2commit2commit2commit2commit2",
         branch: "test-branch",
         run_id: "2",
         run_number: 2,
         timestamp: new Date().toISOString(),
-      });
+      };
 
       const metricsRun2: MetricConfig[] = [
         { name: "existing-metric", type: "numeric", command: 'echo "2"' },
       ];
 
-      await collectMetrics(metricsRun2, buildId2, db);
+      const result2 = await collectMetrics(metricsRun2);
+      await repository.recordBuild(buildContext2, result2.collectedMetrics);
 
       const allDefs = db.getAllMetricDefinitions();
       const existingMetrics = allDefs.filter((d) => d.name === "existing-metric");
@@ -170,19 +179,22 @@ describe("End-to-end collection workflow", () => {
     await db.initialize();
 
     try {
-      const buildId = db.insertBuildContext({
+      const buildContext = {
         commit_sha: "abc123def456abc123def456abc123def456abcd",
         branch: "test-branch",
         run_id: "999",
         run_number: 1,
         timestamp: new Date().toISOString(),
-      });
+      };
 
-      const result = await collectMetrics(metrics, buildId, db);
+      const repository = db.getRepository();
+      const result = await collectMetrics(metrics);
 
       expect(result.successful).toBe(2);
       expect(result.failed).toBe(1);
       expect(result.failures[0]?.metricName).toBe("failure");
+
+      const buildId = await repository.recordBuild(buildContext, result.collectedMetrics);
 
       const values = db.getMetricValues(buildId);
       expect(values).toHaveLength(2);
@@ -204,7 +216,7 @@ describe("End-to-end collection workflow", () => {
     await db.initialize();
 
     try {
-      const buildId = db.insertBuildContext({
+      const buildContext = {
         commit_sha: "testcommittestcommittestcommittestcommit1",
         branch: "feature-branch",
         run_id: "12345",
@@ -212,9 +224,11 @@ describe("End-to-end collection workflow", () => {
         actor: "developer",
         event_name: "pull_request",
         timestamp: new Date().toISOString(),
-      });
+      };
 
-      await collectMetrics(metrics, buildId, db);
+      const repository = db.getRepository();
+      const result = await collectMetrics(metrics);
+      const buildId = await repository.recordBuild(buildContext, result.collectedMetrics);
 
       const values = db.getMetricValues(buildId);
       expect(values).toHaveLength(1);
@@ -240,15 +254,17 @@ test("stores collection duration for successful metrics", async () => {
   await db.initialize();
 
   try {
-    const buildId = db.insertBuildContext({
+    const buildContext = {
       commit_sha: "abc123def456abc123def456abc123def456abcd",
       branch: "test-branch",
       run_id: "999",
       run_number: 1,
       timestamp: new Date().toISOString(),
-    });
+    };
 
-    await collectMetrics(metrics, buildId, db);
+    const repository = db.getRepository();
+    const result = await collectMetrics(metrics);
+    const buildId = await repository.recordBuild(buildContext, result.collectedMetrics);
 
     const values = db.getMetricValues(buildId);
     expect(values).toHaveLength(1);

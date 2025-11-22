@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import { Storage } from "../../../src/storage/storage";
+import { SqliteDatabaseAdapter } from "../../../src/storage/adapters/sqlite";
 import {
   getMetricTimeSeries,
   calculateSummaryStats,
@@ -11,6 +12,7 @@ const TEST_DB_PATH = "/tmp/test-generator.db";
 
 describe("getMetricTimeSeries", () => {
   let db: Storage;
+  let adapter: SqliteDatabaseAdapter;
 
   beforeAll(async () => {
     if (fs.existsSync(TEST_DB_PATH)) {
@@ -19,8 +21,9 @@ describe("getMetricTimeSeries", () => {
 
     db = new Storage({ type: "sqlite-local", path: TEST_DB_PATH });
     await db.initialize();
+    adapter = new SqliteDatabaseAdapter(db.getConnection());
 
-    const buildId1 = db.insertBuildContext({
+    const buildId1 = adapter.insertBuildContext({
       commit_sha: "abc123",
       branch: "main",
       run_id: "1",
@@ -29,7 +32,7 @@ describe("getMetricTimeSeries", () => {
       timestamp: "2025-10-01T12:00:00Z",
     });
 
-    const buildId2 = db.insertBuildContext({
+    const buildId2 = adapter.insertBuildContext({
       commit_sha: "def456",
       branch: "main",
       run_id: "2",
@@ -38,7 +41,7 @@ describe("getMetricTimeSeries", () => {
       timestamp: "2025-10-02T12:00:00Z",
     });
 
-    const buildId3 = db.insertBuildContext({
+    const buildId3 = adapter.insertBuildContext({
       commit_sha: "ghi789",
       branch: "main",
       run_id: "3",
@@ -47,55 +50,55 @@ describe("getMetricTimeSeries", () => {
       timestamp: "2025-10-03T12:00:00Z",
     });
 
-    const coverageMetric = db.upsertMetricDefinition({
+    const coverageMetric = adapter.upsertMetricDefinition({
       name: "test-coverage",
       type: "numeric",
       unit: "%",
       description: "Test coverage percentage",
     });
 
-    const statusMetric = db.upsertMetricDefinition({
+    const statusMetric = adapter.upsertMetricDefinition({
       name: "build-status",
       type: "label",
       description: "Build status",
     });
 
-    db.insertMetricValue({
+    adapter.insertMetricValue({
       metric_id: coverageMetric.id,
       build_id: buildId1,
       value_numeric: 85.2,
       collected_at: "2025-10-01T12:00:00Z",
     });
 
-    db.insertMetricValue({
+    adapter.insertMetricValue({
       metric_id: coverageMetric.id,
       build_id: buildId2,
       value_numeric: 86.1,
       collected_at: "2025-10-02T12:00:00Z",
     });
 
-    db.insertMetricValue({
+    adapter.insertMetricValue({
       metric_id: coverageMetric.id,
       build_id: buildId3,
       value_numeric: 87.5,
       collected_at: "2025-10-03T12:00:00Z",
     });
 
-    db.insertMetricValue({
+    adapter.insertMetricValue({
       metric_id: statusMetric.id,
       build_id: buildId1,
       value_label: "success",
       collected_at: "2025-10-01T12:00:00Z",
     });
 
-    db.insertMetricValue({
+    adapter.insertMetricValue({
       metric_id: statusMetric.id,
       build_id: buildId2,
       value_label: "success",
       collected_at: "2025-10-02T12:00:00Z",
     });
 
-    db.insertMetricValue({
+    adapter.insertMetricValue({
       metric_id: statusMetric.id,
       build_id: buildId3,
       value_label: "failure",
@@ -112,8 +115,9 @@ describe("getMetricTimeSeries", () => {
 
       const db = new Storage({ type: "sqlite-local", path: dbPath });
       await db.initialize();
+      const adapter = new SqliteDatabaseAdapter(db.getConnection());
 
-      db.insertBuildContext({
+      adapter.insertBuildContext({
         commit_sha: "abc123",
         branch: "main",
         run_id: "1",
@@ -121,14 +125,14 @@ describe("getMetricTimeSeries", () => {
         timestamp: "2025-10-01T12:00:00Z",
       });
 
-      const sparseMetric = db.upsertMetricDefinition({
+      const sparseMetric = adapter.upsertMetricDefinition({
         name: "sparse-metric",
         type: "numeric",
         description: "Metric with few data points",
       });
 
       for (let i = 0; i < 5; i++) {
-        const bid = db.insertBuildContext({
+        const bid = adapter.insertBuildContext({
           commit_sha: `sha${i}`,
           branch: "main",
           run_id: `run${i}`,
@@ -137,7 +141,7 @@ describe("getMetricTimeSeries", () => {
           timestamp: `2025-10-0${i + 1}T12:00:00Z`,
         });
 
-        db.insertMetricValue({
+        adapter.insertMetricValue({
           metric_id: sparseMetric.id,
           build_id: bid,
           value_numeric: 50 + i,
@@ -162,15 +166,16 @@ describe("getMetricTimeSeries", () => {
 
       const db = new Storage({ type: "sqlite-local", path: dbPath });
       await db.initialize();
+      const adapter = new SqliteDatabaseAdapter(db.getConnection());
 
-      const nonSparseMetric = db.upsertMetricDefinition({
+      const nonSparseMetric = adapter.upsertMetricDefinition({
         name: "non-sparse-metric",
         type: "numeric",
         description: "Metric with sufficient data points",
       });
 
       for (let i = 0; i < 12; i++) {
-        const bid = db.insertBuildContext({
+        const bid = adapter.insertBuildContext({
           commit_sha: `sha${i}`,
           branch: "main",
           run_id: `run${i}`,
@@ -179,7 +184,7 @@ describe("getMetricTimeSeries", () => {
           timestamp: `2025-10-${String(i + 1).padStart(2, "0")}T12:00:00Z`,
         });
 
-        db.insertMetricValue({
+        adapter.insertMetricValue({
           metric_id: nonSparseMetric.id,
           build_id: bid,
           value_numeric: 50 + i,
@@ -246,7 +251,7 @@ describe("getMetricTimeSeries", () => {
   });
 
   test("returns empty data points for metric with no values", () => {
-    db.upsertMetricDefinition({
+    adapter.upsertMetricDefinition({
       name: "empty-metric",
       type: "numeric",
       description: "No data",

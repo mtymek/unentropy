@@ -6,7 +6,6 @@ import { collectMetrics } from "../collector/collector";
 import { extractBuildContext } from "../collector/context";
 import { StorageConfig } from "../config/schema";
 import type { StorageProviderConfig } from "../storage/providers/interface";
-import { DatabaseQueries } from "../storage/queries";
 
 interface ActionInputs {
   storageType: string;
@@ -176,15 +175,17 @@ async function createOrUpdatePullRequestComment(
   let metricDiffsSection = "";
   if (storage && buildId) {
     try {
-      const queries = new DatabaseQueries(storage);
-      const metricValues = queries.getMetricValuesByBuildId(buildId);
+      const repository = storage.getRepository();
+      const metricValues = repository.queries.getMetricValuesByBuildId(buildId);
 
       const diffs: MetricDiff[] = [];
 
       for (const metricValue of metricValues) {
         if (metricValue.value_numeric !== null) {
           // Get baseline values from main branch
-          const baselineValues = queries.getBaselineMetricValues(metricValue.metric_name);
+          const baselineValues = repository.queries.getBaselineMetricValues(
+            metricValue.metric_name
+          );
 
           if (baselineValues.length > 0) {
             // Calculate median baseline
@@ -362,12 +363,19 @@ export async function runTrackMetricsAction(): Promise<void> {
   // Phase 2: Collect metrics
   core.info("Collecting metrics...");
   const context = extractBuildContext();
-  const buildId = storage.insertBuildContext({
-    ...context,
-    timestamp: new Date().toISOString(),
-  });
+  const repository = storage.getRepository();
 
-  const collectionResult = await collectMetrics(config.metrics, buildId, storage);
+  // Collect metrics (doesn't write to DB yet)
+  const collectionResult = await collectMetrics(config.metrics);
+
+  // Record build with all collected metrics in one operation
+  const buildId = await repository.recordBuild(
+    {
+      ...context,
+      timestamp: new Date().toISOString(),
+    },
+    collectionResult.collectedMetrics
+  );
 
   core.info(
     `Metrics collection completed: ${collectionResult.successful}/${collectionResult.total} successful`
@@ -398,15 +406,7 @@ export async function runTrackMetricsAction(): Promise<void> {
     }
   }
 
-  // Phase 3: Persist storage (upload for S3) - only on main branch, not PRs
-  if (!isPullRequestContext()) {
-    core.info("Uploading database to S3...");
-    await storage.persist();
-  } else {
-    core.info("Skipping database upload in pull request context");
-  }
-
-  // Phase 4: Generate report
+  // Phase 3: Generate report (before closing database)
   core.info("Generating HTML report...");
   try {
     const { generateReport } = await import("../reporter/generator");
@@ -423,6 +423,15 @@ export async function runTrackMetricsAction(): Promise<void> {
       `Report generation failed: ${error instanceof Error ? error.message : String(error)}`
     );
     // Continue anyway - report generation failure shouldn't fail the whole action
+  }
+
+  // Phase 4: Persist storage (upload for S3) - only on main branch, not PRs
+  // This closes the database for S3 providers, so must happen after report generation
+  if (!isPullRequestContext()) {
+    core.info("Uploading database to S3...");
+    await storage.persist();
+  } else {
+    core.info("Skipping database upload in pull request context");
   }
 
   const duration = Date.now() - startTime;
