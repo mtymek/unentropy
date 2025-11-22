@@ -147,7 +147,7 @@ export class MetricsRepository {
    *
    * @returns Array of all metric definitions
    */
-  getAllMetrics(): MetricDefinition[] {
+  getAllMetricDefinitions(): MetricDefinition[] {
     return this.adapter.getAllMetricDefinitions();
   }
 

@@ -159,7 +159,7 @@ function getReportMetadata(db: Storage, repository: string): ReportMetadata {
 export function generateReport(db: Storage, options: GenerateReportOptions = {}): string {
   const repository = options.repository || "unknown/repository";
 
-  const allMetrics = db.getRepository().queries.getAllMetricDefinitions();
+  const allMetrics = db.getRepository().getAllMetricDefinitions();
 
   // If config is provided, only show metrics that are configured
   let metricNames: string[];

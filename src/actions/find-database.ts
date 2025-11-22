@@ -189,7 +189,7 @@ async function logDatabaseStats(databasePath: string): Promise<void> {
     await dbClient.ready();
 
     const buildContexts = dbClient.getRepository().queries.getAllBuildContexts();
-    const metricDefinitions = dbClient.getRepository().queries.getAllMetricDefinitions();
+    const metricDefinitions = dbClient.getRepository().getAllMetricDefinitions();
     const metricValues = dbClient.getRepository().queries.getAllMetricValues();
 
     core.info(`Database statistics:`);

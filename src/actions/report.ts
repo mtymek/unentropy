@@ -224,7 +224,7 @@ export async function run(): Promise<void> {
   core.info(`Using time range filter: ${JSON.stringify(timeRangeFilter)}`);
 
   // Get all available metrics
-  const allMetrics = db.getRepository().queries.getAllMetricDefinitions();
+  const allMetrics = db.getRepository().getAllMetricDefinitions();
   if (allMetrics.length === 0) {
     core.warning("No metrics found in database");
 

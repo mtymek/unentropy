@@ -150,7 +150,7 @@ describe("End-to-end collection workflow", () => {
       const result2 = await collectMetrics(metricsRun2);
       await repository.recordBuild(buildContext2, result2.collectedMetrics);
 
-      const allDefs = db.getRepository().queries.getAllMetricDefinitions();
+      const allDefs = db.getRepository().getAllMetricDefinitions();
       const existingMetrics = allDefs.filter((d: { name: string }) => d.name === "existing-metric");
       expect(existingMetrics).toHaveLength(1);
 
