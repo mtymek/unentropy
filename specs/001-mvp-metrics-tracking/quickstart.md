@@ -60,32 +60,162 @@ export async function loadConfig(path: string): Promise<UnentropyConfig> {
 
 ---
 
-### Phase 2: Database Layer
+### Phase 2: Storage Layer (Three-Layer Architecture)
 
-**Goal**: SQLite database with schema initialization and basic CRUD operations
+**Goal**: Storage system with provider, adapter, and repository layers
 
 **Components**:
-1. `src/storage/storage.ts` - Storage connection management
-2. `src/database/migrations.ts` - Schema creation
-3. `src/database/queries.ts` - Data access functions
-4. `src/database/types.ts` - Entity types
+1. `src/storage/providers/` - Storage providers (local, S3)
+2. `src/storage/adapters/` - Database adapters (SQLite, PostgreSQL)
+3. `src/storage/repository.ts` - Domain operations
+4. `src/storage/storage.ts` - Orchestration layer
+5. `src/storage/migrations.ts` - Schema initialization
+6. `src/storage/types.ts` - Entity types
 
 **Implementation Steps**:
 
 ```typescript
-// 1. Setup connection in src/storage/storage.ts
-import Database from 'better-sqlite3';
-
-export function openDatabase(path: string): Database.Database {
-  const db = new Database(path);
-  db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
-  db.pragma('busy_timeout = 5000');
-  return db;
+// 1. Storage provider interface in src/storage/providers/interface.ts
+export interface StorageProvider {
+  initialize(): Promise<Database>;
+  persist(): Promise<void>;
+  cleanup(): void;
+  readonly isInitialized: boolean;
 }
 
-// 2. Schema initialization in src/database/migrations.ts
-export function initializeSchema(db: Database.Database): void {
+// 2. SQLite local provider in src/storage/providers/sqlite-local.ts
+export class SqliteLocalStorageProvider implements StorageProvider {
+  async initialize(): Promise<Database> {
+    const db = new Database(this.config.path);
+    return db;
+  }
+  
+  async persist(): Promise<void> {
+    // No-op for local (writes are immediate)
+  }
+  
+  cleanup(): void {
+    this.db?.close();
+  }
+}
+
+// 3. Database adapter interface in src/storage/adapters/interface.ts
+export interface DatabaseAdapter {
+  insertBuildContext(context: BuildContext): Promise<number>;
+  upsertMetricDefinition(metric: MetricDefinition): Promise<number>;
+  insertMetricValue(value: MetricValue): Promise<void>;
+  getMetricTimeSeries(name: string, options?: TimeSeriesOptions): Promise<MetricValue[]>;
+  // ... other query methods
+}
+
+// 4. SQLite adapter in src/storage/adapters/sqlite.ts
+export class SqliteDatabaseAdapter implements DatabaseAdapter {
+  constructor(private db: Database) {}
+  
+  async insertBuildContext(context: BuildContext): Promise<number> {
+    const stmt = this.db.prepare(`
+      INSERT INTO build_contexts (commit_sha, branch, run_id, run_number, actor, event_name, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    const result = stmt.run(
+      context.commitSha,
+      context.branch,
+      context.runId,
+      context.runNumber,
+      context.actor,
+      context.eventName,
+      context.createdAt
+    );
+    return result.lastInsertRowid as number;
+  }
+  
+  async upsertMetricDefinition(metric: MetricDefinition): Promise<number> {
+    const stmt = this.db.prepare(`
+      INSERT INTO metric_definitions (name, type, unit, description)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(name) DO UPDATE SET
+        unit = excluded.unit,
+        description = excluded.description
+      RETURNING id
+    `);
+    const row = stmt.get(metric.name, metric.type, metric.unit, metric.description) as { id: number };
+    return row.id;
+  }
+  // ... other query methods
+}
+
+// 5. Repository in src/storage/repository.ts
+export class MetricsRepository {
+  constructor(private adapter: DatabaseAdapter) {}
+  
+  async recordBuild(buildContext: BuildContext, metrics: MetricValue[]): Promise<number> {
+    const buildId = await this.adapter.insertBuildContext(buildContext);
+    
+    for (const metric of metrics) {
+      const metricId = await this.adapter.upsertMetricDefinition(metric.definition);
+      await this.adapter.insertMetricValue({
+        metricId,
+        buildId,
+        ...metric
+      });
+    }
+    
+    return buildId;
+  }
+  
+  async getMetricHistory(name: string, options?: HistoryOptions): Promise<MetricHistory> {
+    const values = await this.adapter.getMetricTimeSeries(name, options);
+    return {
+      metricName: name,
+      values,
+      // ... computed summary stats
+    };
+  }
+  
+  // For test assertions
+  get queries(): DatabaseAdapter {
+    return this.adapter;
+  }
+}
+
+// 6. Storage orchestrator in src/storage/storage.ts
+export class Storage {
+  private provider: StorageProvider;
+  private adapter: DatabaseAdapter;
+  private repository: MetricsRepository;
+  
+  async initialize(): Promise<void> {
+    this.provider = await createStorageProvider(this.config.provider);
+    const db = await this.provider.initialize();
+    
+    // Configure connection
+    db.run("PRAGMA journal_mode = WAL");
+    db.run("PRAGMA foreign_keys = ON");
+    db.run("PRAGMA busy_timeout = 5000");
+    
+    this.adapter = new SqliteDatabaseAdapter(db);
+    this.repository = new MetricsRepository(this.adapter);
+    
+    // Initialize schema
+    await initializeSchema(db);
+  }
+  
+  getRepository(): MetricsRepository {
+    return this.repository;
+  }
+  
+  async close(): Promise<void> {
+    await this.provider.persist();
+    this.provider.cleanup();
+  }
+  
+  async transaction<T>(fn: () => Promise<T>): Promise<T> {
+    // Delegate to provider's database transaction
+  }
+}
+
+// 7. Schema initialization in src/storage/migrations.ts
+export function initializeSchema(db: Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS metric_definitions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -104,7 +234,6 @@ export function initializeSchema(db: Database.Database): void {
       run_number INTEGER NOT NULL,
       actor TEXT,
       event_name TEXT,
-      timestamp DATETIME NOT NULL,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(commit_sha, run_id)
     );
@@ -123,37 +252,21 @@ export function initializeSchema(db: Database.Database): void {
     );
   `);
 }
-
-// 3. CRUD operations in src/database/queries.ts
-export function insertBuildContext(db: Database.Database, context: BuildContext): number {
-  const stmt = db.prepare(`
-    INSERT INTO build_contexts (commit_sha, branch, run_id, run_number, actor, event_name, timestamp)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `);
-  const result = stmt.run(/* params */);
-  return result.lastInsertRowid as number;
-}
-
-export function upsertMetricDefinition(db: Database.Database, metric: MetricConfig): number {
-  const stmt = db.prepare(`
-    INSERT INTO metric_definitions (name, type, unit, description)
-    VALUES (?, ?, ?, ?)
-    ON CONFLICT(name) DO UPDATE SET
-      unit = excluded.unit,
-      description = excluded.description
-    RETURNING id
-  `);
-  const row = stmt.get(/* params */) as { id: number };
-  return row.id;
-}
 ```
 
-**Tests** (`tests/unit/database/`):
-- Schema creates all tables and indexes
-- CRUD operations work correctly
-- Foreign keys enforced
-- Unique constraints enforced
-- Concurrent writes handled (busy timeout)
+**Tests** (`tests/unit/storage/`):
+- Provider tests: `providers/sqlite-local.test.ts`, `providers/factory.test.ts`
+- Adapter tests: `adapters/sqlite.test.ts`
+- Repository tests: `repository.test.ts`
+- Storage tests: `storage.test.ts`
+- Schema tests: `migrations.test.ts`
+
+**Key Benefits**:
+- Clean separation: Provider (WHERE), Adapter (WHAT), Repository (WHY)
+- Future PostgreSQL support via new adapter
+- S3 storage support via new provider
+- Repository exposes clean domain API
+- No SQL in application code
 
 **Acceptance**: FR-009, FR-011
 
@@ -211,14 +324,12 @@ export async function executeMetricCommand(
 // 3. Main collector in src/collector/collector.ts
 export async function collectMetrics(
   config: UnentropyConfig,
-  db: Database.Database
+  repository: MetricsRepository
 ): Promise<CollectionResult> {
   const context = getBuildContext();
-  const buildId = insertBuildContext(db, context);
   
-  const results = await Promise.allSettled(
+  const metricValues = await Promise.allSettled(
     config.metrics.map(async (metric) => {
-      const metricId = upsertMetricDefinition(db, metric);
       const startTime = Date.now();
       const output = await executeMetricCommand(
         metric.command,
@@ -229,13 +340,24 @@ export async function collectMetrics(
       const duration = Date.now() - startTime;
       
       const value = parseMetricValue(output, metric.type);
-      insertMetricValue(db, metricId, buildId, value, duration);
+      return {
+        definition: metric,
+        value,
+        collectionDurationMs: duration,
+      };
     })
   );
   
+  const successfulMetrics = metricValues
+    .filter((r) => r.status === 'fulfilled')
+    .map((r) => r.value);
+  
+  // Record build with all collected metrics in one operation
+  await repository.recordBuild(context, successfulMetrics);
+  
   return {
-    collected: results.filter((r) => r.status === 'fulfilled').length,
-    failed: results.filter((r) => r.status === 'rejected').length,
+    collected: successfulMetrics.length,
+    failed: metricValues.filter((r) => r.status === 'rejected').length,
   };
 }
 ```
@@ -274,21 +396,24 @@ import * as artifact from '@actions/artifact';
 async function run(): Promise<void> {
   try {
     const configPath = core.getInput('config-path') || './unentropy.json';
-    const artifactName = core.getInput('database-artifact') || 'unentropy-metrics';
     const dbPath = core.getInput('database-path') || '.unentropy/metrics.db';
     
-    // Download existing artifact (if exists)
-    await downloadArtifact(artifactName, dbPath);
+    // Initialize storage with three-layer architecture
+    const storage = new Storage({
+      provider: {
+        type: 'sqlite-local',
+        path: dbPath
+      }
+    });
+    await storage.initialize();
     
-    // Load config and collect metrics
+    // Load config and collect metrics using repository
     const config = await loadConfig(configPath);
-    const db = openDatabase(dbPath);
-    initializeSchema(db);
-    const result = await collectMetrics(config, db);
-    db.close();
+    const repository = storage.getRepository();
+    const result = await collectMetrics(config, repository);
     
-    // Upload updated artifact
-    await uploadArtifact(artifactName, dbPath);
+    // Clean up
+    await storage.close();
     
     // Set outputs
     core.setOutput('metrics-collected', result.collected);

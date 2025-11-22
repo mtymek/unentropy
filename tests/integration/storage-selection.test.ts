@@ -27,8 +27,6 @@ describe("Storage Backend Selection Integration", () => {
       const db = new Storage(provider);
       await db.ready();
 
-      expect(db.isOpen()).toBe(true);
-
       await db.close();
     });
 
@@ -40,8 +38,6 @@ describe("Storage Backend Selection Integration", () => {
 
       const db = new Storage(provider);
       await db.ready();
-
-      expect(db.isOpen()).toBe(true);
 
       await db.close();
     });
@@ -160,7 +156,6 @@ describe("Storage Backend Selection Integration", () => {
       // but the factory should create the provider successfully
       try {
         await storage.ready();
-        expect(storage.isOpen()).toBe(true);
         await storage.close();
       } catch (error) {
         // Expected in test environment

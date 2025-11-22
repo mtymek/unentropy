@@ -1,6 +1,5 @@
 import { runCommand } from "./runner";
 import type { MetricConfig } from "../config/schema";
-import { Storage } from "../storage/storage";
 
 export interface ParseResult {
   success: boolean;
@@ -52,16 +51,48 @@ export function parseMetricValue(output: string, type: "numeric" | "label"): Par
   }
 }
 
-export async function collectMetrics(
-  metrics: MetricConfig[],
-  buildId: number,
-  storage: Storage
-): Promise<CollectionResult> {
-  const result: CollectionResult = {
+/**
+ * Collect metrics by running their commands and parsing outputs.
+ * Returns collected metrics for caller to record to database.
+ *
+ * @param metrics - Array of metric configurations to collect
+ * @returns Collection result with successful metrics and failures
+ */
+export async function collectMetrics(metrics: MetricConfig[]): Promise<
+  CollectionResult & {
+    collectedMetrics: {
+      definition: {
+        name: string;
+        type: "numeric" | "label";
+        unit?: string;
+        description?: string;
+      };
+      value_numeric?: number;
+      value_label?: string;
+      collected_at: string;
+      collection_duration_ms?: number;
+    }[];
+  }
+> {
+  const result: CollectionResult & {
+    collectedMetrics: {
+      definition: {
+        name: string;
+        type: "numeric" | "label";
+        unit?: string;
+        description?: string;
+      };
+      value_numeric?: number;
+      value_label?: string;
+      collected_at: string;
+      collection_duration_ms?: number;
+    }[];
+  } = {
     total: metrics.length,
     successful: 0,
     failed: 0,
     failures: [],
+    collectedMetrics: [],
   };
 
   if (metrics.length === 0) {
@@ -96,16 +127,14 @@ export async function collectMetrics(
         continue;
       }
 
-      const metricDef = storage.upsertMetricDefinition({
-        name: metric.name,
-        type: metric.type,
-        unit: metric.unit,
-        description: metric.description,
-      });
-
-      storage.insertMetricValue({
-        metric_id: metricDef.id,
-        build_id: buildId,
+      // Add to collected metrics (caller will record to DB)
+      result.collectedMetrics.push({
+        definition: {
+          name: metric.name,
+          type: metric.type,
+          unit: metric.unit,
+          description: metric.description,
+        },
         value_numeric: parseResult.numericValue,
         value_label: parseResult.labelValue,
         collected_at: new Date().toISOString(),

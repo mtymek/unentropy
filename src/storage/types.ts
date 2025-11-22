@@ -19,6 +19,9 @@ export interface BuildContext {
   event_name: string | null;
   timestamp: string;
   created_at: string;
+  pull_request_number: number | null;
+  pull_request_base: string | null;
+  pull_request_head: string | null;
 }
 
 export interface MetricValue {
@@ -36,9 +39,12 @@ export interface InsertBuildContext {
   branch: string;
   run_id: string;
   run_number: number;
-  actor?: string | null;
-  event_name?: string | null;
+  actor?: string;
+  event_name?: string;
   timestamp: string;
+  pull_request_number?: number | null;
+  pull_request_base?: string | null;
+  pull_request_head?: string | null;
 }
 
 export interface InsertMetricDefinition {

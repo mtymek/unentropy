@@ -23,8 +23,8 @@
 **Purpose**: Project initialization and dependencies
 
 - [x] T001 Install dependencies: zod, @actions/core, @actions/github
-- [x] T002 [P] Create directory structure: src/config/, src/storage/, src/storage/providers/, src/collector/, src/reporter/, src/actions/
-- [x] T003 [P] Create directory structure: tests/unit/config/, tests/unit/storage/, tests/unit/storage/providers/, tests/unit/collector/, tests/unit/reporter/
+- [x] T002 [P] Create directory structure: src/config/, src/storage/, src/storage/providers/, src/storage/adapters/, src/collector/, src/reporter/, src/actions/
+- [x] T003 [P] Create directory structure: tests/unit/config/, tests/unit/storage/, tests/unit/storage/providers/, tests/unit/storage/adapters/, tests/unit/collector/, tests/unit/reporter/
 - [x] T004 [P] Create directory structure: tests/integration/, tests/contract/
 
 ---
@@ -35,59 +35,103 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-### Storage Provider Architecture
+### Storage Architecture (Three-Layer Separation)
 
-**Architecture**: Storage Provider Pattern abstracts WHERE the database is stored (local file, GitHub Artifacts, S3, PostgreSQL) while using bun:sqlite Database API directly (no wrapper). Provider types follow pattern: `<database-engine>-<storage-location>` (e.g., 'sqlite-local', 'sqlite-artifact', 'postgres').
+**Architecture**: The storage layer implements a three-layer separation of concerns:
+
+1. **StorageProvider** (`providers/`): Manages database lifecycle and storage location (WHERE to store)
+   - Handles initialization, persistence, and cleanup
+   - Types: 'sqlite-local', 'sqlite-s3', 'postgres'
+   
+2. **DatabaseAdapter** (`adapters/`): Abstracts database query execution (WHAT queries to run)
+   - Provides query methods independent of storage location
+   - SQLite adapter provides SQL-based operations
+   - Future: PostgreSQL adapter for different database engine
+   
+3. **MetricsRepository** (`repository.ts`): Exposes domain-specific operations (WHY - business logic)
+   - Business operations: `recordBuild()`, `getMetricComparison()`, `getMetricHistory()`
+   - Uses adapter internally
+   - Clean API for application code
+   
+4. **Storage** (`storage.ts`): Orchestration layer
+   - Coordinates provider, adapter, and repository
+   - Provides unified API to rest of application
+
+This separation enables:
+- Future database engines (PostgreSQL) via new adapters
+- Alternative storage locations (S3, Artifacts) via new providers
+- Clean business logic without coupling to SQL or storage details
+- Independent testing of each layer
 
 - [x] T005 Create TypeScript types for storage entities in src/storage/types.ts
 - [x] T006 Define StorageProvider interface in src/storage/providers/interface.ts
   - Define StorageProvider interface (initialize, persist, cleanup, isInitialized)
-  - Define StorageProviderConfig type with types: 'sqlite-local', 'sqlite-artifact', 'sqlite-s3', 'postgres'
-  - Add config fields: path (sqlite-local), artifactName/repository (sqlite-artifact), s3Bucket/s3Key (sqlite-s3), connectionString (postgres)
+  - Define StorageProviderConfig type with types: 'sqlite-local', 'sqlite-s3', 'postgres'
+  - Add config fields: path (sqlite-local), s3Bucket/s3Key (sqlite-s3), connectionString (postgres)
   
 - [x] T007 Implement SqliteLocalStorageProvider in src/storage/providers/sqlite-local.ts
   - initialize(): Opens SQLite database at config.path using `new Database(path, options)`
   - persist(): No-op for local storage (writes are immediate to disk)
   - cleanup(): Closes database via db.close()
-  - Uses bun:sqlite Database API directly
+  
+- [x] T007b Implement SqliteS3StorageProvider in src/storage/providers/sqlite-s3.ts
+  - initialize(): Downloads database from S3, opens locally
+  - persist(): Uploads modified database back to S3
+  - cleanup(): Closes database, cleans up temp file
   
 - [x] T008 Create provider factory in src/storage/providers/factory.ts
   - createStorageProvider(config: StorageProviderConfig): Promise<StorageProvider>
-  - Handles 'sqlite-local' type (MVP only)
+  - Handles 'sqlite-local' and 'sqlite-s3' types
   - Throws error for unsupported types with clear message
   
-- [x] T009 Implement Storage with provider pattern in src/storage/storage.ts
-  - Use StorageProvider to get Database instance
-  - Direct use of bun:sqlite Database (no wrapper)
+- [x] T008b Define DatabaseAdapter interface in src/storage/adapters/interface.ts
+  - Define query methods: insertBuildContext, upsertMetricDefinition, insertMetricValue
+  - Define query methods: getMetricTimeSeries, getAllMetricDefinitions, getBuildContext, etc.
+  - Database-agnostic interface
+  
+- [x] T008c Implement SqliteDatabaseAdapter in src/storage/adapters/sqlite.ts
+  - Implements DatabaseAdapter interface
+  - Uses db.query() to create prepared statements
+  - SQLite-specific SQL queries
+  
+- [x] T009 Implement MetricsRepository in src/storage/repository.ts
+  - Domain operations: recordBuild(), getMetricComparison(), getMetricHistory()
+  - Uses DatabaseAdapter internally
+  - Clean business API (no SQL exposed)
+  - Exposes `repository.queries` accessor for test assertions
+  
+- [x] T009b Implement Storage orchestrator in src/storage/storage.ts
+  - Uses StorageProvider to manage database lifecycle
+  - Uses DatabaseAdapter for queries
+  - Uses MetricsRepository for domain operations
   - configureConnection() uses db.run("PRAGMA ...") for SQLite configuration
-  - Methods: initialize(), close(), getConnection(), transaction()
+  - Methods: initialize(), close(), getRepository(), transaction()
   
 - [x] T010 Implement storage schema initialization in src/storage/migrations.ts
   - Uses Database.exec() for schema creation
   - Tables: metric_definitions, build_contexts, metric_values, schema_version
   - Proper indexes and foreign keys
-  
-- [x] T011 Implement storage query functions in src/storage/queries.ts
-  - Uses db.query() to create prepared statements
-  - Methods: insertBuildContext, upsertMetricDefinition, insertMetricValue
-  - Query methods: getMetricTimeSeries, getAllMetricDefinitions, etc.
 
 ### Tests for Storage Layer
 
 - [x] T012 [P] Write unit tests for SqliteLocalStorageProvider in tests/unit/storage/providers/sqlite-local.test.ts
+- [x] T012b [P] Write unit tests for SqliteS3StorageProvider in tests/unit/storage/providers/sqlite-s3.test.ts
 - [x] T013 [P] Write unit tests for provider factory in tests/unit/storage/providers/factory.test.ts
-- [x] T014 [P] Write unit tests for Storage in tests/unit/storage/client.test.ts
-- [x] T015 [P] Write unit tests for schema initialization in tests/unit/storage/migrations.test.ts
-- [x] T016 [P] Write unit tests for query functions in tests/unit/storage/queries.test.ts
+- [x] T013b [P] Write unit tests for SqliteDatabaseAdapter in tests/unit/storage/adapters/sqlite.test.ts
+- [x] T014 [P] Write unit tests for MetricsRepository in tests/unit/storage/repository.test.ts
+- [x] T015 [P] Write unit tests for Storage orchestrator in tests/unit/storage/storage.test.ts
+- [x] T016 [P] Write unit tests for schema initialization in tests/unit/storage/migrations.test.ts
 
-**Checkpoint**: Storage layer ready with provider pattern - user story implementation can now begin
+**Checkpoint**: Storage layer ready with three-layer architecture - user story implementation can now begin
 
 **Key Design Decisions**:
-- ✓ No wrapper around bun:sqlite - use Database API directly
-- ✓ Provider abstracts storage location, not database operations
-- ✓ Type naming: 'sqlite-local' (MVP), 'sqlite-artifact', 'sqlite-s3', 'postgres' (future)
-- ✓ PRAGMA statements via db.run(), not separate pragma() method
-- ✓ Simple for MVP (local only), extensible for future (artifacts, S3, Postgres)
+- ✓ Three-layer separation: Provider (WHERE), Adapter (WHAT), Repository (WHY)
+- ✓ Provider manages database lifecycle and location
+- ✓ Adapter abstracts query execution (enables future PostgreSQL support)
+- ✓ Repository exposes clean domain API (recordBuild, getMetricComparison)
+- ✓ Storage orchestrates all three layers
+- ✓ Type naming: 'sqlite-local', 'sqlite-s3', 'postgres'
+- ✓ Repository exposes `queries` accessor for test assertions
 
 ---
 
@@ -172,8 +216,8 @@
 
 ### Implementation for User Story 3
 
-- [x] T051 [P] [US3] Implement time-series query functions in src/storage/queries.ts
-- [x] T052 [US3] Implement getAllBuildContexts query in src/storage/queries.ts (for report metadata)
+- [x] T051 [P] [US3] Implement time-series query methods in DatabaseAdapter (src/storage/adapters/sqlite.ts)
+- [x] T052 [US3] Implement getAllBuildContexts query in DatabaseAdapter (for report metadata)
 - [x] T053 [P] [US3] Implement Chart.js configuration builder in src/reporter/charts.ts
 - [x] T054 [US3] Implement HTML template with Tailwind CSS and embedded Chart.js in src/reporter/templates.ts
 - [x] T055 [US3] Implement report generator orchestration in src/reporter/generator.ts
@@ -305,9 +349,11 @@
 
 - **Setup (Phase 1)**: No dependencies - can start immediately
 - **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
-  - **Critical**: Storage Provider Pattern must be implemented correctly
-  - Uses bun:sqlite Database API directly (no adapter wrapper)
-  - Provider abstracts storage location, not database operations
+  - **Critical**: Three-layer storage architecture must be implemented correctly
+  - Provider manages database lifecycle and location
+  - Adapter abstracts query execution
+  - Repository provides domain operations
+  - Storage orchestrates all three layers
 - **User Stories (Phase 3-5)**: All depend on Foundational phase completion
   - User stories can then proceed in parallel (if staffed)
   - Or sequentially in priority order (P1 → P2 → P3)
@@ -410,9 +456,9 @@ With multiple developers:
 
 ## Task Summary
 
-- **Total Tasks**: 109
+- **Total Tasks**: 116
 - **Phase 1 (Setup)**: 4 tasks
-- **Phase 2 (Foundational - Storage Provider Pattern)**: 16 tasks (11 implementation + 5 tests) **← BLOCKING**
+- **Phase 2 (Foundational - Three-Layer Architecture)**: 23 tasks (13 implementation + 7 tests + 3 additional layers) **← BLOCKING**
 - **Phase 3 (User Story 1)**: 10 tasks (6 tests + 4 implementation)
 - **Phase 4 (User Story 2)**: 13 tasks (8 tests + 5 implementation)
 - **Phase 5 (User Story 3)**: 31 tasks (11 tests + 12 implementation + 8 visual acceptance)
@@ -420,16 +466,18 @@ With multiple developers:
 - **Phase 7 (GitHub Actions)**: 15 tasks (5 tests + 10 implementation)
 - **Phase 8 (Polish)**: 12 tasks
 
-### Current Status: 89/109 tasks completed (82%)
+### Current Status: 96/116 tasks completed (83%)
 
-### Storage Provider Pattern (Phase 2)
+### Storage Architecture (Phase 2)
 
-**Key Changes from Previous Approach**:
-- ✓ No DatabaseAdapter wrapper - use bun:sqlite Database API directly
-- ✓ StorageProvider abstracts storage LOCATION (local/artifact/s3), not database operations
-- ✓ Type naming: 'sqlite-local', 'sqlite-artifact', 'sqlite-s3', 'postgres'
-- ✓ PRAGMA configuration via db.run("PRAGMA ..."), not separate method
-- ✓ Simple MVP (SqliteLocalStorageProvider only), extensible for future
+**Key Changes - Three-Layer Separation**:
+- ✓ **StorageProvider** (`providers/`): Manages database lifecycle and location (WHERE to store)
+- ✓ **DatabaseAdapter** (`adapters/`): Abstracts query execution (WHAT queries to run)
+- ✓ **MetricsRepository** (`repository.ts`): Provides domain operations (WHY - business logic)
+- ✓ **Storage** (`storage.ts`): Orchestrates provider, adapter, and repository
+- ✓ Type naming: 'sqlite-local', 'sqlite-s3', 'postgres'
+- ✓ Clean separation enables future PostgreSQL support
+- ✓ Repository exposes `queries` accessor for test assertions
 
 ### Parallel Opportunities
 
@@ -442,7 +490,7 @@ With multiple developers:
 **Minimum Viable Product** = Phase 1 + Phase 2 + Phase 3 (User Story 1 only)
 
 This delivers:
-- ✓ Storage Provider Pattern foundation (sqlite-local)
+- ✓ Three-layer storage architecture (provider + adapter + repository)
 - ✓ Configuration file support
 - ✓ Metric definition and validation
 - ✓ Clear error messages
@@ -454,7 +502,7 @@ This delivers:
 **Realistic MVP** = Phase 1 + Phase 2 + Phase 3 + Phase 4 + Phase 5 + Phase 6 + Phase 7
 
 This delivers complete end-to-end functionality:
-- ✓ Storage Provider Pattern (extensible for future: artifact, s3, postgres)
+- ✓ Three-layer storage architecture (extensible for PostgreSQL)
 - ✓ Configuration system
 - ✓ Metric collection in CI/CD
 - ✓ HTML report generation
@@ -477,28 +525,29 @@ This delivers complete end-to-end functionality:
 - User stories have sequential dependencies in this feature
 - User Story 4 (self-monitoring) serves as both demonstration and genuine project monitoring
 
-## Storage Provider Pattern - Key Principles
+## Three-Layer Storage Architecture - Key Principles
 
 **Design Philosophy**:
-- Provider abstracts WHERE database is stored (location/access method)
-- Client abstracts WHAT to do with database (business operations)
-- Use bun:sqlite Database API directly - no wrapper needed
+- **Provider** abstracts WHERE database is stored (location/access method)
+- **Adapter** abstracts WHAT queries to run (SQL engine-specific)
+- **Repository** abstracts WHY (domain operations like recordBuild)
+- **Storage** orchestrates all three layers
 - Type naming convention: `<database-engine>-<storage-location>`
 
-**MVP Implementation**:
-- Type: 'sqlite-local' - SQLite on local file system
-- Opens database file directly using `new Database(path, options)`
-- PRAGMA configuration via `db.run("PRAGMA ...")`
-- No persist() operation needed (writes immediate to disk)
+**Current Implementation**:
+- Providers: 'sqlite-local' (local file), 'sqlite-s3' (S3-compatible storage)
+- Adapter: SqliteDatabaseAdapter (SQLite-specific queries)
+- Repository: MetricsRepository (domain operations)
+- Storage: Coordinates provider + adapter + repository
 
 **Future Extensibility**:
-- 'sqlite-artifact' - SQLite in GitHub Artifacts (download/upload)
-- 'sqlite-s3' - SQLite in S3 storage (download/upload)
-- 'postgres' - PostgreSQL remote database (different connection model)
+- New adapter: PostgresDatabaseAdapter (different SQL dialect)
+- New providers: 'postgres' (remote database connection)
+- Repository stays the same (clean domain API)
 
 **Benefits**:
-- Simple MVP (just opens a file)
-- Clear separation of concerns
-- Easy to test (mock providers)
-- Extensible without changing existing code
+- Clean separation of concerns
+- Future PostgreSQL support via new adapter
+- Easy to test (mock each layer independently)
+- Repository API never changes when adding new databases
 

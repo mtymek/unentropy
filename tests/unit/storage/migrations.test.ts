@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { Database } from "bun:sqlite";
 import { Storage } from "../../../src/storage/storage";
 import { initializeSchema } from "../../../src/storage/migrations";
 import { rm } from "fs/promises";
@@ -73,6 +74,9 @@ describe("Schema Initialization", () => {
       "event_name",
       "timestamp",
       "created_at",
+      "pull_request_number",
+      "pull_request_base",
+      "pull_request_head",
     ]);
   });
 
@@ -121,10 +125,71 @@ describe("Schema Initialization", () => {
       .query<
         { version: string },
         []
-      >("SELECT version FROM schema_version ORDER BY applied_at DESC LIMIT 1")
+      >("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1")
       .get();
 
-    expect(version?.version).toBe("1.0.0");
+    expect(version?.version).toBe("1.1.0");
+  });
+
+  it("migrates from 1.0.0 to 1.1.0", () => {
+    // Create a fresh database for this test
+    const db = new Database("./test-migration.db");
+
+    try {
+      // Create a mock storage object that returns our database
+      const mockStorage = {
+        getConnection: () => db,
+      } as Storage;
+
+      // Initialize to version 1.0.0 only
+      initializeSchema(mockStorage, "1.0.0");
+
+      // Verify we're at 1.0.0
+      const version = db
+        .query<
+          { version: string },
+          []
+        >("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1")
+        .get();
+      expect(version?.version).toBe("1.0.0");
+
+      // Verify pull request columns don't exist yet
+      const columns = db
+        .query<{ name: string; type: string }, []>("PRAGMA table_info(build_contexts)")
+        .all();
+      const columnNames = columns.map((c) => c.name);
+
+      expect(columnNames).not.toContain("pull_request_number");
+      expect(columnNames).not.toContain("pull_request_base");
+      expect(columnNames).not.toContain("pull_request_head");
+
+      // Now migrate to 1.1.0
+      initializeSchema(mockStorage, "1.1.0");
+
+      // Check new columns were added
+      const updatedColumns = db
+        .query<{ name: string; type: string }, []>("PRAGMA table_info(build_contexts)")
+        .all();
+      const updatedColumnNames = updatedColumns.map((c) => c.name);
+
+      expect(updatedColumnNames).toContain("pull_request_number");
+      expect(updatedColumnNames).toContain("pull_request_base");
+      expect(updatedColumnNames).toContain("pull_request_head");
+
+      // Check version was updated
+      const finalVersion = db
+        .query<
+          { version: string },
+          []
+        >("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1")
+        .get();
+      expect(finalVersion?.version).toBe("1.1.0");
+    } finally {
+      db.close();
+      rm("./test-migration.db", { force: true });
+      rm("./test-migration.db-shm", { force: true });
+      rm("./test-migration.db-wal", { force: true });
+    }
   });
 
   it("is idempotent", () => {
@@ -136,6 +201,6 @@ describe("Schema Initialization", () => {
       .query<{ count: number }, []>("SELECT COUNT(*) as count FROM schema_version")
       .get();
 
-    expect(versions?.count).toBe(1);
+    expect(versions?.count).toBe(2);
   });
 });

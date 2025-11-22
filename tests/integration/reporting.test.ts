@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import { Storage } from "../../src/storage/storage";
+import { SqliteDatabaseAdapter } from "../../src/storage/adapters/sqlite";
 import { generateReport } from "../../src/reporter/generator";
 import fs from "fs";
 
@@ -7,6 +8,7 @@ const TEST_DB_PATH = "/tmp/test-integration-reporting.db";
 
 describe("Full reporting workflow integration (Bun runtime)", () => {
   let db: Storage;
+  let adapter: SqliteDatabaseAdapter;
 
   beforeAll(async () => {
     if (fs.existsSync(TEST_DB_PATH)) {
@@ -15,29 +17,30 @@ describe("Full reporting workflow integration (Bun runtime)", () => {
 
     db = new Storage({ type: "sqlite-local", path: TEST_DB_PATH });
     await db.initialize();
+    adapter = new SqliteDatabaseAdapter(db.getConnection());
 
-    const coverageMetric = db.upsertMetricDefinition({
+    const coverageMetric = adapter.upsertMetricDefinition({
       name: "test-coverage",
       type: "numeric",
       unit: "%",
       description: "Code coverage percentage",
     });
 
-    const bundleSizeMetric = db.upsertMetricDefinition({
+    const bundleSizeMetric = adapter.upsertMetricDefinition({
       name: "bundle-size",
       type: "numeric",
       unit: "KB",
       description: "Total bundle size",
     });
 
-    const statusMetric = db.upsertMetricDefinition({
+    const statusMetric = adapter.upsertMetricDefinition({
       name: "build-status",
       type: "label",
       description: "Build status result",
     });
 
     for (let i = 0; i < 15; i++) {
-      const buildId = db.insertBuildContext({
+      const buildId = adapter.insertBuildContext({
         commit_sha: `commit-${i}`,
         branch: "main",
         run_id: `run-${i}`,
@@ -46,21 +49,21 @@ describe("Full reporting workflow integration (Bun runtime)", () => {
         timestamp: new Date(Date.UTC(2025, 9, i + 1, 12, 0, 0)).toISOString(),
       });
 
-      db.insertMetricValue({
+      adapter.insertMetricValue({
         metric_id: coverageMetric.id,
         build_id: buildId,
         value_numeric: 80 + Math.random() * 10,
         collected_at: new Date(Date.UTC(2025, 9, i + 1, 12, 0, 0)).toISOString(),
       });
 
-      db.insertMetricValue({
+      adapter.insertMetricValue({
         metric_id: bundleSizeMetric.id,
         build_id: buildId,
         value_numeric: 450 + Math.random() * 50,
         collected_at: new Date(Date.UTC(2025, 9, i + 1, 12, 0, 0)).toISOString(),
       });
 
-      db.insertMetricValue({
+      adapter.insertMetricValue({
         metric_id: statusMetric.id,
         build_id: buildId,
         value_label: i % 10 === 0 ? "failure" : "success",

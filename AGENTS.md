@@ -10,7 +10,10 @@ This project follows Specification-Driven Development (SDD) principles as define
 - **Security Best Practices**: Never log/expose secrets, follow security guidelines
 - **Testing Discipline**: Comprehensive unit, integration, and contract tests
 
-_Use read tool on need-to-know basis to reference `.specify/memory/constitution.md` for full details_
+## General instructions
+
+- Use read tool on need-to-know basis to reference `.specify/memory/constitution.md` for full details
+- DO NOT jump into modifying code when not explicitly instructed to do so - for example, when asked to "plan" or "analyze" or "update the spec", just run the analysis, report the results and wait for further instructions.
 
 ## Development Workflow
 
@@ -58,3 +61,12 @@ Unentropy is a serverless tool for tracking custom code metrics in CI/CD pipelin
 - SQLite databases (.db, .db-journal) are gitignored and regenerated on each run
 - Run `bun run visual-review` to regenerate all fixtures and open HTML reports in browser
 - Visual acceptance criteria checklist is in specs/003-mvp-metrics-tracking/contracts/visual-acceptance-criteria.md
+
+## Active Technologies
+
+- Bun runtime with TypeScript (aligned with existing Unentropy codebase). + Bun runtime, TypeScript, SQLite (metrics store), GitHub Actions runtime, GitHub REST API client for pull request comments, Chart.js for existing visual reports. (004-metrics-quality-gate)
+- Existing SQLite database managed via the storage provider abstraction (local, artifact, or S3-compatible backends). (004-metrics-quality-gate)
+
+## Recent Changes
+
+- 004-metrics-quality-gate: Added Bun runtime with TypeScript (aligned with existing Unentropy codebase). + Bun runtime, TypeScript, SQLite (metrics store), GitHub Actions runtime, GitHub REST API client for pull request comments, Chart.js for existing visual reports.

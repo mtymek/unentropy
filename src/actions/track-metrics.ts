@@ -1,7 +1,9 @@
 import * as core from "@actions/core";
+import * as github from "@actions/github";
 import { loadConfig } from "../config/loader";
 import { Storage } from "../storage/storage";
 import { collectMetrics } from "../collector/collector";
+import { extractBuildContext } from "../collector/context";
 import { StorageConfig } from "../config/schema";
 import type { StorageProviderConfig } from "../storage/providers/interface";
 
@@ -19,6 +21,8 @@ interface ActionInputs {
   timeout?: number;
   retryAttempts?: number;
   verbose?: boolean;
+  enablePrComment?: boolean;
+  prCommentMarker?: string;
 }
 
 interface ActionOutputs {
@@ -30,6 +34,7 @@ interface ActionOutputs {
   duration: number;
   errorCode?: string;
   errorMessage?: string;
+  prCommentUrl?: string;
 }
 
 function parseInputs(): ActionInputs {
@@ -50,10 +55,16 @@ function parseInputs(): ActionInputs {
   const timeoutInput = core.getInput("timeout");
   const retryAttemptsInput = core.getInput("retry-attempts");
   const verboseInput = core.getInput("verbose");
+  const enablePrCommentInput = core.getInput("enable-pr-comment");
+  const prCommentMarkerInput = core.getInput("pr-comment-marker");
 
   const timeout = timeoutInput ? parseInt(timeoutInput, 10) : undefined;
   const retryAttempts = retryAttemptsInput ? parseInt(retryAttemptsInput, 10) : undefined;
   const verbose = verboseInput ? verboseInput.toLowerCase() === "true" : false;
+  const enablePrComment = enablePrCommentInput
+    ? enablePrCommentInput.toLowerCase() === "true"
+    : false;
+  const prCommentMarker = prCommentMarkerInput || "<!-- unentropy-metrics-quality-gate -->";
 
   // Validate storage type
   const validStorageTypes = ["sqlite-local", "sqlite-artifact", "sqlite-s3"];
@@ -84,6 +95,8 @@ function parseInputs(): ActionInputs {
     timeout,
     retryAttempts,
     verbose,
+    enablePrComment,
+    prCommentMarker,
   };
 }
 
@@ -115,6 +128,210 @@ function createStorageConfig(inputs: ActionInputs, config: StorageConfig): Stora
   };
 }
 
+function isPullRequestContext(): boolean {
+  return process.env.GITHUB_EVENT_NAME === "pull_request";
+}
+
+interface MetricDiff {
+  metricName: string;
+  baselineValue?: number;
+  pullRequestValue?: number;
+  absoluteDelta?: number;
+  relativeDeltaPercent?: number;
+  status: "improved" | "degraded" | "unchanged" | "no-baseline";
+}
+
+async function createOrUpdatePullRequestComment(
+  metricsCollected: number,
+  totalMetrics: number,
+  failures: { metricName: string; reason: string }[],
+  marker: string,
+  storage: Storage,
+  buildId: number
+): Promise<string | null> {
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) {
+    core.warning("GITHUB_TOKEN not available, skipping PR comment");
+    return null;
+  }
+
+  const octokit = github.getOctokit(token);
+  const context = github.context;
+
+  if (!context.payload.pull_request) {
+    core.warning("Not in a pull request context, skipping comment");
+    return null;
+  }
+
+  const { owner, repo } = context.repo;
+  const pull_number = context.payload.pull_request.number;
+
+  // Create comment body
+  const successCount = metricsCollected;
+  const failureCount = failures.length;
+  const status = failureCount === 0 ? "✅ Success" : "⚠️ Partial Success";
+
+  // Calculate metric diffs if storage and buildId are available
+  let metricDiffsSection = "";
+  try {
+    const repository = storage.getRepository();
+    const metricValues = repository.getMetricValuesByBuildId(buildId);
+
+    const diffs: MetricDiff[] = [];
+
+    for (const metricValue of metricValues) {
+      if (metricValue.value_numeric !== null) {
+        // Get baseline values from main branch
+        const baselineValues = repository.getBaselineMetricValues(metricValue.metric_name);
+
+        if (baselineValues.length > 0) {
+          // Calculate median baseline
+          const sortedValues = baselineValues.map((bv) => bv.value_numeric).sort((a, b) => a - b);
+          const medianBaseline = sortedValues[Math.floor(sortedValues.length / 2)];
+
+          if (medianBaseline !== undefined) {
+            const absoluteDelta = metricValue.value_numeric - medianBaseline;
+            const relativeDeltaPercent =
+              medianBaseline !== 0 ? (absoluteDelta / medianBaseline) * 100 : 0;
+
+            let status: "improved" | "degraded" | "unchanged";
+            if (Math.abs(relativeDeltaPercent) < 0.1) {
+              status = "unchanged";
+            } else if (relativeDeltaPercent > 0) {
+              // For most metrics, higher is better, but this is a simplistic approach
+              // In a full implementation, this would depend on the metric type
+              status = "degraded";
+            } else {
+              status = "improved";
+            }
+
+            diffs.push({
+              metricName: metricValue.metric_name,
+              baselineValue: medianBaseline,
+              pullRequestValue: metricValue.value_numeric,
+              absoluteDelta,
+              relativeDeltaPercent,
+              status,
+            });
+          } else {
+            diffs.push({
+              metricName: metricValue.metric_name,
+              pullRequestValue: metricValue.value_numeric,
+              status: "no-baseline",
+            });
+          }
+        } else {
+          diffs.push({
+            metricName: metricValue.metric_name,
+            pullRequestValue: metricValue.value_numeric,
+            status: "no-baseline",
+          });
+        }
+      }
+    }
+
+    if (diffs.length > 0) {
+      const diffRows = diffs
+        .map((diff) => {
+          const statusIcon =
+            diff.status === "improved"
+              ? "🟢"
+              : diff.status === "degraded"
+                ? "🔴"
+                : diff.status === "unchanged"
+                  ? "⚪"
+                  : "⚪";
+
+          const baselineStr =
+            diff.baselineValue !== undefined ? diff.baselineValue.toFixed(2) : "N/A";
+          const prStr =
+            diff.pullRequestValue !== undefined ? diff.pullRequestValue.toFixed(2) : "N/A";
+          const deltaStr =
+            diff.relativeDeltaPercent !== undefined
+              ? `${diff.relativeDeltaPercent >= 0 ? "+" : ""}${diff.relativeDeltaPercent.toFixed(1)}%`
+              : "N/A";
+
+          return `| ${statusIcon} ${diff.metricName} | ${baselineStr} | ${prStr} | ${deltaStr} |`;
+        })
+        .join("\n");
+
+      metricDiffsSection = `
+### 📈 Metric Changes vs Baseline
+
+| Metric | Baseline | PR | Δ |
+|--------|----------|----|---|
+${diffRows}
+
+`;
+    }
+  } catch (error) {
+    core.warning(
+      `Failed to calculate metric diffs: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+
+  const commentBody = `${marker}
+
+## 📊 Unentropy Metrics Report
+
+${status} - ${successCount}/${totalMetrics} metrics collected successfully
+
+${metricDiffsSection}
+${
+  failureCount > 0
+    ? `
+### Failed Metrics
+${failures.map((f) => `- **${f.metricName}**: ${f.reason}`).join("\n")}
+`
+    : ""
+}
+
+### Summary
+- **Total Metrics**: ${totalMetrics}
+- **Successful**: ${successCount}
+- **Failed**: ${failureCount}
+
+---
+Generated by **[Unentropy](https://github.com/unentropy/unentropy)**
+`;
+
+  // Try to find existing comment
+  const existingComments = await octokit.rest.issues.listComments({
+    owner,
+    repo,
+    issue_number: pull_number,
+    per_page: 100,
+  });
+
+  const existingComment = existingComments.data.find((comment) => comment.body?.includes(marker));
+
+  let commentUrl: string;
+
+  if (existingComment) {
+    // Update existing comment
+    await octokit.rest.issues.updateComment({
+      owner,
+      repo,
+      comment_id: existingComment.id,
+      body: commentBody,
+    });
+    commentUrl = existingComment.html_url;
+    core.info("Updated existing PR comment");
+  } else {
+    // Create new comment
+    const response = await octokit.rest.issues.createComment({
+      owner,
+      repo,
+      issue_number: pull_number,
+      body: commentBody,
+    });
+    commentUrl = response.data.html_url;
+    core.info("Created new PR comment");
+  }
+
+  return commentUrl;
+}
+
 export async function runTrackMetricsAction(): Promise<void> {
   const startTime = Date.now();
 
@@ -141,15 +358,14 @@ export async function runTrackMetricsAction(): Promise<void> {
 
   // Phase 2: Collect metrics
   core.info("Collecting metrics...");
-  const buildId = storage.insertBuildContext({
-    commit_sha: process.env.GITHUB_SHA || "unknown",
-    branch: process.env.GITHUB_REF_NAME || "unknown",
-    run_id: process.env.GITHUB_RUN_ID || "unknown",
-    run_number: parseInt(process.env.GITHUB_RUN_NUMBER || "0"),
-    timestamp: new Date().toISOString(),
-  });
+  const context = extractBuildContext();
+  const repository = storage.getRepository();
 
-  const collectionResult = await collectMetrics(config.metrics, buildId, storage);
+  // Collect metrics (doesn't write to DB yet)
+  const collectionResult = await collectMetrics(config.metrics);
+
+  // Record build with all collected metrics in one operation
+  const buildId = await repository.recordBuild(context, collectionResult.collectedMetrics);
 
   core.info(
     `Metrics collection completed: ${collectionResult.successful}/${collectionResult.total} successful`
@@ -162,11 +378,25 @@ export async function runTrackMetricsAction(): Promise<void> {
     }
   }
 
-  // Phase 3: Persist storage (upload for S3)
-  core.info("Uploading database to S3...");
-  await storage.persist();
+  // Phase 2.5: Create PR comment if enabled and in PR context
+  let prCommentUrl: string | undefined;
+  if (inputs.enablePrComment && isPullRequestContext()) {
+    core.info("Creating/updating pull request comment...");
+    const commentUrl = await createOrUpdatePullRequestComment(
+      collectionResult.successful,
+      collectionResult.total,
+      collectionResult.failures,
+      inputs.prCommentMarker || "<!-- unentropy-metrics-quality-gate -->",
+      storage,
+      buildId
+    );
+    if (commentUrl) {
+      prCommentUrl = commentUrl;
+      core.info(`PR comment created: ${prCommentUrl}`);
+    }
+  }
 
-  // Phase 4: Generate report
+  // Phase 3: Generate report (before closing database)
   core.info("Generating HTML report...");
   try {
     const { generateReport } = await import("../reporter/generator");
@@ -185,6 +415,15 @@ export async function runTrackMetricsAction(): Promise<void> {
     // Continue anyway - report generation failure shouldn't fail the whole action
   }
 
+  // Phase 4: Persist storage (upload for S3) - only on main branch, not PRs
+  // This closes the database for S3 providers, so must happen after report generation
+  if (!isPullRequestContext()) {
+    core.info("Uploading database to S3...");
+    await storage.persist();
+  } else {
+    core.info("Skipping database upload in pull request context");
+  }
+
   const duration = Date.now() - startTime;
 
   // Set outputs
@@ -194,6 +433,7 @@ export async function runTrackMetricsAction(): Promise<void> {
     databaseLocation: `storage://${inputs.storageType}/${inputs.databaseKey}`,
     metricsCollected: collectionResult.successful,
     duration,
+    prCommentUrl,
   };
 
   core.setOutput("success", outputs.success.toString());
@@ -206,6 +446,9 @@ export async function runTrackMetricsAction(): Promise<void> {
     core.setOutput("metrics-collected", outputs.metricsCollected.toString());
   }
   core.setOutput("duration", outputs.duration.toString());
+  if (outputs.prCommentUrl) {
+    core.setOutput("pr-comment-url", outputs.prCommentUrl);
+  }
 
   core.info("Track-metrics action completed successfully");
 

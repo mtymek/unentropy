@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 
 import { Storage } from "../src/storage/storage";
+import { SqliteDatabaseAdapter } from "../src/storage/adapters/sqlite";
 import { generateReport } from "../src/reporter/generator";
 import { writeFileSync, mkdirSync } from "fs";
 import { dirname } from "path";
@@ -158,6 +159,9 @@ async function generateFixture(config: FixtureConfig): Promise<void> {
   });
   await db.ready();
 
+  // Get adapter for direct data access (test fixture generation)
+  const adapter = new SqliteDatabaseAdapter(db.getConnection());
+
   const baseTimestamp = new Date("2025-01-01T00:00:00Z").getTime();
   const dayInMs = 24 * 60 * 60 * 1000;
 
@@ -167,7 +171,7 @@ async function generateFixture(config: FixtureConfig): Promise<void> {
     const buildTimestamp = new Date(baseTimestamp + i * buildInterval * dayInMs).toISOString();
     const commitSha = `abc${i.toString().padStart(4, "0")}def0123456789012345678901234`;
 
-    const buildId = db.insertBuildContext({
+    const buildId = adapter.insertBuildContext({
       commit_sha: commitSha,
       branch: "main",
       run_id: `run-${i + 1000}`,
@@ -178,7 +182,7 @@ async function generateFixture(config: FixtureConfig): Promise<void> {
     });
 
     for (const metricGen of config.metricGenerators) {
-      const metricDef = db.upsertMetricDefinition({
+      const metricDef = adapter.upsertMetricDefinition({
         name: metricGen.name,
         type: metricGen.type,
         description: metricGen.description,
@@ -190,7 +194,7 @@ async function generateFixture(config: FixtureConfig): Promise<void> {
         new Date(buildTimestamp).getTime() + Math.random() * 60000
       ).toISOString();
 
-      db.insertMetricValue({
+      adapter.insertMetricValue({
         metric_id: metricDef.id,
         build_id: buildId,
         value_numeric: metricGen.type === "numeric" ? Number(value) : null,

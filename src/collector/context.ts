@@ -1,13 +1,6 @@
-export interface BuildContext {
-  commit_sha: string;
-  branch: string;
-  run_id: string;
-  run_number: number;
-  actor?: string;
-  event_name?: string;
-}
+import type { InsertBuildContext } from "../storage/types";
 
-export function extractBuildContext(): BuildContext {
+export function extractBuildContext(): InsertBuildContext {
   const commitSha = process.env.GITHUB_SHA;
   const ref = process.env.GITHUB_REF;
   const runId = process.env.GITHUB_RUN_ID;
@@ -43,6 +36,26 @@ export function extractBuildContext(): BuildContext {
     branch = ref.substring("refs/tags/".length);
   }
 
+  // Extract PR-specific fields for diff functionality
+  let pullRequestNumber: number | undefined;
+  let pullRequestBase: string | undefined;
+  let pullRequestHead: string | undefined;
+
+  if (eventName === "pull_request") {
+    // For pull request events, GitHub Actions provides these environment variables:
+    // GITHUB_REF: refs/pull/123/merge
+    // GITHUB_HEAD_REF: branch name of the PR head
+    // GITHUB_BASE_REF: branch name of the PR base
+    if (ref) {
+      const prNumberMatch = ref.match(/^refs\/pull\/(\d+)\/merge$/);
+      if (prNumberMatch && prNumberMatch[1]) {
+        pullRequestNumber = parseInt(prNumberMatch[1], 10);
+      }
+    }
+    pullRequestBase = process.env.GITHUB_BASE_REF;
+    pullRequestHead = process.env.GITHUB_HEAD_REF;
+  }
+
   return {
     commit_sha: commitSha,
     branch,
@@ -50,5 +63,9 @@ export function extractBuildContext(): BuildContext {
     run_number: parsedRunNumber,
     actor: actor || undefined,
     event_name: eventName || undefined,
+    timestamp: new Date().toISOString(),
+    pull_request_number: pullRequestNumber,
+    pull_request_base: pullRequestBase,
+    pull_request_head: pullRequestHead,
   };
 }

@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import { Storage } from "./storage";
+import type { DatabaseAdapter } from "./interface";
 import type {
   BuildContext,
   InsertBuildContext,
@@ -7,24 +7,37 @@ import type {
   InsertMetricValue,
   MetricDefinition,
   MetricValue,
-} from "./types";
+} from "../types";
 
-export class DatabaseQueries {
-  constructor(private storage: Storage) {}
-
-  private getDb(): Database {
-    return this.storage.getConnection();
-  }
+/**
+ * SqliteDatabaseAdapter implements DatabaseAdapter using SQLite-specific SQL queries.
+ *
+ * This adapter uses bun:sqlite prepared statements for efficient query execution.
+ * All queries are SQLite-specific; a PostgreSQL adapter would use different SQL dialects.
+ */
+export class SqliteDatabaseAdapter implements DatabaseAdapter {
+  constructor(private db: Database) {}
 
   insertBuildContext(data: InsertBuildContext): number {
-    const db = this.getDb();
-    const stmt = db.query<
+    const stmt = this.db.query<
       { id: number },
-      [string, string, string, number, string | null, string | null, string]
+      [
+        string,
+        string,
+        string,
+        number,
+        string | null,
+        string | null,
+        string,
+        number | null,
+        string | null,
+        string | null,
+      ]
     >(`
       INSERT INTO build_contexts (
-        commit_sha, branch, run_id, run_number, actor, event_name, timestamp
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        commit_sha, branch, run_id, run_number, actor, event_name, timestamp,
+        pull_request_number, pull_request_base, pull_request_head
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       RETURNING id
     `);
 
@@ -35,7 +48,10 @@ export class DatabaseQueries {
       data.run_number,
       data.actor ?? null,
       data.event_name ?? null,
-      data.timestamp
+      data.timestamp,
+      data.pull_request_number ?? null,
+      data.pull_request_base ?? null,
+      data.pull_request_head ?? null
     );
 
     if (!result) throw new Error("Failed to insert build context");
@@ -43,8 +59,7 @@ export class DatabaseQueries {
   }
 
   upsertMetricDefinition(data: InsertMetricDefinition): MetricDefinition {
-    const db = this.getDb();
-    const stmt = db.query<MetricDefinition, [string, string, string | null, string | null]>(`
+    const stmt = this.db.query<MetricDefinition, [string, string, string | null, string | null]>(`
       INSERT INTO metric_definitions (name, type, unit, description)
       VALUES (?, ?, ?, ?)
       ON CONFLICT(name) DO UPDATE SET
@@ -60,8 +75,7 @@ export class DatabaseQueries {
   }
 
   insertMetricValue(data: InsertMetricValue): number {
-    const db = this.getDb();
-    const stmt = db.query<
+    const stmt = this.db.query<
       { id: number },
       [number, number, number | null, string | null, string, number | null]
     >(`
@@ -90,30 +104,26 @@ export class DatabaseQueries {
   }
 
   getBuildContext(id: number): BuildContext | undefined {
-    const db = this.getDb();
-    const stmt = db.query<BuildContext, [number]>("SELECT * FROM build_contexts WHERE id = ?");
+    const stmt = this.db.query<BuildContext, [number]>("SELECT * FROM build_contexts WHERE id = ?");
     return stmt.get(id) ?? undefined;
   }
 
   getMetricDefinition(name: string): MetricDefinition | undefined {
-    const db = this.getDb();
-    const stmt = db.query<MetricDefinition, [string]>(
+    const stmt = this.db.query<MetricDefinition, [string]>(
       "SELECT * FROM metric_definitions WHERE name = ?"
     );
     return stmt.get(name) ?? undefined;
   }
 
   getMetricValues(metricId: number, buildId: number): MetricValue | undefined {
-    const db = this.getDb();
-    const stmt = db.query<MetricValue, [number, number]>(
+    const stmt = this.db.query<MetricValue, [number, number]>(
       "SELECT * FROM metric_values WHERE metric_id = ? AND build_id = ?"
     );
     return stmt.get(metricId, buildId) ?? undefined;
   }
 
   getMetricValuesByBuildId(buildId: number): (MetricValue & { metric_name: string })[] {
-    const db = this.getDb();
-    const stmt = db.query<MetricValue & { metric_name: string }, [number]>(`
+    const stmt = this.db.query<MetricValue & { metric_name: string }, [number]>(`
       SELECT mv.*, md.name as metric_name
       FROM metric_values mv
       JOIN metric_definitions md ON mv.metric_id = md.id
@@ -124,14 +134,14 @@ export class DatabaseQueries {
   }
 
   getAllMetricDefinitions(): MetricDefinition[] {
-    const db = this.getDb();
-    const stmt = db.query<MetricDefinition, []>("SELECT * FROM metric_definitions ORDER BY name");
+    const stmt = this.db.query<MetricDefinition, []>(
+      "SELECT * FROM metric_definitions ORDER BY name"
+    );
     return stmt.all();
   }
 
   getAllMetricValues(): (MetricValue & { metric_name: string })[] {
-    const db = this.getDb();
-    const stmt = db.query<MetricValue & { metric_name: string }, []>(`
+    const stmt = this.db.query<MetricValue & { metric_name: string }, []>(`
       SELECT mv.*, md.name as metric_name
       FROM metric_values mv
       JOIN metric_definitions md ON mv.metric_id = md.id
@@ -147,8 +157,7 @@ export class DatabaseQueries {
     run_number: number;
     build_timestamp: string;
   })[] {
-    const db = this.getDb();
-    const stmt = db.query<
+    const stmt = this.db.query<
       MetricValue & {
         metric_name: string;
         commit_sha: string;
@@ -175,8 +184,46 @@ export class DatabaseQueries {
   }
 
   getAllBuildContexts(): BuildContext[] {
-    const db = this.getDb();
-    const stmt = db.query<BuildContext, []>("SELECT * FROM build_contexts ORDER BY timestamp");
+    const stmt = this.db.query<BuildContext, []>("SELECT * FROM build_contexts ORDER BY timestamp");
     return stmt.all();
+  }
+
+  getBaselineMetricValues(
+    metricName: string,
+    referenceBranch = "main",
+    maxBuilds = 20,
+    maxAgeDays = 90
+  ): { value_numeric: number }[] {
+    const stmt = this.db.query<{ value_numeric: number }, [string, string, number, number]>(`
+      SELECT mv.value_numeric
+      FROM metric_values mv
+      JOIN metric_definitions md ON mv.metric_id = md.id
+      JOIN build_contexts bc ON mv.build_id = bc.id
+      WHERE md.name = ? 
+        AND bc.branch = ?
+        AND bc.event_name = 'push'
+        AND bc.timestamp >= datetime('now', '-' || ? || ' days')
+        AND mv.value_numeric IS NOT NULL
+      ORDER BY bc.timestamp DESC
+      LIMIT ?
+    `);
+
+    return stmt.all(metricName, referenceBranch, maxAgeDays, maxBuilds);
+  }
+
+  getPullRequestMetricValue(
+    metricName: string,
+    pullRequestBuildId: number
+  ): { value_numeric: number } | undefined {
+    const stmt = this.db.query<{ value_numeric: number }, [string, number]>(`
+      SELECT mv.value_numeric
+      FROM metric_values mv
+      JOIN metric_definitions md ON mv.metric_id = md.id
+      WHERE md.name = ? 
+        AND mv.build_id = ?
+        AND mv.value_numeric IS NOT NULL
+    `);
+
+    return stmt.get(metricName, pullRequestBuildId) ?? undefined;
   }
 }
