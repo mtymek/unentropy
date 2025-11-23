@@ -56,17 +56,14 @@
 - [x] T012 [P] [US1] Define build-time built-in metric in src/metrics/registry.ts
 - [x] T013 [P] [US1] Define test-time built-in metric in src/metrics/registry.ts
 - [x] T014 [P] [US1] Define dependencies-count built-in metric in src/metrics/registry.ts
-- [ ] T015 [US1] Implement getBuiltInMetric lookup function in src/metrics/registry.ts
-- [ ] T016 [US1] Implement listAvailableMetricIds function in src/metrics/registry.ts
-- [ ] T017 [US1] Implement resolveMetricReference function in src/metrics/resolver.ts
-- [ ] T018 [US1] Implement validateBuiltInReference function in src/metrics/resolver.ts
-- [ ] T019 [US1] Add resolution step to loadConfig function in src/config/loader.ts
-- [ ] T020 [US1] Export public API from src/metrics/index.ts
-- [ ] T021 [P] [US1] Add unit test for built-in metrics registry in tests/unit/metrics/registry.test.ts
-- [ ] T022 [P] [US1] Add unit test for resolver with valid references in tests/unit/metrics/resolver.test.ts
-- [ ] T023 [P] [US1] Add unit test for resolver with invalid references in tests/unit/metrics/resolver.test.ts
-- [ ] T024 [US1] Add integration test for config loading with built-in metric refs in tests/integration/gallery-config.test.ts
-- [ ] T025 [US1] Add contract test for $ref schema validation in tests/contract/gallery-schema.test.ts
+- [x] T015 [US1] Implement getBuiltInMetric lookup function in src/metrics/registry.ts
+- [x] T016 [US1] Implement listAvailableMetricIds function in src/metrics/registry.ts
+- [x] T017 [US1] Implement resolveMetricReference function in src/metrics/resolver.ts
+- [x] T018 [US1] Implement validateBuiltInReference function in src/metrics/resolver.ts
+- [x] T019 [US1] Add resolution step to loadConfig function in src/config/loader.ts
+- [x] T021 [P] [US1] Add unit test for built-in metrics registry in tests/unit/metrics/registry.test.ts
+- [x] T022 [P] [US1] Add unit test for resolver with valid references in tests/unit/metrics/resolver.test.ts
+- [x] T023 [P] [US1] Add unit test for resolver with invalid references in tests/unit/metrics/resolver.test.ts
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently. Users can reference all 7 built-in metrics by ID.
 
