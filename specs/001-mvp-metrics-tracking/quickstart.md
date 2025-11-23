@@ -10,19 +10,74 @@ This guide provides a step-by-step implementation roadmap for building the MVP m
 
 ## Implementation Phases
 
-### Phase 1: Configuration Layer (Foundation)
+### Phase 1: CLI & Configuration Layer (Foundation)
 
-**Goal**: Users can define metrics in `unentropy.json` with validation
+**Goal**: Users can validate configurations via CLI and define metrics in `unentropy.json` with validation
 
 **Components**:
-1. `src/config/schema.ts` - Zod schema definitions
-2. `src/config/loader.ts` - Config file loading and validation
-3. `src/config/types.ts` - TypeScript type exports
+1. `src/cli/cmd/cmd.ts` - Command builder utility
+2. `src/cli/cmd/verify.ts` - CLI verification command
+3. `src/index.ts` - CLI entrypoint
+4. `src/config/schema.ts` - Zod schema definitions
+5. `src/config/loader.ts` - Config file loading and validation
+6. `src/config/types.ts` - TypeScript type exports
 
 **Implementation Steps**:
 
 ```typescript
-// 1. Define Zod schema in src/config/schema.ts
+// 1. CLI command builder in src/cli/cmd/cmd.ts
+import type { CommandModule } from "yargs";
+
+export function cmd<T, U>(input: CommandModule<T, U>) {
+  return input
+}
+
+// 2. CLI verification command in src/cli/cmd/verify.ts
+import type { Argv } from "yargs";
+import { loadConfig } from "../../config/loader.js";
+import { cmd } from "./cmd";
+
+interface VerifyArgs {
+  config?: string;
+}
+
+export const VerifyCommand = cmd({
+  command: "verify [config]",
+  describe: "verify unentropy.json configuration file",
+  builder: (yargs: Argv<VerifyArgs>) => {
+    return yargs.positional("config", {
+      type: "string",
+      description: "path to configuration file",
+      default: "unentropy.json",
+    });
+  },
+  async handler(argv: VerifyArgs) {
+    try {
+      await loadConfig(argv.config);
+      console.log(`✓ Configuration file ${argv.config} is valid`);
+    } catch (error) {
+      console.error(`✗ Configuration file ${argv.config} is invalid:`);
+      console.error(`  ${error instanceof Error ? error.message : String(error)}`);
+      process.exit(1);
+    }
+  },
+});
+
+// 3. CLI entrypoint in src/index.ts
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers"
+import {VerifyCommand} from "./cmd/verify";
+
+const cli = yargs()
+  .scriptName("unentropy")
+  .command(VerifyCommand)
+  .demandCommand()
+  .strict()
+  .help();
+
+await cli.parse(hideBin(process.argv));
+
+// 4. Define Zod schema in src/config/schema.ts
 import { z } from 'zod';
 
 export const MetricConfigSchema = z.object({
@@ -37,15 +92,26 @@ export const UnentropyConfigSchema = z.object({
   metrics: z.array(MetricConfigSchema).min(1).max(50),
 });
 
-// 2. Export inferred types in src/config/types.ts
+// 5. Export inferred types in src/config/types.ts
 export type MetricConfig = z.infer<typeof MetricConfigSchema>;
 export type UnentropyConfig = z.infer<typeof UnentropyConfigSchema>;
 
-// 3. Implement loader in src/config/loader.ts
-export async function loadConfig(path: string): Promise<UnentropyConfig> {
-  const content = await fs.readFile(path, 'utf-8');
-  const json = JSON.parse(content);
-  return UnentropyConfigSchema.parse(json);
+// 6. Implement loader in src/config/loader.ts
+export async function loadConfig(configPath = "unentropy.json"): Promise<UnentropyConfig> {
+  const fileContent = await readFile(configPath, "utf-8");
+  let parsedJson;
+  try {
+    parsedJson = JSON.parse(fileContent);
+  } catch (error) {
+    throw new Error(`Invalid JSON: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  
+  if (!parsedJson.metrics || !Array.isArray(parsedJson.metrics)) {
+    throw new Error("Configuration must contain a 'metrics' array");
+  }
+  
+  const validated = validateConfig(configWithResolvedMetrics);
+  return validated as ResolvedUnentropyConfig;
 }
 ```
 
@@ -56,7 +122,59 @@ export async function loadConfig(path: string): Promise<UnentropyConfig> {
 - Type mismatches caught
 - Clear error messages
 
-**Acceptance**: User Story 1, Scenario 1-2
+**Tests** (`tests/unit/cli/`):
+- CLI verify command accepts default config file
+- CLI verify command accepts custom config file path
+- CLI verify command exits with code 0 for valid configs
+- CLI verify command exits with code 1 for invalid configs
+- CLI verify command displays clear error messages
+- CLI verify command handles missing files gracefully
+
+**Acceptance**: User Story 1, Scenario 1-2; User Story 1.5, Scenario 1-4
+
+---
+
+### Phase 1.5: CLI Verification Usage
+
+**Goal**: Users can validate configurations locally before CI/CD execution
+
+**Usage Examples**:
+
+```bash
+# Verify default configuration file
+unentropy verify
+
+# Verify custom configuration file
+unentropy verify ./config/metrics.json
+
+# CI/CD integration
+unentropy verify && unentropy collect
+```
+
+**Error Handling Examples**:
+
+```bash
+# Valid configuration
+$ unentropy verify
+✓ Configuration file unentropy.json is valid
+
+# Invalid JSON
+$ unentropy verify invalid.json
+✗ Configuration file invalid.json is invalid:
+  Invalid JSON: Unexpected token } in JSON at position 123
+
+# Missing metrics array
+$ unentropy verify empty.json
+✗ Configuration file empty.json is invalid:
+  Configuration must contain a 'metrics' array
+
+# Invalid metric name
+$ unentropy verify bad-name.json
+✗ Configuration file bad-name.json is invalid:
+  name must be lowercase with hyphens only (pattern: ^[a-z0-9-]+$)
+```
+
+**Acceptance**: User Story 1.5 (CLI Validation)
 
 ---
 
@@ -774,6 +892,12 @@ npm run typecheck
 
 # Lint
 npm run lint
+
+# Test CLI verification
+bun run src/index.ts verify
+
+# Test CLI with custom config
+bun run src/index.ts verify ./test-config.json
 ```
 
 ### GitHub Action Packaging
@@ -785,6 +909,12 @@ npm run build:actions
 # This creates:
 # - .github/actions/collect-metrics/dist/
 # - .github/actions/generate-report/dist/
+
+# Build CLI for distribution
+npm run build
+
+# This creates:
+# - dist/index.js (CLI entrypoint)
 ```
 
 ### CI/CD Pipeline
@@ -805,6 +935,23 @@ jobs:
       - run: bun install
       - run: bun run build
       - run: bun test
+      
+  metrics:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.2'
+      - run: bun install
+      - run: bun run build
+      - name: Verify configuration
+        run: bun run dist/index.js verify
+      - name: Collect metrics
+        uses: ./.github/actions/collect-metrics
+      - name: Generate report
+        uses: ./.github/actions/generate-report
 ```
 
 ---
@@ -815,6 +962,13 @@ jobs:
 - [ ] Valid config loads successfully
 - [ ] Invalid configs rejected with clear errors
 - [ ] Multiple metrics supported
+
+**User Story 1.5: CLI Verification**
+- [ ] CLI verify command validates default config file
+- [ ] CLI verify command accepts custom config path
+- [ ] CLI verify exits with correct codes (0/1)
+- [ ] CLI verify displays clear error messages
+- [ ] CLI verify handles missing files gracefully
 
 **User Story 2: Collection**
 - [ ] Metrics collected in CI pipeline
@@ -836,6 +990,8 @@ jobs:
 - [ ] SC-005: 95% first report in < 15 minutes
 - [ ] SC-006: Reports work offline in all browsers
 - [ ] SC-007: Config errors resolved in < 3 attempts
+- [ ] SC-007.1: CLI verify completes < 2 seconds
+- [ ] SC-007.2: 95% validate config on first attempt
 
 ---
 
@@ -850,6 +1006,14 @@ jobs:
 **"Config validation failed"**
 - Cause: Invalid metric name or missing fields
 - Solution: Check error message, fix config, refer to schema docs
+
+**"CLI verify command not found"**
+- Cause: CLI not built or not in PATH
+- Solution: Run `bun run build` and use `bun run src/index.ts verify`
+
+**"CLI verify exits with code 1"**
+- Cause: Configuration validation failed
+- Solution: Check error message, fix configuration issues
 
 **"Command execution failed"**
 - Cause: Metric collection command errored
@@ -881,3 +1045,33 @@ After MVP implementation:
   - [Config Schema](./contracts/config-schema.md)
   - [Database Schema](./contracts/database-schema.md)
   - [Action Interface](./contracts/action-interface.md)
+
+## CLI Reference
+
+### Commands
+
+**verify [config]**
+- Description: Validate unentropy.json configuration file
+- Arguments:
+  - `config` (optional): Path to configuration file (default: unentropy.json)
+- Exit Codes:
+  - `0`: Configuration is valid
+  - `1`: Configuration is invalid or file not found
+- Examples:
+  ```bash
+  unentropy verify                    # Verify default config
+  unentropy verify ./custom.json        # Verify custom config
+  unentropy verify && echo "Valid"     # Use in scripts
+  ```
+
+### Error Messages
+
+**Common validation errors and solutions:**
+
+| Error | Cause | Solution |
+|-------|--------|----------|
+| "Invalid JSON: ..." | Malformed JSON syntax | Fix JSON syntax errors |
+| "Configuration must contain a 'metrics' array" | Missing metrics property | Add metrics array to config |
+| "name must be lowercase with hyphens only" | Invalid metric name format | Use lowercase letters, numbers, and hyphens only |
+| "type must be either 'numeric' or 'label'" | Invalid metric type | Use 'numeric' or 'label' |
+| "command cannot be empty" | Missing collection command | Add command property to metric definition |

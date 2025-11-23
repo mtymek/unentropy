@@ -17,6 +17,8 @@ Build a serverless metrics tracking system that allows developers to define cust
 - `@actions/core` and `@actions/github` for GitHub Actions integration
 - Chart.js (via CDN) for HTML report visualizations
 - `zod` for configuration validation
+- `yargs` v18.x for command-line argument parsing and help generation
+- `@types/yargs` for TypeScript support in CLI development
 
 **Storage**: SQLite database file stored as GitHub Actions artifact (persisted across workflow runs)  
 **Testing**: Existing test setup (bun test with unit and integration tests)  
@@ -24,6 +26,7 @@ Build a serverless metrics tracking system that allows developers to define cust
 **Project Type**: Single project (CLI tool / library with GitHub Action wrapper)  
 **Performance Goals**: 
 - Configuration validation: <100ms for typical configs
+- CLI verification command: <2 seconds for typical configuration files
 - Database artifact download: <15 seconds (including API calls)
 - Metric collection: <30 seconds total overhead per CI run
 - Report generation: <10 seconds for 100 data points
@@ -94,6 +97,11 @@ specs/001-mvp-metrics-tracking/
 
 ```
  src/
+ ├── cli/
+ │   ├── cmd/
+ │   │   ├── cmd.ts          # Command builder utility
+ │   │   └── verify.ts       # CLI verification command
+ │   └── index.ts            # CLI entrypoint
  ├── config/
  │   ├── schema.ts           # Zod schema for unentropy.json
  │   └── loader.ts           # Config file reading and validation
@@ -152,17 +160,18 @@ tests/
 unentropy.json               # Self-monitoring configuration (test coverage + LoC)
 ```
 
-**Structure Decision**: Using single project structure as this is a CLI tool/library with GitHub Action wrappers. All components are TypeScript/Bun. Clear separation of concerns follows a three-layer architecture:
+**Structure Decision**: Using single project structure as this is a CLI tool/library with GitHub Action wrappers. All components are TypeScript/Bun. Clear separation of concerns follows a layered architecture:
 
-1. **Configuration Layer** (`config/`): Schema validation and file loading
-2. **Storage Layer** (`storage/`): Three-layer separation of concerns:
+1. **CLI Layer** (`cli/`): Command-line interface with yargs for argument parsing and help generation
+2. **Configuration Layer** (`config/`): Schema validation and file loading
+3. **Storage Layer** (`storage/`): Three-layer separation of concerns:
    - **Providers** (`providers/`): Database lifecycle & location (WHERE to store)
    - **Adapters** (`adapters/`): Query execution engine (WHAT queries to run)
    - **Repository** (`repository.ts`): Domain operations (WHY - business logic)
    - **Storage** (`storage.ts`): Orchestration layer that coordinates provider, adapter, and repository
-3. **Collection Layer** (`collector/`): Metric extraction and command execution
-4. **Reporting Layer** (`reporter/`): HTML generation and visualization
-5. **Action Layer** (`actions/`): GitHub Actions entrypoints
+4. **Collection Layer** (`collector/`): Metric extraction and command execution
+5. **Reporting Layer** (`reporter/`): HTML generation and visualization
+6. **Action Layer** (`actions/`): GitHub Actions entrypoints
 
 This architecture enables independent testing of each layer and future extensibility (e.g., PostgreSQL adapter, alternative storage providers).
 
@@ -210,10 +219,11 @@ After core functionality is complete, the project will include `unentropy.json` 
 
 The existing `.github/workflows/ci.yml` will be extended to include:
 
-1. **Database Download Step**: Download database artifact from previous successful runs using GitHub's actions/download-artifact
-2. **Metric Collection Step**: Run the collect-metrics action with downloaded database (or create new)
-3. **Database Persistence**: Store updated SQLite database as workflow artifact  
-4. **Report Generation**: Generate HTML report and attach as artifact or PR comment
+1. **Configuration Verification Step**: Run `unentropy verify` to validate configuration before collection
+2. **Database Download Step**: Download database artifact from previous successful runs using GitHub's actions/download-artifact
+3. **Metric Collection Step**: Run the collect-metrics action with downloaded database (or create new)
+4. **Database Persistence**: Store updated SQLite database as workflow artifact  
+5. **Report Generation**: Generate HTML report and attach as artifact or PR comment
 
 ### Demonstration Value
 
@@ -222,6 +232,7 @@ This self-monitoring setup provides:
 - **Validation**: Each PR shows impact on test coverage and code size
 - **Performance Tracking**: Monitor how changes affect project metrics
 - **Documentation**: Working reference implementation
+- **CLI Usage**: Demonstrates `unentropy verify` command in CI context
 
 ### Success Metrics for Self-Monitoring
 
@@ -229,4 +240,5 @@ This self-monitoring setup provides:
 - LoC growth tracking for project scope management  
 - Reports generated successfully on each commit
 - Configuration serves as clear example for new users
+- CLI verification runs successfully on each commit before collection
 

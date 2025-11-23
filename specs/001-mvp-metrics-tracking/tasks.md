@@ -22,9 +22,9 @@
 
 **Purpose**: Project initialization and dependencies
 
-- [x] T001 Install dependencies: zod, @actions/core, @actions/github
-- [x] T002 [P] Create directory structure: src/config/, src/storage/, src/storage/providers/, src/storage/adapters/, src/collector/, src/reporter/, src/actions/
-- [x] T003 [P] Create directory structure: tests/unit/config/, tests/unit/storage/, tests/unit/storage/providers/, tests/unit/storage/adapters/, tests/unit/collector/, tests/unit/reporter/
+- [x] T001 Install dependencies: zod, @actions/core, @actions/github, yargs, @types/yargs
+- [x] T002 [P] Create directory structure: src/config/, src/storage/, src/storage/providers/, src/storage/adapters/, src/collector/, src/reporter/, src/actions/, src/cli/, src/cli/cmd/
+- [x] T003 [P] Create directory structure: tests/unit/config/, tests/unit/storage/, tests/unit/storage/providers/, tests/unit/storage/adapters/, tests/unit/collector/, tests/unit/reporter/, tests/unit/cli/
 - [x] T004 [P] Create directory structure: tests/integration/, tests/contract/
 
 ---
@@ -124,6 +124,35 @@ This separation enables:
 
 **Checkpoint**: Storage layer ready with three-layer architecture - user story implementation can now begin
 
+---
+
+## Phase 3: User Story 1.5 - Validate Configuration via CLI (Priority: P1.5)
+
+**Goal**: Users can validate their unentropy.json configuration file locally before committing it, so they can catch configuration errors early and avoid CI pipeline failures
+
+**Independent Test**: Run the CLI verify command against various configuration files (valid, invalid, malformed) and verify appropriate success/error responses, delivering value by providing immediate feedback on configuration correctness
+
+### Tests for User Story 1.5
+
+**NOTE: Write these tests FIRST, ensure they FAIL before implementation**
+
+- [ ] T017.5 [P] [US1.5] Write unit test for CLI verify command with default config in tests/unit/cli/verify.test.ts
+- [ ] T018.5 [P] [US1.5] Write unit test for CLI verify command with custom config path in tests/unit/cli/verify.test.ts
+- [ ] T019.5 [P] [US1.5] Write unit test for CLI verify success exit code (0) in tests/unit/cli/verify.test.ts
+- [ ] T020.5 [P] [US1.5] Write unit test for CLI verify error exit code (1) in tests/unit/cli/verify.test.ts
+- [ ] T021.5 [P] [US1.5] Write unit test for CLI verify error message formatting in tests/unit/cli/verify.test.ts
+- [ ] T022.5 [P] [US1.5] Write unit test for CLI verify file not found handling in tests/unit/cli/verify.test.ts
+
+### Implementation for User Story 1.5
+
+- [x] T023.5 [US1.5] Implement CLI command builder in src/cli/cmd/cmd.ts
+- [x] T024.5 [US1.5] Implement CLI verify command in src/cli/cmd/verify.ts
+- [x] T025.5 [US1.5] Implement CLI entrypoint in src/index.ts
+
+**Checkpoint**: Users can validate configurations locally with clear feedback ✅
+
+---
+
 **Key Design Decisions**:
 - ✓ Three-layer separation: Provider (WHERE), Adapter (WHAT), Repository (WHY)
 - ✓ Provider manages database lifecycle and location
@@ -135,7 +164,7 @@ This separation enables:
 
 ---
 
-## Phase 3: User Story 1 - Define Custom Metrics via Configuration (Priority: P1) 🎯 MVP
+## Phase 4: User Story 1 - Define Custom Metrics via Configuration (Priority: P1) 🎯 MVP
 
 **Goal**: Users can define what code metrics they want to track through an `unentropy.json` configuration file, with validation that provides clear error messages
 
@@ -163,7 +192,7 @@ This separation enables:
 
 ---
 
-## Phase 4: User Story 2 - Collect Metrics in CI/CD Pipeline (Priority: P2)
+## Phase 5: User Story 2 - Collect Metrics in CI/CD Pipeline (Priority: P2)
 
 **Goal**: CI/CD pipeline automatically collects defined metrics, stores them with timestamps and build metadata, handling partial failures gracefully
 
@@ -192,7 +221,7 @@ This separation enables:
 
 ---
 
-## Phase 5: User Story 3 - View Metric Trends in HTML Reports (Priority: P3)
+## Phase 6: User Story 3 - View Metric Trends in HTML Reports (Priority: P3)
 
 **Goal**: Generate self-contained HTML reports showing metric trends over time with visual charts, viewable in any browser without external dependencies
 
@@ -246,7 +275,7 @@ This separation enables:
 
 ---
 
-## Phase 6: User Story 4 - Unentropy Self-Monitoring (Priority: P4)
+## Phase 7: User Story 4 - Unentropy Self-Monitoring (Priority: P4)
 
 **Goal**: Implement self-monitoring for Unentropy project to track test coverage and lines of code, serving as both demonstration and genuine project health monitoring
 
@@ -290,7 +319,7 @@ This separation enables:
 
 ---
 
-## Phase 7: GitHub Actions Integration
+## Phase 8: GitHub Actions Integration
 
 **Purpose**: Package functionality as GitHub Actions for easy CI/CD integration
 
@@ -324,7 +353,7 @@ This separation enables:
 
 ---
 
-## Phase 8: Polish & Cross-Cutting Concerns
+## Phase 9: Polish & Cross-Cutting Concerns
 
 **Purpose**: Improvements that affect multiple user stories
 
@@ -354,22 +383,23 @@ This separation enables:
   - Adapter abstracts query execution
   - Repository provides domain operations
   - Storage orchestrates all three layers
-- **User Stories (Phase 3-5)**: All depend on Foundational phase completion
+- **User Stories (Phase 3-6)**: All depend on Foundational phase completion
   - User stories can then proceed in parallel (if staffed)
-  - Or sequentially in priority order (P1 → P2 → P3)
-- **User Story 4 (Phase 6)**: Depends on User Stories 1, 2, and 3 being complete
-- **GitHub Actions (Phase 7)**: Depends on User Stories 2 and 3 being complete
-  - collect-metrics action: Depends on User Stories 1, 2 (config + collection)
+  - Or sequentially in priority order (P1 → P1.5 → P2 → P3)
+- **User Story 4 (Phase 7)**: Depends on User Stories 1, 1.5, 2, and 3 being complete
+- **GitHub Actions (Phase 8)**: Depends on User Stories 2 and 3 being complete
+  - collect-metrics action: Depends on User Stories 1, 1.5, 2 (config + CLI verification + collection)
   - generate-report action: Depends on User Story 3 (reporting)
   - find-database action: Documented in specs/002-find-database/
-- **Polish (Phase 8)**: Depends on all phases being complete
+- **Polish (Phase 9)**: Depends on all phases being complete
 
 ### User Story Dependencies
 
 - **User Story 1 (P1)**: Can start after Foundational (Phase 2) - No dependencies on other stories
-- **User Story 2 (P2)**: Can start after Foundational (Phase 2) + User Story 1 complete (needs config loading)
+- **User Story 1.5 (P1.5)**: Can start after Foundational (Phase 2) + User Story 1 complete (needs config loading)
+- **User Story 2 (P2)**: Can start after Foundational (Phase 2) + User Story 1.5 complete (needs CLI verification)
 - **User Story 3 (P3)**: Can start after Foundational (Phase 2) + User Story 2 complete (needs data collection)
-- **User Story 4 (P4)**: Can start after Foundational (Phase 2) + User Stories 1, 2, and 3 complete (needs complete workflow)
+- **User Story 4 (P4)**: Can start after Foundational (Phase 2) + User Stories 1, 1.5, 2, and 3 complete (needs complete workflow)
 
 ### Within Each User Story
 
@@ -380,10 +410,13 @@ This separation enables:
 
 ### Parallel Opportunities
 
-#### Phase 7 (GitHub Actions - Tests)
+#### Phase 3 (CLI Verification - Tests)
+- T017.5, T018.5, T019.5, T020.5, T021.5, T022.5 can run in parallel (different test scenarios)
+
+#### Phase 8 (GitHub Actions - Tests)
 - T049, T050, T051, T052, T053 can run in parallel (different test files)
 
-#### Phase 8 (Polish)
+#### Phase 9 (Polish)
 - T064, T065, T066, T067, T068, T069 can all run in parallel (different concerns)
 
 ---
@@ -417,23 +450,25 @@ Task: "Write integration test for artifact upload/download in tests/integration/
 
 ## Implementation Strategy
 
-### MVP First (User Story 1 Only)
+### MVP First (User Story 1 + 1.5 Only)
 
 1. Complete Phase 1: Setup
 2. Complete Phase 2: Foundational (CRITICAL - blocks all stories)
 3. Complete Phase 3: User Story 1
-4. **STOP and VALIDATE**: Test User Story 1 independently
-5. Review and refine before continuing
+4. Complete Phase 4: User Story 1.5
+5. **STOP and VALIDATE**: Test User Stories 1 and 1.5 independently
+6. Review and refine before continuing
 
 ### Incremental Delivery
 
 1. Complete Setup + Foundational → Foundation ready (T001-T011)
 2. Add User Story 1 → Test independently → Validate config system (T012-T021)
-3. Add User Story 2 → Test independently → Validate collection (T022-T035)
-4. Add User Story 3 → Test independently → Validate reporting (T036-T048)
-5. Add User Story 4 → Implement self-monitoring → Validate via CI/CD (T075-T086)
-6. Add GitHub Actions → Integrate with CI/CD (T049-T063)
-7. Polish and optimize → Production ready (T064-T075)
+3. Add User Story 1.5 → Test independently → Validate CLI verification (T017.5-T026.5)
+4. Add User Story 2 → Test independently → Validate collection (T022-T035)
+5. Add User Story 3 → Test independently → Validate reporting (T036-T048)
+6. Add User Story 4 → Implement self-monitoring → Validate via CI/CD (T075-T086)
+7. Add GitHub Actions → Integrate with CI/CD (T049-T063)
+8. Polish and optimize → Production ready (T064-T075)
 
 ### Parallel Team Strategy
 
@@ -442,8 +477,9 @@ With multiple developers:
 1. Team completes Setup + Foundational together (T001-T011)
 2. Once Foundational is done:
    - Developer A: User Story 1 (T012-T021)
+   - Developer B: User Story 1.5 (T017.5-T026.5) - Can run in parallel with US1
    - After US1: Developer A continues to User Story 2 (T022-T035)
-   - After US2: Developer A continues to User Story 3 (T036-T048)
+   - After US1.5: Developer B continues to User Story 3 (T036-T048)
 3. Once User Stories complete:
    - Developer B: User Story 4 (T075-T086)
    - Developer A: GitHub Actions (T049-T063)

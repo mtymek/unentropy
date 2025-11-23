@@ -23,6 +23,23 @@ As a developer, I want to define what code metrics I want to track through a sim
 
 ---
 
+### User Story 1.5 - Validate Configuration via CLI (Priority: P1.5)
+
+As a developer, I want to validate my unentropy.json configuration file locally before committing it, so I can catch configuration errors early and avoid CI pipeline failures.
+
+**Why this priority**: Configuration validation is critical for user experience and prevents wasted CI cycles. This sits between defining metrics and collecting data, serving as a quality gate before pipeline execution.
+
+**Independent Test**: Can be fully tested by running the CLI verify command against various configuration files (valid, invalid, malformed) and verifying appropriate success/error responses, delivering value by providing immediate feedback on configuration correctness.
+
+**Acceptance Scenarios**:
+
+1. **Given** I have created an unentropy.json configuration file, **When** I run `unentropy verify`, **Then** the system validates the configuration and reports success or specific error messages
+2. **Given** I want to validate a configuration file in a different location, **When** I run `unentropy verify path/to/config.json`, **Then** the system validates the specified file
+3. **Given** my configuration has syntax errors, **When** I run the verify command, **Then** the system exits with error code 1 and displays clear, actionable error messages
+4. **Given** my configuration is valid, **When** I run the verify command, **Then** the system exits with success code 0 and displays a confirmation message
+
+---
+
 ### User Story 2 - Collect Metrics in CI/CD Pipeline (Priority: P2)
 
 As a developer, I want my CI/CD pipeline to automatically collect the metrics I've defined, so I can track code quality trends over time without manual intervention.
@@ -79,6 +96,10 @@ As the Unentropy project maintainer, I want to use Unentropy to track its own co
 ### Edge Cases
 
 - What happens when the configuration file is missing or malformed?
+- What happens when running verify command on a non-existent configuration file?
+- What happens when running verify command on a file with invalid JSON syntax?
+- What happens when running verify command without any arguments (default behavior)?
+- What happens when configuration file has permission issues preventing reading?
 - What happens when metric collection fails for some but not all metrics?
 - What happens when the database file doesn't exist yet (first run)?
 - What happens when generating a report with no collected data?
@@ -100,6 +121,10 @@ As the Unentropy project maintainer, I want to use Unentropy to track its own co
 - **FR-002**: System MUST support defining custom metrics with user-specified names
 - **FR-003**: System MUST support metric types including numeric values and categorical labels
 - **FR-004**: System MUST validate configuration file structure and provide clear error messages for invalid configurations
+- **FR-004.1**: System MUST provide a CLI command `unentropy verify [config]` to validate configuration files
+- **FR-004.2**: Verify command MUST accept optional config file path, defaulting to `unentropy.json`
+- **FR-004.3**: Verify command MUST exit with code 0 for valid configurations and code 1 for invalid ones
+- **FR-004.4**: Verify command MUST provide specific, actionable error messages for different validation failure types
 - **FR-005**: Configuration MUST allow users to define multiple metrics in a single file
 
 #### Data Collection
@@ -171,6 +196,8 @@ This configuration serves as both a working example and genuine project monitori
 - **SC-005**: 95% of users successfully generate their first report within 15 minutes of initial setup
 - **SC-006**: Generated reports are viewable in all major browsers without requiring internet connectivity (after initial CDN resource load)
 - **SC-007**: Configuration errors are resolved within 3 attempts due to clear, actionable error messages
+- **SC-007.1**: CLI verify command completes validation in under 2 seconds for typical configuration files
+- **SC-007.2**: 95% of users successfully validate their configuration on first attempt using the verify command
 - **SC-008**: Reports render correctly on screens from 320px (mobile) to 2560px (desktop) width
 - **SC-009**: Chart interactions (tooltips, hover states) respond within 100ms on standard hardware
 
@@ -189,6 +216,8 @@ This configuration serves as both a working example and genuine project monitori
 - GitHub Actions infrastructure for workflow execution
 - Bun runtime for both local development and GitHub Actions
 - SQLite support via `bun:sqlite` (native to Bun runtime)
+- Yargs v18.x for command-line argument parsing and help generation
+- @types/yargs for TypeScript support in CLI development
 - Chart.js v4.x via CDN (jsDelivr) for interactive visualizations
 - Tailwind CSS v3.x via CDN for responsive styling
 - Modern browser support (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+)
@@ -199,6 +228,9 @@ This configuration serves as both a working example and genuine project monitori
 ### In Scope (MVP)
 
 - Configuration file parsing and validation
+- CLI verification command for local configuration validation
+- Command-line interface with yargs for argument parsing
+- Local file system access for configuration file reading
 - SQLite database creation and metric storage (local file system)
 - Storage provider pattern architecture (extensible: sqlite-local, sqlite-artifact, sqlite-s3, postgres)
 - SQLite local storage provider implementation (file-based SQLite)
