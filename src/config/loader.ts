@@ -10,7 +10,17 @@ export interface ResolvedUnentropyConfig {
 
 export async function loadConfig(configPath = "unentropy.json"): Promise<ResolvedUnentropyConfig> {
   const fileContent = await readFile(configPath, "utf-8");
-  const parsedJson = JSON.parse(fileContent);
+  let parsedJson;
+  try {
+    parsedJson = JSON.parse(fileContent);
+  } catch (error) {
+    throw new Error(`Invalid JSON: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  // Check if metrics array exists
+  if (!parsedJson.metrics || !Array.isArray(parsedJson.metrics)) {
+    throw new Error("Configuration must contain a 'metrics' array");
+  }
 
   // Resolve built-in metric references before validation
   const resolvedMetrics = (parsedJson.metrics as MetricConfig[]).map((metric) => {
