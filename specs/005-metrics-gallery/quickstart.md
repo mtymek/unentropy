@@ -89,6 +89,67 @@ Customize any property while keeping other defaults:
 }
 ```
 
+## Simplified Commands with CLI Helpers
+
+For standard formats, you can use CLI helpers to simplify metric collection commands:
+
+### Coverage Metrics
+
+**Traditional (complex)**:
+```json
+{
+  "$ref": "coverage",
+  "command": "bun test --coverage --coverage-reporter=json 2>/dev/null | jq -r '.total.lines.pct' 2>/dev/null || echo '0'"
+}
+```
+
+**CLI Helper (simplified)**:
+```json
+{
+  "$ref": "coverage",
+  "command": "bun test --coverage && unentropy collect coverage-json ./coverage/coverage.json"
+}
+```
+
+**Available coverage formats**:
+- `coverage-lcov <path>` - Parse LCOV format coverage reports
+- `coverage-json <path>` - Parse JSON format coverage reports  
+- `coverage-xml <path>` - Parse XML format coverage reports
+
+### Bundle Size Metrics
+
+**Traditional (complex)**:
+```json
+{
+  "$ref": "bundle-size",
+  "command": "find dist/ -name '*.js' -type f | xargs wc -c | tail -1 | awk '{print int($1/1024)}'"
+}
+```
+
+**CLI Helper (simplified)**:
+```json
+{
+  "$ref": "bundle-size",
+  "command": "bun run build && unentropy collect size ./dist/"
+}
+```
+
+**File size example**:
+```json
+{
+  "$ref": "bundle-size",
+  "command": "unentropy collect size ./dist/bundle.js"
+}
+```
+
+### CLI Helper Benefits
+
+- **Simple Commands**: Replace complex jq/awk pipelines with readable commands
+- **Standard Formats**: Support industry-standard formats (LCOV, JSON, XML)
+- **Tool Agnostic**: Work with any tool outputting standard formats
+- **Error Handling**: Built-in error handling and sensible defaults
+- **Optional**: You can still use custom commands when needed
+
 ## Available Metrics
 
 ### Coverage Metrics
@@ -219,6 +280,16 @@ Combine built-in metrics with quality gate thresholds:
 }
 ```
 
+### CLI Helper Not Found
+
+**Problem**: `unentropy collect coverage-json` command not found
+
+**Solution**: Ensure you're using the latest version of Unentropy that includes CLI helper support. CLI helpers are available for:
+- `coverage-lcov <path>` - LCOV format coverage reports
+- `coverage-json <path>` - JSON format coverage reports
+- `coverage-xml <path>` - XML format coverage reports
+- `size <path>` - File or directory size in KB
+
 ### Name Conflicts
 
 **Problem**: `Duplicate metric name "coverage" found`
@@ -243,7 +314,9 @@ Combine built-in metrics with quality gate thresholds:
 ✅ **Do**: Start with built-in metrics and override only what you need  
 ✅ **Do**: Use built-in metrics for common patterns (coverage, size, performance)  
 ✅ **Do**: Mix built-in and custom metrics freely  
+✅ **Do**: Use CLI helpers for standard formats to simplify commands  
 
 ❌ **Don't**: Override `type` - it's inherited from the built-in metric  
 ❌ **Don't**: Use uppercase or spaces in custom names  
-❌ **Don't**: Duplicate metric names after resolution
+❌ **Don't**: Duplicate metric names after resolution  
+❌ **Don't**: Use CLI helpers for non-standard formats - use custom commands instead

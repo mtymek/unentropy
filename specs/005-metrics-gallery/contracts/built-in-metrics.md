@@ -39,9 +39,18 @@ interface MetricTemplate {
 **Recommended Threshold**: `no-regression` with tolerance 0.5%
 
 **Common Command Examples**:
+
+**Traditional (complex)**:
 - Bun: `bun test --coverage --coverage-reporter=json 2>/dev/null | jq -r ".total.lines.pct" 2>/dev/null || echo "0"`
 - Jest: `npm test -- --coverage --json | jq -r ".coverageMap.total.lines.pct"`
 - Pytest: `pytest --cov --cov-report=json | jq -r ".totals.percent_covered"`
+
+**CLI Helper (simplified)**:
+- Bun: `bun test --coverage && unentropy collect coverage-json ./coverage/coverage.json`
+- Jest: `npm test -- --coverage && unentropy collect coverage-json ./coverage/coverage.json`
+- Pytest: `pytest --cov --cov-report=json && unentropy collect coverage-json ./coverage.json`
+- LCOV format: `unentropy collect coverage-lcov ./coverage/lcov.info`
+- XML format: `unentropy collect coverage-xml ./coverage/coverage.xml`
 
 ---
 
@@ -60,8 +69,16 @@ interface MetricTemplate {
 **Recommended Threshold**: `no-regression` with tolerance 0.5%
 
 **Common Command Examples**:
+
+**Traditional (complex)**:
 - Bun: `bun test --coverage --coverage-reporter=json 2>/dev/null | jq -r ".total.functions.pct" 2>/dev/null || echo "0"`
 - Jest: `npm test -- --coverage --json | jq -r ".coverageMap.total.functions.pct"`
+
+**CLI Helper (simplified)**:
+- Bun: `bun test --coverage && unentropy collect coverage-json ./coverage/coverage.json`
+- Jest: `npm test -- --coverage && unentropy collect coverage-json ./coverage/coverage.json`
+- LCOV format: `unentropy collect coverage-lcov ./coverage/lcov.info`
+- XML format: `unentropy collect coverage-xml ./coverage/coverage.xml`
 
 ---
 
@@ -82,9 +99,16 @@ interface MetricTemplate {
 **Recommended Threshold**: None (informational metric)
 
 **Common Command Examples**:
+
+**Traditional (complex)**:
 - TypeScript: `find src/ -name "*.ts" -o -name "*.tsx" 2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}' || echo "0"`
 - JavaScript: `find src/ -name "*.js" -o -name "*.jsx" 2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}' || echo "0"`
 - Python: `find src/ -name "*.py" 2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}' || echo "0"`
+
+**CLI Helper (simplified)**:
+- Directory: `unentropy collect size ./src/`
+- Specific pattern: `find src/ -name "*.ts" | xargs unentropy collect size`
+- Multiple directories: `unentropy collect size ./src/ ./lib/`
 
 ---
 
@@ -103,9 +127,17 @@ interface MetricTemplate {
 **Recommended Threshold**: `delta-max-drop` with 5% maximum increase
 
 **Common Command Examples**:
+
+**Traditional (complex)**:
 - JavaScript: `find dist/ -name "*.js" -type f 2>/dev/null | xargs wc -c 2>/dev/null | tail -1 | awk '{print int($1/1024)}' || echo "0"`
 - Webpack: `du -sk dist/ | cut -f1`
 - Specific file: `du -k dist/bundle.js | cut -f1`
+
+**CLI Helper (simplified)**:
+- Build directory: `bun run build && unentropy collect size ./dist/`
+- Specific file: `unentropy collect size ./dist/bundle.js`
+- Multiple files: `unentropy collect size ./dist/*.js`
+- Webpack output: `npm run build && unentropy collect size ./build/`
 
 ---
 
@@ -126,9 +158,16 @@ interface MetricTemplate {
 **Recommended Threshold**: `delta-max-drop` with 10% maximum increase
 
 **Common Command Examples**:
+
+**Traditional (complex)**:
 - Bun: `(time bun run build) 2>&1 | grep real | awk '{print $2}' | sed 's/[^0-9.]//g' || echo "0"`
 - npm: `(time npm run build) 2>&1 | grep real | awk '{print $2}' | sed 's/[^0-9.]//g' || echo "0"`
 - Custom: Use project-specific build command with `time` wrapper
+
+**CLI Helper (simplified)**:
+- Bun: `time bun run build` (output parsed automatically by shell)
+- npm: `time npm run build` (output parsed automatically by shell)
+- Note: CLI helpers don't currently support timing - use traditional approach or custom script
 
 ---
 
@@ -147,9 +186,16 @@ interface MetricTemplate {
 **Recommended Threshold**: `delta-max-drop` with 10% maximum increase
 
 **Common Command Examples**:
+
+**Traditional (complex)**:
 - Bun: `(time bun test) 2>&1 | grep real | awk '{print $2}' | sed 's/[^0-9.]//g' || echo "0"`
 - Jest: `(time npm test) 2>&1 | grep real | awk '{print $2}' | sed 's/[^0-9.]//g' || echo "0"`
 - Pytest: `(time pytest) 2>&1 | grep real | awk '{print $2}' | sed 's/[^0-9.]//g' || echo "0"`
+
+**CLI Helper (simplified)**:
+- Bun: `time bun test` (output parsed automatically by shell)
+- Jest: `time npm test` (output parsed automatically by shell)
+- Note: CLI helpers don't currently support timing - use traditional approach or custom script
 
 ---
 
@@ -170,11 +216,50 @@ interface MetricTemplate {
 **Recommended Threshold**: None (monitoring only)
 
 **Common Command Examples**:
+
+**Traditional (complex)**:
 - Node.js: `cat package.json | jq ".dependencies | length" 2>/dev/null || echo "0"`
 - Python: `cat requirements.txt | wc -l`
 - Go: `go list -m all | wc -l`
 
+**CLI Helper (simplified)**:
+- Node.js: `cat package.json | jq ".dependencies | length"`
+- Python: `wc -l requirements.txt`
+- Go: `go list -m all | wc -l`
+- Note: CLI helpers don't currently support dependency counting - use traditional approach or custom script
+
 ---
+
+## CLI Helpers
+
+Unentropy provides CLI helpers to simplify metric collection for standard formats. CLI helpers are optional - you can still use traditional commands when needed.
+
+### Available CLI Helpers
+
+| CLI Helper | Description | Supported Formats | Example Usage |
+|------------|-------------|-------------------|--------------|
+| `coverage-lcov <path>` | Parse LCOV coverage reports | LCOV format | `unentropy collect coverage-lcov ./coverage/lcov.info` |
+| `coverage-json <path>` | Parse JSON coverage reports | JSON format | `unentropy collect coverage-json ./coverage/coverage.json` |
+| `coverage-xml <path>` | Parse XML coverage reports | XML format | `unentropy collect coverage-xml ./coverage/coverage.xml` |
+| `size <path>` | Calculate file/directory size | Files and directories | `unentropy collect size ./dist/` |
+
+### CLI Helper Benefits
+
+- **Simplified Commands**: Replace complex jq/awk pipelines with readable commands
+- **Standard Formats**: Support industry-standard formats (LCOV, JSON, XML)
+- **Tool Agnostic**: Work with any tool outputting standard formats
+- **Error Handling**: Built-in error handling and sensible defaults
+- **Optional**: You can still use custom commands when needed
+
+### CLI Helper Limitations
+
+CLI helpers currently support:
+- ✅ Coverage reports (LCOV, JSON, XML formats)
+- ✅ File/directory size calculations
+- ❌ Timing measurements (use traditional approach)
+- ❌ Dependency counting (use traditional approach)
+
+For unsupported metrics, continue using traditional command examples or create custom scripts.
 
 ## Usage Notes
 
