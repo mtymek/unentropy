@@ -22,7 +22,7 @@
       "$ref": "bundle-size",
       "name": "total-bundle-size",
       "description": "Total size of all compiled GitHub Actions",
-      "command": "find .github/actions/*/dist/*.js -type f 2>/dev/null | xargs wc -c 2>/dev/null | tail -1 | awk '{print $1}' || echo '0'"
+      "command": "bun src/index.ts collect size .github/actions/*/dist/*.js"
     }
   ],
   "storage": {

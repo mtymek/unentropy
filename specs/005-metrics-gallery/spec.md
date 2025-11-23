@@ -49,7 +49,7 @@ The following metrics will be shipped by default. Each metric provides metadata 
    - **Description**: Overall test coverage percentage across the codebase
    - **Type**: numeric
    - **Unit**: %
-   - **Default Threshold**: no-regression (tolerance: 0.5%)
+   -  **Default Threshold**: no-regression
    - **Use Case**: Ensure test coverage doesn't decline with new changes
    - **Example Commands**: See built-in-metrics.md for Bun, Jest, Pytest examples
 
@@ -57,7 +57,7 @@ The following metrics will be shipped by default. Each metric provides metadata 
    - **Description**: Percentage of functions covered by tests
    - **Type**: numeric
    - **Unit**: %
-   - **Default Threshold**: no-regression (tolerance: 0.5%)
+   - **Default Threshold**: no-regression
    - **Use Case**: Ensure functions have test coverage
    - **Example Commands**: See built-in-metrics.md for framework-specific examples
 
