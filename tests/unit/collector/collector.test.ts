@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import { parseMetricValue, collectMetrics } from "../../../src/collector/collector";
-import type { MetricConfig } from "../../../src/config/schema";
+import type { ResolvedMetricConfig } from "../../../src/config/schema";
 import { Storage } from "../../../src/storage/storage";
 import { unlink } from "node:fs/promises";
 import { existsSync } from "node:fs";
@@ -142,7 +142,7 @@ describe("parseMetricValue", () => {
 
 describe("collectMetrics - partial failure handling", () => {
   test("continues collecting when one metric fails", async () => {
-    const metrics: MetricConfig[] = [
+    const metrics: ResolvedMetricConfig[] = [
       { name: "working-metric", type: "numeric", command: "echo 42" },
       { name: "failing-metric", type: "numeric", command: "exit 1" },
       { name: "another-working", type: "label", command: 'echo "green"' },
@@ -158,7 +158,7 @@ describe("collectMetrics - partial failure handling", () => {
   });
 
   test("records failure details for failed metrics", async () => {
-    const metrics: MetricConfig[] = [
+    const metrics: ResolvedMetricConfig[] = [
       {
         name: "timeout-metric",
         type: "numeric",
@@ -175,7 +175,7 @@ describe("collectMetrics - partial failure handling", () => {
   }, 10000);
 
   test("handles all metrics failing", async () => {
-    const metrics: MetricConfig[] = [
+    const metrics: ResolvedMetricConfig[] = [
       { name: "fail1", type: "numeric", command: "exit 1" },
       { name: "fail2", type: "numeric", command: "exit 1" },
     ];
@@ -189,7 +189,7 @@ describe("collectMetrics - partial failure handling", () => {
   });
 
   test("handles all metrics succeeding", async () => {
-    const metrics: MetricConfig[] = [
+    const metrics: ResolvedMetricConfig[] = [
       { name: "metric1", type: "numeric", command: "echo 1" },
       { name: "metric2", type: "numeric", command: "echo 2" },
       { name: "metric3", type: "label", command: 'echo "label"' },
@@ -204,7 +204,7 @@ describe("collectMetrics - partial failure handling", () => {
   });
 
   test("handles parse error as failure", async () => {
-    const metrics: MetricConfig[] = [
+    const metrics: ResolvedMetricConfig[] = [
       { name: "parse-fail", type: "numeric", command: 'echo "not-a-number"' },
     ];
 
@@ -216,7 +216,7 @@ describe("collectMetrics - partial failure handling", () => {
   });
 
   test("collects metrics in order", async () => {
-    const metrics: MetricConfig[] = [
+    const metrics: ResolvedMetricConfig[] = [
       { name: "first", type: "label", command: 'echo "1"' },
       { name: "second", type: "label", command: 'echo "2"' },
       { name: "third", type: "label", command: 'echo "3"' },
@@ -228,7 +228,7 @@ describe("collectMetrics - partial failure handling", () => {
   });
 
   test("handles empty metrics array", async () => {
-    const metrics: MetricConfig[] = [];
+    const metrics: ResolvedMetricConfig[] = [];
 
     const result = await collectMetrics(metrics);
 

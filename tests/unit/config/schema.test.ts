@@ -411,4 +411,391 @@ describe("Config Schema Validation", () => {
       expect(() => validateConfig(config)).not.toThrow();
     });
   });
+
+  describe("Built-in Metric References ($ref)", () => {
+    describe("Pure $ref Usage", () => {
+      it("should reject $ref without command field", () => {
+        const config = {
+          metrics: [
+            {
+              $ref: "coverage",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should accept valid $ref with command", () => {
+        const config = {
+          metrics: [
+            {
+              $ref: "coverage",
+              command: "bun test --coverage --coverage-reporter=json | jq -r '.total.lines.pct'",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should accept multiple $ref entries with commands", () => {
+        const config = {
+          metrics: [
+            { $ref: "coverage", command: "echo 85" },
+            { $ref: "bundle-size", command: "du -k dist/bundle.js | cut -f1" },
+            {
+              $ref: "loc",
+              command: "find src/ -name '*.ts' | xargs wc -l | tail -1 | awk '{print $1}'",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should accept all valid built-in metric IDs with commands", () => {
+        const validRefs = [
+          "coverage",
+          "function-coverage",
+          "loc",
+          "bundle-size",
+          "build-time",
+          "test-time",
+          "dependencies-count",
+        ];
+
+        for (const ref of validRefs) {
+          const config = {
+            metrics: [{ $ref: ref, command: "echo 0" }],
+          };
+          expect(() => validateConfig(config)).not.toThrow();
+        }
+      });
+    });
+
+    describe("$ref with Overrides", () => {
+      it("should accept $ref with name override and command", () => {
+        const config = {
+          metrics: [
+            {
+              $ref: "coverage",
+              name: "unit-test-coverage",
+              command: "bun test --coverage",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should accept $ref with command only", () => {
+        const config = {
+          metrics: [
+            {
+              $ref: "bundle-size",
+              command: "du -k dist/main.js | cut -f1",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should accept $ref with unit override and command", () => {
+        const config = {
+          metrics: [
+            {
+              $ref: "bundle-size",
+              command: "du -k dist/main.js | cut -f1",
+              unit: "KB",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should accept $ref with description override and command", () => {
+        const config = {
+          metrics: [
+            {
+              $ref: "coverage",
+              command: "bun test --coverage",
+              description: "Custom coverage description",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should accept $ref with timeout override and command", () => {
+        const config = {
+          metrics: [
+            {
+              $ref: "build-time",
+              command: "time bun run build",
+              timeout: 60000,
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should accept $ref with multiple overrides including command", () => {
+        const config = {
+          metrics: [
+            {
+              $ref: "coverage",
+              name: "frontend-coverage",
+              command: "bun test --coverage",
+              unit: "pct",
+              description: "Frontend test coverage",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should reject $ref with invalid name override", () => {
+        const config = {
+          metrics: [
+            {
+              $ref: "coverage",
+              name: "Test_Coverage",
+              command: "echo 85",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject $ref with empty command override", () => {
+        const config = {
+          metrics: [
+            {
+              $ref: "coverage",
+              command: "",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject $ref with invalid unit length", () => {
+        const config = {
+          metrics: [
+            {
+              $ref: "bundle-size",
+              command: "echo 100",
+              unit: "a".repeat(11),
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should accept $ref with type field and command (validation deferred to resolver)", () => {
+        const config = {
+          metrics: [
+            {
+              $ref: "coverage",
+              command: "echo 85",
+              type: "label",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+    });
+
+    describe("Invalid $ref Values", () => {
+      it("should accept any $ref string value with command (validation deferred to resolver)", () => {
+        const config = {
+          metrics: [
+            {
+              $ref: "unknown-metric",
+              command: "echo 0",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should accept case-variant references with command (validation deferred to resolver)", () => {
+        const config = {
+          metrics: [
+            {
+              $ref: "Coverage",
+              command: "echo 85",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should reject missing $ref value (empty string not valid)", () => {
+        const config = {
+          metrics: [
+            {
+              $ref: "",
+              command: "echo 0",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+    });
+
+    describe("Mixed Built-in and Custom Metrics", () => {
+      it("should accept mix of $ref and custom metrics", () => {
+        const config = {
+          metrics: [
+            { $ref: "coverage", command: "bun test --coverage" },
+            { $ref: "loc", command: "find src/ -name '*.ts' | xargs wc -l" },
+            {
+              name: "custom-score",
+              type: "numeric",
+              command: "echo 95",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should accept $ref with override alongside custom metrics", () => {
+        const config = {
+          metrics: [
+            {
+              $ref: "bundle-size",
+              name: "prod-bundle",
+              command: "du -k dist/prod.js | cut -f1",
+            },
+            {
+              name: "dev-bundle",
+              type: "numeric",
+              command: "du -k dist/dev.js | cut -f1",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+    });
+
+    describe("Metric with $ref Missing Required Fields", () => {
+      it("should reject metric with $ref but no command", () => {
+        const config = {
+          metrics: [
+            {
+              $ref: "coverage",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should provide clear error for $ref without command", () => {
+        const config = {
+          metrics: [
+            {
+              $ref: "coverage",
+            },
+          ],
+        };
+
+        try {
+          validateConfig(config);
+          expect(true).toBe(false);
+        } catch (error) {
+          expect(error).toBeInstanceOf(Error);
+          const message = (error as Error).message;
+          expect(message.toLowerCase()).toContain("command");
+          expect(message.toLowerCase()).toMatch(/required|must/);
+        }
+      });
+
+      it("should reject metric without $ref and without name", () => {
+        const config = {
+          metrics: [
+            {
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject metric without $ref and without type", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              command: "echo 85",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject metric without $ref and without command", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+    });
+
+    describe("Strict Mode Validation", () => {
+      it("should reject unknown properties alongside $ref", () => {
+        const config = {
+          metrics: [
+            {
+              $ref: "coverage",
+              command: "echo 85",
+              unknownProp: "value",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject unknown properties in custom metrics", () => {
+        const config = {
+          metrics: [
+            {
+              name: "custom",
+              type: "numeric",
+              command: "echo 1",
+              unknownProp: "value",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+    });
+  });
 });

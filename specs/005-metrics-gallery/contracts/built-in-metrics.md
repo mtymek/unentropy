@@ -1,0 +1,285 @@
+# Built-in Metrics Registry Contract
+
+**Feature**: 005-metrics-gallery  
+**Version**: 1.0.0  
+**Last Updated**: 2025-11-22
+
+## Overview
+
+This contract defines the built-in metrics available in the Metrics Gallery. Each metric provides metadata (name, description, type, unit) but does NOT include commands. Commands must always be specified in the user's `unentropy.json` configuration to support different project technologies and tooling setups.
+
+## Registry Structure
+
+```typescript
+interface MetricTemplate {
+  id: string;           // Unique identifier for $ref
+  name: string;         // Default metric name
+  description: string;  // What the metric measures
+  type: 'numeric' | 'label';
+  unit?: string;        // Display unit
+}
+```
+
+## Built-in Metrics
+
+### Coverage Metrics
+
+#### 1. coverage
+
+```typescript
+{
+  id: 'coverage',
+  name: 'coverage',
+  description: 'Overall test coverage percentage across the codebase',
+  type: 'numeric',
+  unit: '%'
+}
+```
+
+**Recommended Threshold**: `no-regression` with tolerance 0.5%
+
+**Common Command Examples**:
+- Bun: `bun test --coverage --coverage-reporter=json 2>/dev/null | jq -r ".total.lines.pct" 2>/dev/null || echo "0"`
+- Jest: `npm test -- --coverage --json | jq -r ".coverageMap.total.lines.pct"`
+- Pytest: `pytest --cov --cov-report=json | jq -r ".totals.percent_covered"`
+
+---
+
+#### 2. function-coverage
+
+```typescript
+{
+  id: 'function-coverage',
+  name: 'function-coverage',
+  description: 'Percentage of functions covered by tests',
+  type: 'numeric',
+  unit: '%'
+}
+```
+
+**Recommended Threshold**: `no-regression` with tolerance 0.5%
+
+**Common Command Examples**:
+- Bun: `bun test --coverage --coverage-reporter=json 2>/dev/null | jq -r ".total.functions.pct" 2>/dev/null || echo "0"`
+- Jest: `npm test -- --coverage --json | jq -r ".coverageMap.total.functions.pct"`
+
+---
+
+### Code Size Metrics
+
+#### 3. loc
+
+```typescript
+{
+  id: 'loc',
+  name: 'loc',
+  description: 'Total lines of code in the codebase',
+  type: 'numeric',
+  unit: 'lines'
+}
+```
+
+**Recommended Threshold**: None (informational metric)
+
+**Common Command Examples**:
+- TypeScript: `find src/ -name "*.ts" -o -name "*.tsx" 2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}' || echo "0"`
+- JavaScript: `find src/ -name "*.js" -o -name "*.jsx" 2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}' || echo "0"`
+- Python: `find src/ -name "*.py" 2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}' || echo "0"`
+
+---
+
+#### 4. bundle-size
+
+```typescript
+{
+  id: 'bundle-size',
+  name: 'bundle-size',
+  description: 'Total size of production build artifacts',
+  type: 'numeric',
+  unit: 'KB'
+}
+```
+
+**Recommended Threshold**: `delta-max-drop` with 5% maximum increase
+
+**Common Command Examples**:
+- JavaScript: `find dist/ -name "*.js" -type f 2>/dev/null | xargs wc -c 2>/dev/null | tail -1 | awk '{print int($1/1024)}' || echo "0"`
+- Webpack: `du -sk dist/ | cut -f1`
+- Specific file: `du -k dist/bundle.js | cut -f1`
+
+---
+
+### Performance Metrics
+
+#### 5. build-time
+
+```typescript
+{
+  id: 'build-time',
+  name: 'build-time',
+  description: 'Time taken to complete the build',
+  type: 'numeric',
+  unit: 'seconds'
+}
+```
+
+**Recommended Threshold**: `delta-max-drop` with 10% maximum increase
+
+**Common Command Examples**:
+- Bun: `(time bun run build) 2>&1 | grep real | awk '{print $2}' | sed 's/[^0-9.]//g' || echo "0"`
+- npm: `(time npm run build) 2>&1 | grep real | awk '{print $2}' | sed 's/[^0-9.]//g' || echo "0"`
+- Custom: Use project-specific build command with `time` wrapper
+
+---
+
+#### 6. test-time
+
+```typescript
+{
+  id: 'test-time',
+  name: 'test-time',
+  description: 'Time taken to run all tests',
+  type: 'numeric',
+  unit: 'seconds'
+}
+```
+
+**Recommended Threshold**: `delta-max-drop` with 10% maximum increase
+
+**Common Command Examples**:
+- Bun: `(time bun test) 2>&1 | grep real | awk '{print $2}' | sed 's/[^0-9.]//g' || echo "0"`
+- Jest: `(time npm test) 2>&1 | grep real | awk '{print $2}' | sed 's/[^0-9.]//g' || echo "0"`
+- Pytest: `(time pytest) 2>&1 | grep real | awk '{print $2}' | sed 's/[^0-9.]//g' || echo "0"`
+
+---
+
+### Dependency Metrics
+
+#### 7. dependencies-count
+
+```typescript
+{
+  id: 'dependencies-count',
+  name: 'dependencies-count',
+  description: 'Total number of direct dependencies',
+  type: 'numeric',
+  unit: 'count'
+}
+```
+
+**Recommended Threshold**: None (monitoring only)
+
+**Common Command Examples**:
+- Node.js: `cat package.json | jq ".dependencies | length" 2>/dev/null || echo "0"`
+- Python: `cat requirements.txt | wc -l`
+- Go: `go list -m all | wc -l`
+
+---
+
+## Usage Notes
+
+**Important**: Built-in metrics are metadata templates only. The `command` field must always be provided in your `unentropy.json` configuration. This design allows Unentropy to support different programming languages, testing frameworks, and build tools.
+
+### Why Commands Are Required
+
+1. **Technology Agnostic**: Your project may use Bun, Node.js, Python, Go, or any other technology
+2. **Tooling Flexibility**: Different projects use different test runners, coverage tools, and build systems
+3. **Custom Paths**: Your source code and build output directories may have different names
+4. **Project-Specific Setup**: Some projects need environment setup or specific flags
+
+### Command Examples vs Requirements
+
+The "Common Command Examples" provided for each metric are illustrative only. You should:
+- Adapt commands to match your project's structure and tooling
+- Test commands locally before adding to configuration
+- Ensure commands work in GitHub Actions environment
+- Follow your project's conventions for directory names and file patterns
+
+## Override Examples
+
+### Using Built-in Metric with Custom Command
+
+```json
+{
+  "$ref": "coverage",
+  "command": "npm run test:coverage -- --json | jq -r '.coverage.total'"
+}
+```
+
+### Using Built-in Metric with Different Source Directory
+
+```json
+{
+  "$ref": "loc",
+  "command": "find lib/ -name '*.js' | xargs wc -l | tail -1 | awk '{print $1}'"
+}
+```
+
+### Using Built-in Metric for Different Technology
+
+```json
+{
+  "$ref": "coverage",
+  "command": "pytest --cov --cov-report=json | jq -r '.totals.percent_covered'"
+}
+```
+
+## Validation Requirements
+
+### Metric Definition Validation
+
+Built-in metric templates must:
+1. Have a unique `id` following lowercase-with-hyphens convention
+2. Include a clear `description` explaining what the metric measures
+3. Specify correct `type` (numeric or label)
+4. Include appropriate `unit` for numeric metrics
+5. Be grouped into logical categories
+
+### User Configuration Validation
+
+When users reference built-in metrics:
+1. The `$ref` must match an existing built-in metric ID
+2. A `command` field MUST always be provided (not inherited from template)
+3. Command output must match the metric type (numeric value for numeric metrics)
+4. All standard MetricConfig validation rules apply
+
+## Extensibility
+
+### Future Metrics
+
+New built-in metrics may be added in future versions following these guidelines:
+
+1. **ID Convention**: lowercase-with-hyphens
+2. **Category Grouping**: coverage, size, quality, security, performance, dependencies
+3. **Clear Description**: Explain what the metric measures and why it's useful
+4. **Documentation**: Include recommended thresholds and common command examples for popular technologies
+5. **Backward Compatibility**: New metrics don't affect existing IDs
+
+### Technology-Specific Examples
+
+Future documentation may include comprehensive command examples for different ecosystems:
+- JavaScript/TypeScript (Bun, Node.js, Deno)
+- Python (pytest, unittest, coverage.py)
+- Go (go test, go vet)
+- Java (Maven, Gradle, JaCoCo)
+- Ruby (RSpec, SimpleCov)
+- Rust (cargo test, tarpaulin)
+
+Currently, each built-in metric includes common examples for popular tools.
+
+## Testing Requirements
+
+Each built-in metric should have:
+
+1. **Unit Test**: Verify metric definition is valid
+2. **Command Test**: Execute command in test environment, verify output format
+3. **Integration Test**: Resolve metric from registry, collect value, store in DB
+
+## Version History
+
+**1.0.0** (2025-11-22):
+- Initial registry with 7 built-in metrics
+- Coverage: coverage, function-coverage
+- Size: loc, bundle-size
+- Performance: build-time, test-time
+- Dependencies: dependencies-count

@@ -82,7 +82,7 @@ export class MetricsRepository {
 
   getBaselineMetricValues(
     metricName: string,
-    referenceBranch?: string,
+    referenceBranch: string,
     maxBuilds?: number,
     maxAgeDays?: number
   ): { value_numeric: number }[] {

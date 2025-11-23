@@ -4,7 +4,7 @@ import { loadConfig } from "../config/loader";
 import { Storage } from "../storage/storage";
 import { collectMetrics } from "../collector/collector";
 import { extractBuildContext } from "../collector/context";
-import { StorageConfig } from "../config/schema";
+import { StorageConfig, UnentropyConfig } from "../config/schema";
 import type { StorageProviderConfig } from "../storage/providers/interface";
 
 interface ActionInputs {
@@ -142,12 +142,15 @@ interface MetricDiff {
 }
 
 async function createOrUpdatePullRequestComment(
-  metricsCollected: number,
-  totalMetrics: number,
+  config: UnentropyConfig,
+  collectedMetrics: {
+    definition: { name: string; type: string };
+    value_numeric?: number;
+    value_label?: string;
+  }[],
   failures: { metricName: string; reason: string }[],
   marker: string,
-  storage: Storage,
-  buildId: number
+  storage: Storage
 ): Promise<string | null> {
   const token = process.env.GITHUB_TOKEN;
   if (!token) {
@@ -167,65 +170,74 @@ async function createOrUpdatePullRequestComment(
   const pull_number = context.payload.pull_request.number;
 
   // Create comment body
-  const successCount = metricsCollected;
+  const successCount = collectedMetrics.length;
   const failureCount = failures.length;
+  const totalMetrics = config.metrics.length;
   const status = failureCount === 0 ? "✅ Success" : "⚠️ Partial Success";
 
-  // Calculate metric diffs if storage and buildId are available
+  // Calculate metric diffs based on config and collected metrics
   let metricDiffsSection = "";
   try {
     const repository = storage.getRepository();
-    const metricValues = repository.getMetricValuesByBuildId(buildId);
+
+    // Create a map of collected metrics by name for quick lookup
+    const collectedMetricsMap = new Map(collectedMetrics.map((m) => [m.definition.name, m]));
 
     const diffs: MetricDiff[] = [];
 
-    for (const metricValue of metricValues) {
-      if (metricValue.value_numeric !== null) {
-        // Get baseline values from main branch
-        const baselineValues = repository.getBaselineMetricValues(metricValue.metric_name);
+    // Iterate through config metrics to determine which ones to analyze
+    for (const metricConfig of config.metrics) {
+      if (metricConfig.type === "numeric" && metricConfig.name) {
+        const collectedMetric = collectedMetricsMap.get(metricConfig.name);
+        const pullRequestValue = collectedMetric?.value_numeric;
 
-        if (baselineValues.length > 0) {
-          // Calculate median baseline
-          const sortedValues = baselineValues.map((bv) => bv.value_numeric).sort((a, b) => a - b);
-          const medianBaseline = sortedValues[Math.floor(sortedValues.length / 2)];
+        if (pullRequestValue !== null && pullRequestValue !== undefined) {
+          // Get baseline values from main branch
+          const baselineValues = repository.getBaselineMetricValues(metricConfig.name, "main");
 
-          if (medianBaseline !== undefined) {
-            const absoluteDelta = metricValue.value_numeric - medianBaseline;
-            const relativeDeltaPercent =
-              medianBaseline !== 0 ? (absoluteDelta / medianBaseline) * 100 : 0;
+          if (baselineValues.length > 0) {
+            // Use the latest baseline value (first in array, as they're ordered by build_id DESC)
+            const latestBaselineValue = baselineValues[0];
+            const latestBaseline = latestBaselineValue?.value_numeric;
 
-            let status: "improved" | "degraded" | "unchanged";
-            if (Math.abs(relativeDeltaPercent) < 0.1) {
-              status = "unchanged";
-            } else if (relativeDeltaPercent > 0) {
-              // For most metrics, higher is better, but this is a simplistic approach
-              // In a full implementation, this would depend on the metric type
-              status = "degraded";
+            if (latestBaseline !== undefined) {
+              const absoluteDelta = pullRequestValue - latestBaseline;
+              const relativeDeltaPercent =
+                latestBaseline !== 0 ? (absoluteDelta / latestBaseline) * 100 : 0;
+
+              let status: "improved" | "degraded" | "unchanged";
+              if (Math.abs(relativeDeltaPercent) < 0.1) {
+                status = "unchanged";
+              } else if (relativeDeltaPercent > 0) {
+                // For most metrics, higher is better, but this is a simplistic approach
+                // In a full implementation, this would depend on the metric type
+                status = "degraded";
+              } else {
+                status = "improved";
+              }
+
+              diffs.push({
+                metricName: metricConfig.name,
+                baselineValue: latestBaseline,
+                pullRequestValue,
+                absoluteDelta,
+                relativeDeltaPercent,
+                status,
+              });
             } else {
-              status = "improved";
+              diffs.push({
+                metricName: metricConfig.name,
+                pullRequestValue,
+                status: "no-baseline",
+              });
             }
-
-            diffs.push({
-              metricName: metricValue.metric_name,
-              baselineValue: medianBaseline,
-              pullRequestValue: metricValue.value_numeric,
-              absoluteDelta,
-              relativeDeltaPercent,
-              status,
-            });
           } else {
             diffs.push({
-              metricName: metricValue.metric_name,
-              pullRequestValue: metricValue.value_numeric,
+              metricName: metricConfig.name,
+              pullRequestValue,
               status: "no-baseline",
             });
           }
-        } else {
-          diffs.push({
-            metricName: metricValue.metric_name,
-            pullRequestValue: metricValue.value_numeric,
-            status: "no-baseline",
-          });
         }
       }
     }
@@ -365,7 +377,7 @@ export async function runTrackMetricsAction(): Promise<void> {
   const collectionResult = await collectMetrics(config.metrics);
 
   // Record build with all collected metrics in one operation
-  const buildId = await repository.recordBuild(context, collectionResult.collectedMetrics);
+  await repository.recordBuild(context, collectionResult.collectedMetrics);
 
   core.info(
     `Metrics collection completed: ${collectionResult.successful}/${collectionResult.total} successful`
@@ -383,12 +395,11 @@ export async function runTrackMetricsAction(): Promise<void> {
   if (inputs.enablePrComment && isPullRequestContext()) {
     core.info("Creating/updating pull request comment...");
     const commentUrl = await createOrUpdatePullRequestComment(
-      collectionResult.successful,
-      collectionResult.total,
+      config,
+      collectionResult.collectedMetrics,
       collectionResult.failures,
       inputs.prCommentMarker || "<!-- unentropy-metrics-quality-gate -->",
-      storage,
-      buildId
+      storage
     );
     if (commentUrl) {
       prCommentUrl = commentUrl;
