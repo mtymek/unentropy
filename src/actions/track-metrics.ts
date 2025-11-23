@@ -185,14 +185,14 @@ async function createOrUpdatePullRequestComment(
         const baselineValues = repository.getBaselineMetricValues(metricValue.metric_name, "main");
 
         if (baselineValues.length > 0) {
-          // Calculate median baseline
-          const sortedValues = baselineValues.map((bv) => bv.value_numeric).sort((a, b) => a - b);
-          const medianBaseline = sortedValues[Math.floor(sortedValues.length / 2)];
+          // Use the latest baseline value (first in array, as they're ordered by build_id DESC)
+          const latestBaselineValue = baselineValues[0];
+          const latestBaseline = latestBaselineValue?.value_numeric;
 
-          if (medianBaseline !== undefined) {
-            const absoluteDelta = metricValue.value_numeric - medianBaseline;
+          if (latestBaseline !== undefined) {
+            const absoluteDelta = metricValue.value_numeric - latestBaseline;
             const relativeDeltaPercent =
-              medianBaseline !== 0 ? (absoluteDelta / medianBaseline) * 100 : 0;
+              latestBaseline !== 0 ? (absoluteDelta / latestBaseline) * 100 : 0;
 
             let status: "improved" | "degraded" | "unchanged";
             if (Math.abs(relativeDeltaPercent) < 0.1) {
@@ -207,7 +207,7 @@ async function createOrUpdatePullRequestComment(
 
             diffs.push({
               metricName: metricValue.metric_name,
-              baselineValue: medianBaseline,
+              baselineValue: latestBaseline,
               pullRequestValue: metricValue.value_numeric,
               absoluteDelta,
               relativeDeltaPercent,
