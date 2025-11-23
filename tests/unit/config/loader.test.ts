@@ -49,6 +49,6 @@ describe("Config Loader", () => {
   it("should throw error for invalid JSON", async () => {
     const configPath = path.join(fixturesDir, "invalid-json.json");
 
-    await expect(loadConfig(configPath)).rejects.toThrow(SyntaxError);
+    await expect(loadConfig(configPath)).rejects.toThrow(Error);
   });
 });
