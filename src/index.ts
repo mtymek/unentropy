@@ -1,6 +1,6 @@
 import yargs from "yargs";
-import { hideBin } from "yargs/helpers"
-import {VerifyCommand} from "./cli/cmd/verify";
+import { hideBin } from "yargs/helpers";
+import { VerifyCommand } from "./cli/cmd/verify";
 
 const cli = yargs()
   .scriptName("unentropy")
@@ -11,9 +11,9 @@ const cli = yargs()
       msg.startsWith("Not enough non-option arguments") ||
       msg.startsWith("Invalid values:")
     ) {
-      cli.showHelp("log")
+      cli.showHelp("log");
     }
-    process.exit(1)
+    process.exit(1);
   })
   .demandCommand()
   .strict()

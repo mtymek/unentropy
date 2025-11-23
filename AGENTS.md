@@ -54,7 +54,7 @@ Unentropy is a serverless tool for tracking custom code metrics in CI/CD pipelin
 - Follow security best practices; avoid logging secrets
 - Mimic existing code style from src/ and tests/ directories
 - When working on tasks from spec/\*/tasks.md, make sure to update the status after completion in that file
-- Use yargs (https://yargs.js.org/) for command-line argument parsing 
+- Use yargs (https://yargs.js.org/) for command-line argument parsing
 
 ## Visual Testing
 
