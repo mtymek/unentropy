@@ -182,7 +182,7 @@ async function createOrUpdatePullRequestComment(
     for (const metricValue of metricValues) {
       if (metricValue.value_numeric !== null) {
         // Get baseline values from main branch
-        const baselineValues = repository.getBaselineMetricValues(metricValue.metric_name);
+        const baselineValues = repository.getBaselineMetricValues(metricValue.metric_name, "main");
 
         if (baselineValues.length > 0) {
           // Calculate median baseline

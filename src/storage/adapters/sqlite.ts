@@ -190,7 +190,7 @@ export class SqliteDatabaseAdapter implements DatabaseAdapter {
 
   getBaselineMetricValues(
     metricName: string,
-    referenceBranch = "main",
+    referenceBranch: string,
     maxBuilds = 20,
     maxAgeDays = 90
   ): { value_numeric: number }[] {
