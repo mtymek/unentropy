@@ -8,6 +8,7 @@
         "@actions/core": "^1.11.1",
         "@actions/exec": "^1.1.1",
         "@actions/github": "^6.0.1",
+        "@markusberg/lcov-parse": "^2.0.4",
         "@types/serialize-javascript": "^5.0.4",
         "preact": "^10.27.2",
         "preact-render-to-string": "^6.6.3",
@@ -98,6 +99,8 @@
     "@humanwhocodes/retry": ["@humanwhocodes/retry@0.4.3", "", {}, "sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ=="],
 
     "@isaacs/cliui": ["@isaacs/cliui@8.0.2", "", { "dependencies": { "string-width": "^5.1.2", "string-width-cjs": "npm:string-width@^4.2.0", "strip-ansi": "^7.0.1", "strip-ansi-cjs": "npm:strip-ansi@^6.0.1", "wrap-ansi": "^8.1.0", "wrap-ansi-cjs": "npm:wrap-ansi@^7.0.0" } }, "sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA=="],
+
+    "@markusberg/lcov-parse": ["@markusberg/lcov-parse@2.0.4", "", { "bin": { "lcov-parse": "bin/cli.js" } }, "sha512-yTCizKEnMswpKwhBO5s9nV6piIxCqWzDGeMF8xqBv9YPXc0QkS09BhDj2SfnVg1Mah7ijogQxTXpK4Fs3pZcdw=="],
 
     "@nodelib/fs.scandir": ["@nodelib/fs.scandir@2.1.5", "", { "dependencies": { "@nodelib/fs.stat": "2.0.5", "run-parallel": "^1.1.9" } }, "sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g=="],
 

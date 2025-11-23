@@ -38,7 +38,7 @@ jobs:
       - name: Wait for Minio and create test bucket
         run: docker exec minio mc mb data/unentropy-test
       - name: Test
-        run: bun test
+        run: bun test --coverage --coverage-reporter=lcov
 
       - name: Test track-metrics action
         id: track-metrics

@@ -16,7 +16,7 @@
       "$ref": "coverage",
       "name": "test-coverage",
       "description": "Test coverage percentage for the codebase",
-      "command": "bun test --coverage --coverage-reporter=lcov >/dev/null 2>&1 && awk -F'[: ,]' '/^DA:/ { total_lines++; if ($3 > 0) hit_lines++ } END { if (total_lines > 0) printf \"%.2f\", (hit_lines / total_lines) * 100; else print \"0\" }' coverage/lcov.info"
+      "command": "bun src/index.ts collect coverage-lcov coverage/lcov.info"
     },
     {
       "$ref": "bundle-size",

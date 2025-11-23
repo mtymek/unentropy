@@ -1,6 +1,7 @@
 import type { Argv } from "yargs";
 import { cmd } from "./cmd";
 import { parseSize } from "../../metrics/collectors/size";
+import { parseLcovCoverage } from "../../metrics/collectors/lcov";
 
 const SizeCommand = cmd({
   command: "size <paths...>",
@@ -60,8 +61,8 @@ const CoverageLcovCommand = cmd({
       if (!argv.sourcePath) {
         throw new Error("Source path is required");
       }
-      // TODO: Implement LCOV parser in T043
-      console.log("0");
+      const coverage = await parseLcovCoverage(argv.sourcePath, { fallback: argv.fallback });
+      console.log(coverage);
     } catch (error) {
       console.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
       console.log(argv.fallback || 0);
