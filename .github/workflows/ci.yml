@@ -21,7 +21,7 @@ jobs:
         with:
           bun-version: "1.3.3"
       - name: Install scc (Code Counter)
-        run: sudo apt install -y scc
+        run: snap install scc
       - name: Calculate LOC
         run: | 
           scc src --format json > loc-src.json 
