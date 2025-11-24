@@ -21,7 +21,14 @@ jobs:
         with:
           bun-version: "1.3.3"
       - name: Install scc (Code Counter)
-        run: snap install scc
+        run: |
+          # Get the latest release version number (optional, but good practice)
+          SCC_URL=$(curl -s "https://api.github.com/repos/boyter/scc/releases/latest" | jq -r .tarball_url)
+          
+          curl -L "${SCC_URL}" | tar -xz -C /tmp
+          sudo mv /tmp/scc /usr/local/bin/scc
+          
+          scc --version
       - name: Calculate LOC
         run: | 
           scc src --format json > loc-src.json 
