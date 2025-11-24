@@ -49,7 +49,7 @@ The following metrics will be shipped by default. Each metric provides metadata 
    - **Description**: Overall test coverage percentage across the codebase
    - **Type**: numeric
    - **Unit**: %
-   - **Default Threshold**: no-regression (tolerance: 0.5%)
+   -  **Default Threshold**: no-regression
    - **Use Case**: Ensure test coverage doesn't decline with new changes
    - **Example Commands**: See built-in-metrics.md for Bun, Jest, Pytest examples
 
@@ -57,7 +57,7 @@ The following metrics will be shipped by default. Each metric provides metadata 
    - **Description**: Percentage of functions covered by tests
    - **Type**: numeric
    - **Unit**: %
-   - **Default Threshold**: no-regression (tolerance: 0.5%)
+   - **Default Threshold**: no-regression
    - **Use Case**: Ensure functions have test coverage
    - **Example Commands**: See built-in-metrics.md for framework-specific examples
 
@@ -129,6 +129,7 @@ The following metrics will be shipped by default. Each metric provides metadata 
 - **FR-010**: The system MUST support mixing built-in metric references and custom metric definitions in the same configuration.
 - **FR-011**: When resolving built-in metrics, the system MUST preserve backward compatibility with existing custom metric configurations.
 - **FR-012**: Built-in metrics MUST be organized into logical categories (coverage, code size, quality, security, performance, dependencies) to aid discovery and understanding.
+- **FR-013**: The system MAY provide CLI helpers for parsing standard metric formats (LCOV, JSON coverage, XML coverage, file sizes) to simplify metric collection commands while maintaining tool agnosticism.
 
 ### Key Entities
 
@@ -144,6 +145,7 @@ The following metrics will be shipped by default. Each metric provides metadata 
 - **SC-002**: At least 80% of new metrics tracking setups use at least one built-in metric reference, demonstrating the feature's value in reducing configuration effort.
 - **SC-003**: Configuration validation provides clear, actionable error messages for invalid built-in metric references and missing commands, with users able to correct errors within 1 minute based on error message alone.
 - **SC-004**: Built-in metric metadata (name, type, unit) works correctly across different project technologies without modification in 100% of cases, with users only needing to adapt commands to their specific tooling.
+- **SC-005**: At least 60% of new metrics tracking setups use CLI helpers for standard format parsing when available, demonstrating reduced configuration complexity.
 
 ## Assumptions
 
@@ -152,7 +154,8 @@ The following metrics will be shipped by default. Each metric provides metadata 
 - Users understand basic JSON configuration syntax for referencing built-in metrics and providing commands.
 - The built-in metrics will be shipped with the system initially, with extensibility for custom plugins deferred to a future iteration.
 - Default threshold behaviors align with the existing quality gate feature (004-metrics-quality-gate) and its supported threshold modes.
-- The built-in-metrics.md contract will include common command examples for popular technologies to aid users in configuring their metrics.
+- The built-in-metrics.md contract will include both traditional command examples and simplified CLI helper examples for popular technologies to aid users in configuring their metrics.
+- CLI helpers support industry-standard formats (LCOV, JSON coverage, XML coverage, file sizes) to reduce command complexity while maintaining tool agnosticism.
 
 ## Dependencies
 

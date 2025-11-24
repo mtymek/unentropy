@@ -2,7 +2,7 @@
 
 **Feature**: 005-metrics-gallery  
 **Date**: 2025-11-22  
-**Status**: Complete
+**Status**: Updated - Added CLI Helper Research
 
 ## Overview
 
@@ -60,13 +60,13 @@ This document captures research findings and design decisions for implementing t
 
 ### 3. Command Implementation Strategy
 
-**Decision**: Store commands as strings in registry, not as separate modules per command
+**Decision**: Built-in metrics provide metadata only; users always provide commands (can use CLI helpers)
 
 **Rationale**:
-- Commands are simple shell strings, not complex logic
-- Keeping them in registry makes it self-contained
-- Easier to maintain and understand all metrics in one place
-- Commands can be environment-specific (detected at runtime if needed)
+- Commands are technology-specific and cannot be standardized
+- CLI helpers provide format parsing while maintaining tool agnosticism
+- Users know their project structure and tooling best
+- Keeps built-in metrics focused on metadata (name, type, unit, description)
 
 **Implementation**:
 ```typescript
@@ -75,10 +75,10 @@ export const BUILT_IN_METRICS: Record<string, MetricTemplate> = {
   coverage: {
     id: 'coverage',
     name: 'coverage',
-    description: 'Overall test coverage percentage',
+    description: 'Overall test coverage percentage across the codebase',
     type: 'numeric',
-    unit: '%',
-    command: 'bun test --coverage --coverage-reporter=json | jq -r ".total.lines.pct"'
+    unit: '%'
+    // Note: No command - user provides their own or uses CLI helpers
   },
   // ... more metrics
 };
@@ -166,58 +166,58 @@ build-time, test-time, dependencies-count
 
 ## Command Research
 
-### Coverage Commands
+### Traditional Commands (Complex)
 
-**Bun/Node.js Projects**:
+**Coverage Commands**:
 ```bash
-# Overall coverage
-bun test --coverage --coverage-reporter=json | jq -r '.total.lines.pct'
+# Bun/Node.js - Complex parsing required
+bun test --coverage --coverage-reporter=json 2>/dev/null | jq -r '.total.lines.pct' 2>/dev/null || echo '0'
 
 # Function coverage
-bun test --coverage --coverage-reporter=json | jq -r '.total.functions.pct'
+bun test --coverage --coverage-reporter=json 2>/dev/null | jq -r '.total.functions.pct' 2>/dev/null || echo '0'
 ```
 
-**Rationale**: Unentropy uses Bun, this is the standard approach. Output is JSON with coverage data.
-
-### Lines of Code
-
-**Standard Unix Approach**:
-```bash
-find src/ -name '*.ts' -o -name '*.tsx' | xargs wc -l | tail -1 | awk '{print $1}'
-```
-
-**Rationale**: Works in any Unix environment, no dependencies, filters to TS/TSX files.
-
-### Bundle Size
-
-**Standard Unix Approach**:
+**Bundle Size**:
 ```bash
 find dist/ -name '*.js' -type f | xargs wc -c | tail -1 | awk '{print int($1/1024)}'
 ```
 
-**Rationale**: Measures compiled output, converts to KB, standard utilities only.
-
-### Build/Test Time
-
-**Using Unix `time` Command**:
+**Build/Test Time**:
 ```bash
-# Build time (seconds)
 (time bun run build) 2>&1 | grep real | awk '{print $2}' | sed 's/[^0-9.]//g'
-
-# Test time (seconds)
-(time bun test) 2>&1 | grep real | awk '{print $2}' | sed 's/[^0-9.]//g'
 ```
 
-**Rationale**: Standard Unix timing, parses "real" time, converts to seconds.
+**Problems with Traditional Approach**:
+- Complex shell pipelines with jq/awk parsing
+- Error-prone syntax (pipe failures, missing files)
+- Technology-specific knowledge required
+- Hard to debug and maintain
 
-### Dependency Count
+### CLI Helper Commands (Simplified)
 
-**Using package.json**:
+**Coverage Commands**:
 ```bash
-cat package.json | jq '.dependencies | length'
+# Generate coverage first, then parse with CLI helper
+bun test --coverage && unentropy collect coverage-json ./coverage/coverage.json
+bun test --coverage && unentropy collect coverage-lcov ./coverage/lcov.info
 ```
 
-**Rationale**: Direct count from package.json, simple and accurate.
+**Bundle Size**:
+```bash
+bun run build && unentropy collect size ./dist/
+```
+
+**File Size**:
+```bash
+unentropy collect size ./dist/bundle.js
+```
+
+**Benefits of CLI Helper Approach**``:
+- Simple, readable commands
+- Built-in error handling and fallbacks
+- Standard format support (LCOV, JSON, XML)
+- Tool agnostic - works with any tool outputting standard formats
+- Reduced configuration complexity
 
 ## Integration Points
 
@@ -249,6 +249,77 @@ cat package.json | jq '.dependencies | length'
 - Schema validation allows both forms
 - Resolution step skips non-$ref entries
 - All existing tests pass without modification
+
+### 8. CLI Helpers for Standard Formats
+
+**Decision**: Add format-specific CLI helpers to simplify metric collection commands while maintaining tool agnosticism
+
+**Rationale**:
+- Current approach requires complex shell commands with jq/awk parsing
+- CLI helpers provide standard-compliant format parsing
+- Reduces user error and configuration complexity
+- Maintains tool agnosticism by supporting standard formats only
+- Optional - users can still use custom commands
+
+**CLI Command Structure**:
+```bash
+unentropy collect <format-type> <source-path> [options]
+```
+
+**Supported Format Types**:
+- `coverage-lcov <path>` - Parse LCOV format coverage reports
+- `coverage-json <path>` - Parse JSON format coverage reports  
+- `coverage-xml <path>` - Parse XML format coverage reports
+- `size <path>` - Calculate size of file or directory (KB)
+
+**Configuration Examples**:
+
+**Before (complex)**:
+```json
+{
+  "$ref": "coverage",
+  "command": "bun test --coverage --coverage-reporter=json 2>/dev/null | jq -r '.total.lines.pct' 2>/dev/null || echo '0'"
+}
+```
+
+**After (simplified with CLI helper)**:
+```json
+{
+  "$ref": "coverage",
+  "command": "bun test --coverage && unentropy collect coverage-json ./coverage/coverage.json"
+}
+```
+
+**Bundle size example**:
+```json
+{
+  "$ref": "bundle-size",
+  "command": "bun run build && unentropy collect size ./dist/"
+}
+```
+
+**File size example**:
+```json
+{
+  "$ref": "bundle-size",
+  "command": "unentropy collect size ./dist/bundle.js"
+}
+```
+
+**Implementation Architecture**:
+- New CLI module: `src/cli/cmd/collect.ts`
+- Parser library: `src/metrics/collectors/` for different formats
+- Each parser outputs single numeric value to stdout
+- Comprehensive error handling with sensible defaults
+- Integration with existing CLI via yargs command structure
+
+**Benefits**:
+1. **Simplified Commands**: Replace complex jq/awk pipelines with simple CLI helpers
+2. **Standard Compliance**: Support industry-standard formats (LCOV, JSON, XML)
+3. **Tool Agnostic**: Work with any tool outputting standard formats
+4. **Error Handling**: Built-in error handling and fallback values
+5. **Optional**: Users can still use custom commands when needed
+6. **Backward Compatible**: Existing configurations continue to work unchanged
 
 ## Open Questions
 

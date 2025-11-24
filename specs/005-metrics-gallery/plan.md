@@ -64,6 +64,11 @@ src/
 │   ├── types.ts         # MetricTemplate interface and types
 │   ├── registry.ts      # Built-in metric template definitions
 │   ├── resolver.ts      # $ref resolution logic
+│   ├── collectors/      # NEW: CLI helper format parsers
+│   │   ├── coverage-lcov.ts
+│   │   ├── coverage-json.ts
+│   │   ├── coverage-xml.ts
+│   │   └── size.ts
 │   └── commands/        # Default command implementations
 │       ├── coverage.ts
 │       ├── bundle-size.ts
@@ -71,6 +76,10 @@ src/
 │       ├── build-time.ts
 │       ├── test-time.ts
 │       └── dependencies-count.ts
+├── cli/                 # EXISTING: Extend for collect command
+│   └── cmd/
+│       ├── cmd.ts       # Modify to add collect subcommand
+│       └── collect.ts   # NEW: CLI helper command handler
 ├── config/              # EXISTING: Extend for $ref support
 │   ├── loader.ts        # Modify to resolve gallery refs
 │   └── schema.ts        # Extend to validate $ref syntax
@@ -82,12 +91,14 @@ tests/
 │   └── metrics/         # NEW: Gallery-specific tests
 │       ├── registry.test.ts
 │       ├── resolver.test.ts
+│       ├── collectors/
+│       │   └── *.test.ts
 │       └── commands/
 │           └── *.test.ts
 ├── integration/
-│   └── gallery-config.test.ts  # NEW: End-to-end config resolution
+│   └── cli-helpers.test.ts     # NEW: CLI helper integration tests
 └── contract/
-    └── gallery-schema.test.ts  # NEW: $ref schema validation
+    └── cli-helpers.test.ts     # NEW: CLI helper output contracts
 ```
 
 **Structure Decision**: Single project structure (Option 1). New `src/metrics/` module for gallery functionality. Extends existing `src/config/` module to support `$ref` resolution. All other modules (collector, storage, reporter) remain unchanged and work with resolved metrics.
@@ -141,6 +152,7 @@ No constitution violations to justify. All gates pass without exceptions.
 - `src/config/loader.ts`: Add resolution step before validation
 - `src/config/schema.ts`: Extend MetricConfig schema with optional $ref
 - `src/metrics/*`: New module for gallery functionality
+- `src/cli/cmd/collect.ts`: New CLI helper command handler
 
 ### Constitution Re-check (Post-Design)
 

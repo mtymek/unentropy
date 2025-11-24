@@ -194,7 +194,7 @@ When using `$ref`, the following rules apply:
 
 ## Example Configurations
 
-### 1. Pure Built-in Metric References
+### 1. Pure Built-in Metric References (Traditional Commands)
 
 ```json
 {
@@ -215,6 +215,27 @@ When using `$ref`, the following rules apply:
 }
 ```
 
+### 1b. Pure Built-in Metric References (CLI Helpers)
+
+```json
+{
+  "metrics": [
+    {
+      "$ref": "coverage",
+      "command": "bun test --coverage && unentropy collect coverage-json ./coverage/coverage.json"
+    },
+    {
+      "$ref": "bundle-size",
+      "command": "bun run build && unentropy collect size ./dist/"
+    },
+    {
+      "$ref": "loc",
+      "command": "unentropy collect size ./src/"
+    }
+  ]
+}
+```
+
 ### 2. Built-in Metrics with Property Overrides
 
 ```json
@@ -228,6 +249,25 @@ When using `$ref`, the following rules apply:
     {
       "$ref": "bundle-size",
       "command": "du -k dist/main.js | cut -f1",
+      "unit": "KB"
+    }
+  ]
+}
+```
+
+### 2b. Built-in Metrics with Property Overrides (CLI Helpers)
+
+```json
+{
+  "metrics": [
+    {
+      "$ref": "coverage",
+      "command": "npm run test:coverage && unentropy collect coverage-json ./coverage/coverage.json",
+      "name": "unit-test-coverage"
+    },
+    {
+      "$ref": "bundle-size",
+      "command": "npm run build && unentropy collect size ./dist/",
       "unit": "KB"
     }
   ]
@@ -256,6 +296,28 @@ When using `$ref`, the following rules apply:
 }
 ```
 
+### 3b. Mixed Built-in and Custom Metrics (CLI Helpers)
+
+```json
+{
+  "metrics": [
+    {
+      "$ref": "coverage",
+      "command": "bun test --coverage && unentropy collect coverage-json ./coverage/coverage.json"
+    },
+    {
+      "$ref": "loc",
+      "command": "unentropy collect size ./src/"
+    },
+    {
+      "name": "custom-score",
+      "type": "numeric",
+      "command": "./scripts/calculate-score.sh"
+    }
+  ]
+}
+```
+
 ### 4. Complete Configuration with Quality Gate
 
 ```json
@@ -268,6 +330,36 @@ When using `$ref`, the following rules apply:
     {
       "$ref": "bundle-size",
       "command": "du -k dist/bundle.js | cut -f1"
+    }
+  ],
+  "storage": {
+    "type": "sqlite-s3"
+  },
+  "qualityGate": {
+    "mode": "soft",
+    "thresholds": [
+      {
+        "metric": "coverage",
+        "mode": "no-regression",
+        "tolerance": 0.5
+      }
+    ]
+  }
+}
+```
+
+### 4b. Complete Configuration with Quality Gate (CLI Helpers)
+
+```json
+{
+  "metrics": [
+    {
+      "$ref": "coverage",
+      "command": "bun test --coverage && unentropy collect coverage-json ./coverage/coverage.json"
+    },
+    {
+      "$ref": "bundle-size",
+      "command": "bun run build && unentropy collect size ./dist/"
     }
   ],
   "storage": {
@@ -340,6 +432,55 @@ Duplicate metric name "coverage" found after resolving built-in metric reference
 Metric names must be unique within the configuration.
 ```
 
+## CLI Helper Command Patterns
+
+### Supported CLI Helper Formats
+
+Unentropy CLI helpers follow this pattern:
+```bash
+unentropy collect <format-type> <source-path> [options]
+```
+
+**Available Format Types**:
+- `coverage-lcov <path>` - Parse LCOV format coverage reports
+- `coverage-json <path>` - Parse JSON format coverage reports  
+- `coverage-xml <path>` - Parse XML format coverage reports
+- `size <path>` - Calculate file or directory size (KB)
+
+### CLI Helper Integration Examples
+
+**Coverage with CLI Helper**:
+```json
+{
+  "$ref": "coverage",
+  "command": "bun test --coverage && unentropy collect coverage-json ./coverage/coverage.json"
+}
+```
+
+**Bundle Size with CLI Helper**:
+```json
+{
+  "$ref": "bundle-size", 
+  "command": "bun run build && unentropy collect size ./dist/"
+}
+```
+
+**File Size with CLI Helper**:
+```json
+{
+  "$ref": "bundle-size",
+  "command": "unentropy collect size ./dist/bundle.js"
+}
+```
+
+### CLI Helper Validation
+
+CLI helper commands follow the same validation rules as traditional commands:
+- Must be non-empty strings
+- Maximum 1024 characters
+- Must be executable in GitHub Actions environment
+- Output must match metric type (numeric for numeric metrics)
+
 ## Backward Compatibility
 
 ### Version 1.x Compatibility
@@ -348,6 +489,7 @@ Metric names must be unique within the configuration.
 - Existing custom metrics work exactly as before
 - No breaking changes to schema structure
 - `$ref` is purely additive functionality
+- CLI helpers are optional - traditional commands continue to work
 
 ### Migration Path
 
