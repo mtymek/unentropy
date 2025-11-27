@@ -26,7 +26,7 @@ jobs:
           sudo tar xf scc.tar.gz -C /usr/local/bin scc
           scc --version
       - name: Calculate LOC
-        run: | 
+        run: |
           scc src --format json > loc-src.json 
           scc tests --format json > loc-tests.json
       - name: Install dependencies
