@@ -35,10 +35,11 @@
 * Garbage collection from metrics database
 
 ## Technical improvements
-* [ ] Cleanup queries.js - clear contract
+* [x] Cleanup queries.js - clear contract
 * [ ] Use DB transactions when collecting metrics
 * [ ] Make sure to keep the database connection open for as short a time as possible
 * [ ] Proper tests for Storage class
+* [ ] Allow replacing existing build context
 
 ## Long term ideas
 * Browsing the coverage report

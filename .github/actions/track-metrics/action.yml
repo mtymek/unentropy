@@ -59,6 +59,7 @@ inputs:
 outputs:
   success:
     description: "Whether the workflow completed successfully"
+    value: ${{ steps.track-metrics.outputs.success }}
   storage-type:
     description: "Storage backend type used"
   database-location:
@@ -69,6 +70,7 @@ outputs:
     description: "URL to generated report (if available)"
   metrics-collected:
     description: "Number of metrics collected"
+    value: ${{ steps.track-metrics.outputs.metrics-collected }}
   duration:
     description: "Total workflow duration in milliseconds"
   error-code:
@@ -83,8 +85,9 @@ runs:
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
       with:
-        bun-version: "1.2.13"
+        bun-version: "1.3.3"
     - name: Run metrics collection
+      id: track-metrics
       shell: bash
       run: |
         bun "${{ github.action_path }}/dist/track-metrics.js"
