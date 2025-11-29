@@ -1,0 +1,16 @@
+{
+  "name": "loc-collector-fixture",
+  "version": "1.0.0",
+  "description": "Fixture for LOC collector integration tests",
+  "main": "src/main.ts",
+  "type": "module",
+  "scripts": {
+    "test": "bun test"
+  },
+  "keywords": [
+    "test",
+    "fixture"
+  ],
+  "author": "",
+  "license": "MIT"
+}

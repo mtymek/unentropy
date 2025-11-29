@@ -101,15 +101,15 @@
 ### LOC Collector (SCC-based)
 
 - [x] T042 [P] [CLI] Create CLI collect command structure in src/cli/cmd/collect.ts
-- [ ] T049 [P] [CLI] Create LocOptions interface in src/metrics/collectors/loc.ts
+- [x] T049 [P] [CLI] Create LocOptions interface in src/metrics/collectors/loc.ts
   - TypeScript interface with path (required), excludePatterns? (optional), languageFilter? (optional)
   - Export interface for use by collectLoc function
   - Add JSDoc documentation
-- [ ] T050 [P] [CLI] Define SCC output type interfaces in src/metrics/collectors/loc.ts
+- [x] T050 [P] [CLI] Define SCC output type interfaces in src/metrics/collectors/loc.ts
   - SccLanguageResult interface: Name, Lines, Code, Comments, Blanks, Complexity
   - SccOutput type as array of SccLanguageResult
   - Document "Total" entry format
-- [ ] T051 [CLI] Implement collectLoc function in src/metrics/collectors/loc.ts
+- [x] T051 [CLI] Implement collectLoc function in src/metrics/collectors/loc.ts
   - Async function: async collectLoc(options: LocOptions): Promise<number>
   - Execute: scc --format json <path> [--exclude-dir patterns...]
   - Parse JSON output and extract Code field from Total entry
@@ -156,12 +156,13 @@
   - Test permission denied error
   - Test SCC returns no metrics error
   - Test malformed SCC JSON error
-- [ ] T059 [CLI] Add integration tests for "collect loc" CLI command in tests/integration/cli-loc-collector.test.ts
-  - Test: unentropy collect loc ./src/
-  - Test: unentropy collect loc ./src/ --exclude dist node_modules
-  - Test: unentropy collect loc ./ --language TypeScript
-  - Test: unentropy collect loc ./src/ --exclude dist --language TypeScript
-  - Test output is numeric and deterministic
+- [x] T059 [CLI] Add integration tests for "collect loc" CLI command in tests/integration/cli-loc-collector.test.ts
+  - Use dedicated fixture: tests/fixtures/loc-collector/
+  - Test: unentropy collect loc ./tests/fixtures/loc-collector/src/
+  - Test: unentropy collect loc ./tests/fixtures/loc-collector/src/ --exclude dist node_modules
+  - Test: unentropy collect loc ./tests/fixtures/loc-collector/ --language TypeScript
+  - Test: unentropy collect loc ./tests/fixtures/loc-collector/src/ --exclude dist --language TypeScript
+  - Test output is numeric and deterministic across runs on same fixture
   - Test exit code 0 on success
 - [ ] T060 [CLI] Add CLI error handling tests in tests/integration/cli-loc-collector.test.ts
   - Test missing required path argument error
