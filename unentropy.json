@@ -4,13 +4,13 @@
       "$ref": "loc",
       "name": "lines-of-code",
       "description": "total lines of typescript/tsx code in src/ directory",
-      "command": "find src/ -name '*.ts' -o -name '*.tsx' -not -path '*/node_modules/*' | xargs wc -l | tail -1 | awk '{print $1}' || echo '0'"
+      "command": "jq -r '.[] | select(.Name == \"TypeScript\") | .Code' loc-src.json"
     },
     {
       "$ref": "loc",
       "name": "lines-of-test-code",
       "description": "Total lines of TypeScript/TSX code in tests/ directory",
-      "command": "find tests/ -name '*.ts' -o -name '*.tsx' -not -path '*/node_modules/*' | xargs wc -l | tail -1 | awk '{print $1}' || echo '0'"
+      "command": "jq -r '.[] | select(.Name == \"TypeScript\") | .Code' loc-tests.json"
     },
     {
       "$ref": "coverage",
