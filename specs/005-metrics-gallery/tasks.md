@@ -116,12 +116,12 @@
   - Handle language filtering by finding matching language entry
   - Error handling: SCC unavailable, invalid path, missing Total, parsing failures
   - Return numeric LOC count
-- [ ] T052 [CLI] Add loc subcommand handler to src/cli/cmd/collect.ts
-  - Command: "loc <path>"
-  - Positional: path (required directory)
-  - Options: --exclude (array), --language (string)
-  - Handler calls collectLoc and outputs result to stdout
-  - Register with yargs in CLI structure
+- [x] T052 [CLI] Add loc subcommand handler to src/cli/cmd/collect.ts
+   - Command: "loc <path>"
+   - Positional: path (required directory)
+   - Options: --exclude (array), --language (string)
+   - Handler calls collectLoc and outputs result to stdout
+   - Register with yargs in CLI structure
 
 ### LOC Collector Tests
 
