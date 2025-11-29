@@ -51,10 +51,12 @@ Key points to verify:
 Files changed:
 !`git diff main...HEAD --name-only`
 !`git diff --name-only`
+!`git diff --cached --name-only`
 
 Full diff:
 !`git diff main...HEAD`
 !`git diff`
+!`git diff --cached`
 
 ## Review Process
 
