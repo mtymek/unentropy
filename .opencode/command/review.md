@@ -56,6 +56,34 @@ Full diff:
 !`git diff main...HEAD`
 !`git diff`
 
+## Review Process
+
+Follow these steps in order:
+
+### Phase 1: Understand Context
+
+1. **Identify changed files**: Review the list of changed files from the diff above. If more than 20 files are modified, STOP and report: "❌ Review aborted: Too many files changed (N files). Break this into smaller PRs for effective review."
+2. **Check for PR context**: Run `gh pr view` to see if a PR exists for this branch. If so, read the PR title, description, and any linked issues to understand the intent.
+3. **Identify related specifications**: Check if changed files relate to any spec in `specs/`. If so, read the relevant `spec.md` and `tasks.md` to understand requirements.
+4. **Summarize intent**: Write a 1-2 sentence summary of what this changeset is trying to accomplish based on the above context.
+
+### Phase 2: Evaluate Implementation
+
+5. **For each changed file**:
+   a. Read the file to understand surrounding context if needed
+   b. Check against Critical issues checklist (security, performance, data integrity, breaking changes)
+   c. Check against Important issues checklist (reinventing wheel, over/under-engineering, constitution violations)
+   d. Skip anything in the "DO NOT flag" list
+6. **Cross-file analysis**: Look for issues spanning multiple files (e.g., API contract changes without corresponding updates, missing test coverage for new code)
+7. **Spec compliance**: If a spec was identified, verify the implementation matches the spec requirements and doesn't contradict them
+8. **Constitution check**: Verify compliance with project principles from constitution.md
+
+### Phase 3: Report Findings
+
+9. **Compile findings**: Group by severity (Critical → Important), include file:line references
+10. **Determine verdict**: Apply GO/CONDITIONAL GO/NO GO criteria based on issue counts
+11. **Format output**: Use the output template below
+
 ## Output Format
 
 ### 🔴 Critical Issues
