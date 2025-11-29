@@ -321,6 +321,75 @@ unentropy collect <format-type> <source-path> [options]
 5. **Optional**: Users can still use custom commands when needed
 6. **Backward Compatible**: Existing configurations continue to work unchanged
 
+### 9. SCC Implementation for LOC Collector
+
+**Decision**: Use SCC (Sloc Cloc and Code) as the implementation for the `loc` built-in metric, with CLI helper support for path exclusions and language filtering.
+
+**Rationale**:
+- SCC is much faster than shell-based `find + wc -l` approach
+- Accurately counts code lines (excludes blanks and comments automatically)
+- Supports 200+ programming languages with automatic detection
+- Provides JSON output for reliable parsing
+- Language filtering and directory exclusion are built-in features
+- Well-maintained open-source tool (MIT licensed, 7.8k GitHub stars)
+
+**Benefits Over Shell-Based Approach**:
+1. **Performance**: SCC binary is optimized for code counting (significantly faster than file enumeration)
+2. **Accuracy**: Properly excludes blank lines and comments (not just line counts)
+3. **Language Support**: Automatically detects and counts multiple languages in same codebase
+4. **Reliability**: JSON output prevents parsing errors from complex shell pipelines
+5. **Features**: Built-in support for directory exclusion and language filtering
+
+**Implementation Details**:
+- SCC invocation: `scc --format json <path>`
+- Output format: JSON array with language breakdown and total
+- Total entry: Always includes `Name: "Total"` with `Code`, `Lines`, `Blanks`, `Comment`, `Complexity` fields
+- CLI helper extracts `Code` field (lines excluding blanks/comments)
+- Language filtering: Filter output by `Name` field for specific language
+- Directory exclusion: Use SCC's `--exclude-dir` flag
+
+**CLI Helper Command Structure**:
+```bash
+unentropy collect loc <path> [--exclude <patterns>] [--language <language>]
+```
+
+**Configuration Examples**:
+
+**Basic LOC counting**:
+```json
+{
+  "$ref": "loc",
+  "command": "unentropy collect loc ./src/"
+}
+```
+
+**With directory exclusions**:
+```json
+{
+  "$ref": "loc",
+  "command": "unentropy collect loc ./src/ --exclude dist node_modules .git"
+}
+```
+
+**Language-specific counting**:
+```json
+{
+  "$ref": "loc",
+  "command": "unentropy collect loc ./ --language TypeScript"
+}
+```
+
+**Backward Compatibility**:
+- Existing shell-based LOC commands continue to work (no breaking changes)
+- SCC is optional - users can use traditional `find + wc -l` if preferred
+- `loc` metric definition remains unchanged (users control commands via `$ref`)
+
+**Installation Requirements**:
+- SCC must be available in PATH for LOC CLI helper to work
+- Installation instructions provided in documentation
+- GitHub Actions: Add SCC download step to workflow if using LOC helper
+- Local development: `brew install scc` on macOS or download binary
+
 ## Open Questions
 
 None. All design decisions finalized and documented above.
