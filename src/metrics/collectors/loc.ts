@@ -128,105 +128,71 @@ export async function collectLoc(options: LocOptions): Promise<number> {
     throw new Error(`Directory not found: ${path}`);
   }
 
-  try {
-    // Build SCC command
-    let command = `scc --format json "${path}"`;
+  // Build SCC command
+  let command = `scc --format json "${path}"`;
 
-    // Add exclude patterns if provided
-    if (excludePatterns && Array.isArray(excludePatterns)) {
-      for (const pattern of excludePatterns) {
-        command += ` --exclude-dir "${pattern}"`;
-      }
+  // Add exclude patterns if provided
+  if (excludePatterns && Array.isArray(excludePatterns)) {
+    for (const pattern of excludePatterns) {
+      command += ` --exclude-dir "${pattern}"`;
     }
-
-    // Execute SCC command
-    let output: string;
-    try {
-      output = execSync(command, { encoding: "utf-8" });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (errorMessage.includes("ENOENT") || errorMessage.includes("not found")) {
-        throw new Error(
-          "SCC is not installed. Install it with: brew install scc (macOS) or download from https://github.com/boyter/scc/releases"
-        );
-      }
-      if (errorMessage.includes("EACCES")) {
-        throw new Error(`Permission denied accessing: ${path}`);
-      }
-      throw new Error(`SCC execution failed: ${errorMessage}`);
-    }
-
-    // Parse JSON output
-    const sccOutput: SccOutput = (() => {
-      try {
-        return JSON.parse(output);
-      } catch (error) {
-        throw new Error(
-          `Failed to parse SCC JSON output: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-    })();
-
-    if (sccOutput.length === 0) {
-      return 0;
-    }
-
-    // If language filter is specified, find matching language
-    if (languageFilter) {
-      const languageEntry = sccOutput.find(
-        (entry) => entry.Name.toLowerCase() === languageFilter.toLowerCase()
-      );
-
-      if (!languageEntry) {
-        const availableLanguages = sccOutput
-          .filter((entry) => entry.Name !== "Total")
-          .map((entry) => entry.Name)
-          .join(", ");
-        throw new Error(
-          `Language "${languageFilter}" not found in results. Available languages: ${availableLanguages}`
-        );
-      }
-
-      return languageEntry.Code;
-    }
-
-    // Find Total entry (standard SCC output includes this)
-    const totalEntry = sccOutput.find((entry) => entry.Name === "Total");
-
-    // If no Total entry, calculate by summing all language entries
-    if (!totalEntry) {
-      // Sum Code from all language entries (exclude "Total" if it exists)
-      const totalCode = sccOutput
-        .filter((entry) => entry.Name !== "Total")
-        .reduce((sum, entry) => sum + entry.Code, 0);
-
-      return totalCode;
-    }
-
-    // Return Code field from Total entry
-    return totalEntry.Code;
-  } catch (error) {
-    // Re-throw our custom errors as-is, wrap others
-    if (error instanceof Error && error.message.includes("SCC")) {
-      throw error;
-    }
-    if (error instanceof Error && error.message.includes("Directory")) {
-      throw error;
-    }
-    if (error instanceof Error && error.message.includes("Language")) {
-      throw error;
-    }
-    if (error instanceof Error && error.message.includes("Path")) {
-      throw error;
-    }
-    if (error instanceof Error && error.message.includes("Permission")) {
-      throw error;
-    }
-    if (error instanceof Error && error.message.includes("Failed")) {
-      throw error;
-    }
-    throw new Error(
-      `Unexpected error during LOC collection: ${error instanceof Error ? error.message : String(error)}`
-    );
   }
+
+  // Execute SCC command
+  let output: string;
+  try {
+    output = execSync(command, { encoding: "utf-8" });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes("ENOENT") || errorMessage.includes("not found")) {
+      throw new Error(
+        "SCC is not installed. Install it with: brew install scc (macOS) or download from https://github.com/boyter/scc/releases"
+      );
+    }
+    if (errorMessage.includes("EACCES")) {
+      throw new Error(`Permission denied accessing: ${path}`);
+    }
+    throw new Error(`SCC execution failed: ${errorMessage}`);
+  }
+
+  // Parse JSON output
+  const sccOutput: SccOutput = JSON.parse(output);
+
+  if (sccOutput.length === 0) {
+    return 0;
+  }
+
+  // If language filter is specified, find matching language
+  if (languageFilter) {
+    const languageEntry = sccOutput.find(
+      (entry) => entry.Name.toLowerCase() === languageFilter.toLowerCase()
+    );
+
+    if (!languageEntry) {
+      const availableLanguages = sccOutput
+        .filter((entry) => entry.Name !== "Total")
+        .map((entry) => entry.Name)
+        .join(", ");
+      throw new Error(
+        `Language "${languageFilter}" not found in results. Available languages: ${availableLanguages}`
+      );
+    }
+
+    return languageEntry.Code;
+  }
+
+  // Find Total entry (standard SCC output includes this)
+  const totalEntry = sccOutput.find((entry) => entry.Name === "Total");
+
+  // If no Total entry, calculate by summing all language entries
+  if (!totalEntry) {
+    const totalCode = sccOutput
+      .filter((entry) => entry.Name !== "Total")
+      .reduce((sum, entry) => sum + entry.Code, 0);
+
+    return totalCode;
+  }
+
+  // Return Code field from Total entry
+  return totalEntry.Code;
 }
