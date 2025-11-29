@@ -49,6 +49,7 @@ jobs:
         run: |
           scc src --format json > loc-src.json 
           scc tests --format json > loc-tests.json
+          cat loc-tests.json | jq .
       - name: Test track-metrics action
         id: track-metrics
         uses: ./.github/actions/track-metrics
