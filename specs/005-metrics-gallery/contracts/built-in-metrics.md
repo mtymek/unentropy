@@ -90,7 +90,7 @@ interface MetricTemplate {
 {
   id: 'loc',
   name: 'loc',
-  description: 'Total lines of code in the codebase',
+  description: 'Total lines of code in the codebase (excluding blanks and comments)',
   type: 'numeric',
   unit: 'lines'
 }
@@ -100,15 +100,19 @@ interface MetricTemplate {
 
 **Common Command Examples**:
 
-**Traditional (complex)**:
+**SCC-based (recommended)**:
+- Basic: `unentropy collect loc ./src/`
+- Exclude directories: `unentropy collect loc ./src/ --exclude dist node_modules .git`
+- TypeScript only: `unentropy collect loc ./ --language TypeScript`
+- Combined: `unentropy collect loc ./src/ --exclude dist node_modules --language TypeScript`
+
+**Traditional (shell-based, no external tool)**:
 - TypeScript: `find src/ -name "*.ts" -o -name "*.tsx" 2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}' || echo "0"`
 - JavaScript: `find src/ -name "*.js" -o -name "*.jsx" 2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}' || echo "0"`
 - Python: `find src/ -name "*.py" 2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}' || echo "0"`
 
-**CLI Helper (simplified)**:
-- Directory: `unentropy collect size ./src/`
-- Specific pattern: `find src/ -name "*.ts" | xargs unentropy collect size`
-- Multiple directories: `unentropy collect size ./src/ ./lib/`
+**SCC JSON parsing (for advanced use cases)**:
+- Manual: `scc --format json ./src/ | jq -r '.[] | select(.Name == "Total") | .Code'`
 
 ---
 
@@ -238,6 +242,9 @@ Unentropy provides CLI helpers to simplify metric collection for standard format
 
 | CLI Helper | Description | Supported Formats | Example Usage |
 |------------|-------------|-------------------|--------------|
+| `loc <path>` | Count lines of code using SCC | Any directory | `unentropy collect loc ./src/` |
+| `loc <path> --exclude <patterns>` | Count LOC excluding directories | Any directory with exclusions | `unentropy collect loc ./src/ --exclude dist node_modules` |
+| `loc <path> --language <lang>` | Count LOC for specific language | Any directory with language filter | `unentropy collect loc ./ --language TypeScript` |
 | `coverage-lcov <path>` | Parse LCOV coverage reports | LCOV format | `unentropy collect coverage-lcov ./coverage/lcov.info` |
 | `coverage-json <path>` | Parse JSON coverage reports | JSON format | `unentropy collect coverage-json ./coverage/coverage.json` |
 | `coverage-xml <path>` | Parse XML coverage reports | XML format | `unentropy collect coverage-xml ./coverage/coverage.xml` |
@@ -254,6 +261,7 @@ Unentropy provides CLI helpers to simplify metric collection for standard format
 ### CLI Helper Limitations
 
 CLI helpers currently support:
+- ✅ Lines of code counting (via SCC with exclusions and language filtering)
 - ✅ Coverage reports (LCOV, JSON, XML formats)
 - ✅ File/directory size calculations
 - ❌ Timing measurements (use traditional approach)
@@ -264,6 +272,17 @@ For unsupported metrics, continue using traditional command examples or create c
 ## Usage Notes
 
 **Important**: Built-in metrics are metadata templates only. The `command` field must always be provided in your `unentropy.json` configuration. This design allows Unentropy to support different programming languages, testing frameworks, and build tools.
+
+### SCC Requirement for LOC Metric
+
+The `loc` metric uses SCC (Sloc Cloc and Code) for fast and accurate code counting. SCC is not installed by default and must be available in your environment:
+
+**Installation**:
+- **macOS**: `brew install scc`
+- **Linux**: Download from https://github.com/boyter/scc/releases
+- **GitHub Actions**: Add download step in your workflow (see quickstart guide)
+
+If SCC is not available, you can use the traditional shell-based commands (see Traditional command examples above), though they will be slower and less accurate.
 
 ### Why Commands Are Required
 
@@ -296,7 +315,25 @@ The "Common Command Examples" provided for each metric are illustrative only. Yo
 ```json
 {
   "$ref": "loc",
-  "command": "find lib/ -name '*.js' | xargs wc -l | tail -1 | awk '{print $1}'"
+  "command": "unentropy collect loc ./lib/"
+}
+```
+
+### Using Built-in Metric with Exclusions
+
+```json
+{
+  "$ref": "loc",
+  "command": "unentropy collect loc ./src/ --exclude dist node_modules .git"
+}
+```
+
+### Using Built-in Metric with Language Filter
+
+```json
+{
+  "$ref": "loc",
+  "command": "unentropy collect loc ./ --language TypeScript"
 }
 ```
 

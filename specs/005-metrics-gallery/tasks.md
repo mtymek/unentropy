@@ -98,15 +98,110 @@
 
 **Purpose**: Implement CLI helpers to simplify metric collection commands for standard formats
 
+### LOC Collector (SCC-based)
+
 - [x] T042 [P] [CLI] Create CLI collect command structure in src/cli/cmd/collect.ts
+- [x] T049 [P] [CLI] Create LocOptions interface in src/metrics/collectors/loc.ts
+  - TypeScript interface with path (required), excludePatterns? (optional), languageFilter? (optional)
+  - Export interface for use by collectLoc function
+  - Add JSDoc documentation
+- [x] T050 [P] [CLI] Define SCC output type interfaces in src/metrics/collectors/loc.ts
+  - SccLanguageResult interface: Name, Lines, Code, Comments, Blanks, Complexity
+  - SccOutput type as array of SccLanguageResult
+  - Document "Total" entry format
+- [x] T051 [CLI] Implement collectLoc function in src/metrics/collectors/loc.ts
+  - Async function: async collectLoc(options: LocOptions): Promise<number>
+  - Execute: scc --format json <path> [--exclude-dir patterns...]
+  - Parse JSON output and extract Code field from Total entry
+  - Handle language filtering by finding matching language entry
+  - Error handling: SCC unavailable, invalid path, missing Total, parsing failures
+  - Return numeric LOC count
+- [x] T052 [CLI] Add loc subcommand handler to src/cli/cmd/collect.ts
+   - Command: "loc <path>"
+   - Positional: path (required directory)
+   - Options: --exclude (array), --language (string)
+   - Handler calls collectLoc and outputs result to stdout
+   - Register with yargs in CLI structure
+
+### LOC Collector Tests
+
+- [ ] T053 [P] [CLI] Add unit tests for LocOptions validation in tests/unit/metrics/collectors/loc.test.ts
+  - Test valid option combinations compile
+  - Test optional properties work correctly
+  - Test TypeScript strict mode passes
+- [ ] T054 [P] [CLI] Add unit tests for SCC output parsing in tests/unit/metrics/collectors/loc.test.ts
+  - Test parsing valid SCC output with Total entry
+  - Test error when Total entry missing
+  - Test error on invalid JSON
+  - Test multiple language entries handled correctly
+- [ ] T055 [P] [CLI] Add unit tests for collectLoc with basic path in tests/unit/metrics/collectors/loc.test.ts
+  - Test returns numeric value for valid directory
+  - Test returns value >= 0
+  - Test works with relative paths
+  - Test works with absolute paths
+  - Test idempotent (same result on multiple calls)
+- [ ] T056 [P] [CLI] Add unit tests for collectLoc with excludePatterns in tests/unit/metrics/collectors/loc.test.ts
+  - Test single exclude pattern passed to SCC
+  - Test multiple exclude patterns handled
+  - Test empty excludes array handled gracefully
+  - Test excluded directories reduce count
+- [ ] T057 [P] [CLI] Add unit tests for collectLoc with language filtering in tests/unit/metrics/collectors/loc.test.ts
+  - Test language filter returns language-specific count
+  - Test invalid language throws error
+  - Test error message lists available languages
+  - Test language count <= total count
+- [ ] T058 [P] [CLI] Add unit tests for collectLoc error handling in tests/unit/metrics/collectors/loc.test.ts
+  - Test SCC unavailable error with installation guidance
+  - Test directory not found error
+  - Test permission denied error
+  - Test SCC returns no metrics error
+  - Test malformed SCC JSON error
+- [x] T059 [CLI] Add integration tests for "collect loc" CLI command in tests/integration/cli-loc-collector.test.ts
+  - Use dedicated fixture: tests/fixtures/loc-collector/
+  - Test: unentropy collect loc ./tests/fixtures/loc-collector/src/
+  - Test: unentropy collect loc ./tests/fixtures/loc-collector/src/ --exclude dist node_modules
+  - Test: unentropy collect loc ./tests/fixtures/loc-collector/ --language TypeScript
+  - Test: unentropy collect loc ./tests/fixtures/loc-collector/src/ --exclude dist --language TypeScript
+  - Test output is numeric and deterministic across runs on same fixture
+  - Test exit code 0 on success
+- [ ] T060 [CLI] Add CLI error handling tests in tests/integration/cli-loc-collector.test.ts
+  - Test missing required path argument error
+  - Test invalid flag format error
+  - Test --help displays all options
+  - Test unknown flag rejected
+  - Test invalid directory error
+  - Test exit code non-zero on error
+
+### LOC Contract Tests
+
+- [ ] T061 [P] [CLI] Add contract test for loc metric reference in tests/contract/loc-metrics.test.ts
+  - Test {"$ref": "loc"} resolves correctly
+  - Test resolved metric has type: "numeric"
+  - Test resolved metric has unit: "lines"
+  - Test can override name, description, unit
+  - Test configuration validation passes
+  - Test multiple LOC references with different names work
+- [ ] T062 [P] [CLI] Add contract test for LOC CLI helper output format in tests/contract/loc-metrics.test.ts
+  - Test output is numeric integer
+  - Test output is non-negative
+  - Test output is reasonable (> 100 for unentropy repo)
+  - Test output integrates with metric collection
+  - Test value persists in storage
+- [ ] T063 [CLI] Update loc metric in src/metrics/registry.ts with SCC command reference
+  - Update description to: "Total lines of code in the codebase (excluding blanks and comments)"
+  - Update command example to: "unentropy collect loc ./src/"
+  - Add comment explaining SCC-based collection
+  - Verify registry compiles correctly
+
+### Other CLI Helpers
+
 - [ ] T043 [P] [CLI] Implement coverage-lcov parser in src/metrics/collectors/coverage-lcov.ts
 - [ ] T044 [P] [CLI] Implement coverage-json parser in src/metrics/collectors/coverage-json.ts  
 - [ ] T045 [P] [CLI] Implement coverage-xml parser in src/metrics/collectors/coverage-xml.ts
-- [x] T046 [P] [CLI] Implement size parser in src/metrics/collectors/size.ts
 - [ ] T047 [P] [CLI] Add integration tests for CLI helpers in tests/integration/cli-helpers.test.ts
 - [ ] T048 [P] [CLI] Add contract tests for CLI helper outputs in tests/contract/cli-helpers.test.ts
 
-**Checkpoint**: CLI helpers available for simplified metric collection commands
+**Checkpoint**: LOC collector complete with comprehensive testing. Other CLI helpers available for additional metric collection commands
 
 ---
 
@@ -160,9 +255,11 @@
 - All built-in metric definitions marked [P] can run in parallel (T008-T014)
 - Unit tests for User Story 1 marked [P] can run in parallel (T021-T023)
 - User Story 2 unit tests marked [P] can run in parallel (T030-T033)
-- CLI helper parsers marked [P] can run in parallel (T043-T046)
-- CLI helper tests marked [P] can run in parallel (T047, T048)
-- Polish tasks marked [P] can run in parallel (T036-T038, T051, T052)
+- LOC collector interfaces marked [P] can run in parallel (T049, T050)
+- LOC collector unit tests marked [P] can run in parallel (T053-T058)
+- LOC contract tests marked [P] can run in parallel (T061, T062)
+- Other CLI helper parsers marked [P] can run in parallel (T043-T045)
+- Polish tasks marked [P] can run in parallel (T036-T038)
 
 ---
 
@@ -198,25 +295,49 @@ Task: "Add unit test for invalid override validation in tests/unit/metrics/resol
 
 ---
 
+## Parallel Example: LOC Collector (Phase 5)
+
+```bash
+# Launch LOC collector interfaces together (can start immediately after T042):
+Task: "Create LocOptions interface in src/metrics/collectors/loc.ts"
+Task: "Define SCC output type interfaces in src/metrics/collectors/loc.ts"
+
+# Launch LOC unit tests together (after T051 collectLoc implementation):
+Task: "Add unit tests for LocOptions validation in tests/unit/metrics/collectors/loc.test.ts"
+Task: "Add unit tests for SCC output parsing in tests/unit/metrics/collectors/loc.test.ts"
+Task: "Add unit tests for collectLoc with basic path in tests/unit/metrics/collectors/loc.test.ts"
+Task: "Add unit tests for collectLoc with excludePatterns in tests/unit/metrics/collectors/loc.test.ts"
+Task: "Add unit tests for collectLoc with language filtering in tests/unit/metrics/collectors/loc.test.ts"
+Task: "Add unit tests for collectLoc error handling in tests/unit/metrics/collectors/loc.test.ts"
+
+# Launch LOC contract tests together (after T062 implementation):
+Task: "Add contract test for loc metric reference in tests/contract/loc-metrics.test.ts"
+Task: "Add contract test for LOC CLI helper output format in tests/contract/loc-metrics.test.ts"
+```
+
+---
+
 ## Implementation Strategy
 
-### MVP First (User Stories 1 + 2 + Basic CLI)
+### MVP First (User Stories 1 + 2 + LOC Collector)
 
 1. Complete Phase 1: Setup
 2. Complete Phase 2: Foundational (CRITICAL - blocks all stories)
 3. Complete Phase 3: User Story 1
-4. Complete Phase 4: User Story 2
-5. **NEW**: Complete Phase 6 (Basic CLI helpers - T042, T043, T046)
-6. **STOP and VALIDATE**: Test with quickstart examples including CLI helpers
+4. Complete Phase 5: LOC Collector (T049-T063) - High priority for out-of-box value
+5. Complete Phase 4: User Story 2 (optional, can be parallel with Phase 5)
+6. **STOP and VALIDATE**: Test with quickstart examples including LOC collector
 7. Deploy/demo if ready
+8. Complete other CLI helpers (coverage, etc.) and Phase 6 polish
 
 ### Incremental Delivery
 
 1. Complete Setup + Foundational → Foundation ready
 2. Add User Story 1 → Test independently → Deploy/Demo (MVP! - 7 built-in metrics available by reference)
-3. Add User Story 2 → Test independently → Deploy/Demo (Full feature - overrides supported)
-4. Add Phase 6 (CLI helpers) → Test with quickstart examples → Deploy/Demo (Enhanced feature - simplified commands)
-5. Each story adds value without breaking previous stories
+3. Add LOC Collector (Phase 5: T049-T063) → Test independently → Deploy/Demo (Enhanced MVP - primary out-of-box metric with SCC)
+4. Add User Story 2 → Test independently → Deploy/Demo (Full feature - overrides supported)
+5. Add other CLI helpers + Phase 6 polish → Deploy/Demo (Complete feature suite)
+6. Each addition builds on previous without breaking existing functionality
 
 ### Parallel Team Strategy
 
@@ -226,8 +347,12 @@ With multiple developers:
 2. Once Foundational is done:
    - Developer A: User Story 1 (built-in metrics + basic resolution)
    - Developer B: Can start User Story 2 tests while A works on implementation
-3. User Story 2 implementation follows after User Story 1 is complete
-4. CLI helper implementation can run in parallel with User Story 2 or as separate workstream
+3. After User Story 1 complete, immediately start LOC Collector (T049-T063):
+   - Developer A: T049-T052 (interfaces + core implementation)
+   - Developer B: T053-T062 (comprehensive testing)
+   - Developer C (if available): T061-T062 contract tests in parallel
+4. User Story 2 can proceed in parallel with LOC collector work
+5. Other CLI helpers follow after LOC collector complete
 
 ---
 
@@ -235,11 +360,15 @@ With multiple developers:
 
 - [P] tasks = different files, no dependencies
 - [Story] label maps task to specific user story for traceability
+- [CLI] label indicates CLI helper implementation tasks
 - Each user story should be independently completable and testable
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independently
 - Built-in metric commands follow contract specifications in contracts/built-in-metrics.md
-- CLI helpers support standard formats (LCOV, JSON, XML, size) as documented in quickstart.md
+- LOC collector uses SCC as implementation detail (not exposed in naming or API)
+- LOC collector supports directory exclusion (--exclude) and language filtering (--language)
+- CLI helpers support standard formats (LCOV, JSON, XML, size, LOC) as documented in quickstart.md
 - Schema extensions maintain backward compatibility with existing custom metrics
 - Resolution happens during config loading before validation
 - Error messages include available metric IDs for invalid references
+- LOC is prioritized as primary "out of box" metric for maximum user value

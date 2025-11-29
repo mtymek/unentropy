@@ -45,10 +45,6 @@ jobs:
         run: docker exec minio mc mb data/unentropy-test
       - name: Test
         run: bun test --coverage --coverage-reporter=lcov
-      - name: Calculate LOC
-        run: |
-          scc src --format json > loc-src.json 
-          scc tests --format json > loc-tests.json
       - name: Test track-metrics action
         id: track-metrics
         uses: ./.github/actions/track-metrics

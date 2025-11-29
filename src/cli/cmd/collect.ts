@@ -2,6 +2,7 @@ import type { Argv } from "yargs";
 import { cmd } from "./cmd";
 import { parseSize } from "../../metrics/collectors/size";
 import { parseLcovCoverage } from "../../metrics/collectors/lcov";
+import { collectLoc } from "../../metrics/collectors/loc";
 
 const SizeCommand = cmd({
   command: "size <paths...>",
@@ -132,6 +133,54 @@ const CoverageXmlCommand = cmd({
   },
 });
 
+const LocCommand = cmd({
+  command: "loc <path>",
+  describe: "collect lines of code from directory",
+  builder: (yargs: Argv) => {
+    return yargs
+      .positional("path", {
+        type: "string",
+        description: "directory path to analyze",
+      })
+      .options({
+        exclude: {
+          type: "string",
+          alias: "e",
+          description: "patterns to exclude from LOC count",
+          array: true,
+        },
+        language: {
+          type: "string",
+          alias: "l",
+          description: "specific language to count LOC for",
+        },
+      });
+  },
+  async handler(argv: {
+    path?: string;
+    exclude?: string[];
+    language?: string;
+    [key: string]: unknown;
+  }) {
+    try {
+      if (!argv.path) {
+        throw new Error("Directory path is required");
+      }
+
+      const loc = await collectLoc({
+        path: argv.path,
+        excludePatterns: argv.exclude,
+        languageFilter: argv.language,
+      });
+
+      console.log(loc);
+    } catch (error) {
+      console.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
+      process.exit(1);
+    }
+  },
+});
+
 export const CollectCommand = cmd({
   command: "collect",
   describe: "collect metrics from standard format files",
@@ -141,6 +190,7 @@ export const CollectCommand = cmd({
       .command(CoverageLcovCommand)
       .command(CoverageJsonCommand)
       .command(CoverageXmlCommand)
+      .command(LocCommand)
       .demandCommand();
   },
   async handler() {
