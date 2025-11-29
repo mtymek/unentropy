@@ -62,23 +62,28 @@ outputs:
     value: ${{ steps.track-metrics.outputs.success }}
   storage-type:
     description: "Storage backend type used"
+    value: ${{ steps.track-metrics.outputs.storage-type }}
   database-location:
     description: "Database storage location identifier"
+    value: ${{ steps.track-metrics.outputs.database-location }}
   database-size:
     description: "Database file size in bytes"
-  report-url:
-    description: "URL to generated report (if available)"
+    value: ${{ steps.track-metrics.outputs.database-size }}
   metrics-collected:
     description: "Number of metrics collected"
     value: ${{ steps.track-metrics.outputs.metrics-collected }}
   duration:
     description: "Total workflow duration in milliseconds"
+    value: ${{ steps.track-metrics.outputs.duration }}
   error-code:
     description: "Error code (if failed)"
+    value: ${{ steps.track-metrics.outputs.error-code }}
   error-message:
     description: "Error message (if failed)"
+    value: ${{ steps.track-metrics.outputs.error-message }}
   pr-comment-url:
     description: "URL of the pull request comment (if created)"
+    value: ${{ steps.track-metrics.outputs.pr-comment-url }}
 runs:
   using: "composite"
   steps:
