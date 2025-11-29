@@ -23,6 +23,12 @@
       "name": "total-bundle-size",
       "description": "Total size of all compiled GitHub Actions",
       "command": "bun src/index.ts collect size .github/actions/*/dist/*.js"
+    },
+    {
+      "$ref": "loc",
+      "name": "specs-size",
+      "description": "Total lines of specification documentation",
+      "command": "bun src/index.ts collect loc ./specs --language Markdown"
     }
   ],
   "storage": {
