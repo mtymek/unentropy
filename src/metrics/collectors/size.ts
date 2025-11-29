@@ -9,7 +9,7 @@ export interface SizeOptions {
  * Parse size of a file or directory using `du` command
  * Returns size in bytes
  */
-export async function parseSize(sourcePath: string, options: SizeOptions = {}): Promise<number> {
+export function parseSize(sourcePath: string, options: SizeOptions = {}): Promise<number> {
   // Validate input path
   if (!sourcePath || typeof sourcePath !== "string") {
     throw new Error("Source path must be a non-empty string");

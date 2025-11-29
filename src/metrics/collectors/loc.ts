@@ -1,4 +1,4 @@
-import { execSync } from "child_process";
+import { $ } from "bun";
 import { existsSync } from "fs";
 
 /**
@@ -128,35 +128,43 @@ export async function collectLoc(options: LocOptions): Promise<number> {
     throw new Error(`Directory not found: ${path}`);
   }
 
-  // Build SCC command
-  let command = `scc --format json "${path}"`;
+  // Build exclude arguments for SCC
+  // Bun Shell automatically escapes interpolated variables, preventing command injection
+  const excludeArgs =
+    excludePatterns && Array.isArray(excludePatterns)
+      ? excludePatterns.map((pattern) => `--exclude-dir ${pattern}`)
+      : [];
 
-  // Add exclude patterns if provided
-  if (excludePatterns && Array.isArray(excludePatterns)) {
-    for (const pattern of excludePatterns) {
-      command += ` --exclude-dir "${pattern}"`;
-    }
-  }
-
-  // Execute SCC command
+  // Execute SCC command using Bun Shell
+  // Bun Shell treats interpolated variables as safely escaped strings
   let output: string;
   try {
-    output = execSync(command, { encoding: "utf-8" });
+    if (excludeArgs.length > 0) {
+      // Use raw for the pre-built exclude args since they need to be interpreted as flags
+      output = await $`scc --format json ${path} ${{ raw: excludeArgs.join(" ") }}`.text();
+    } else {
+      output = await $`scc --format json ${path}`.text();
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes("ENOENT") || errorMessage.includes("not found")) {
+    if (errorMessage.includes("not found") || errorMessage.includes("No such file")) {
       throw new Error(
         "SCC is not installed. Install it with: brew install scc (macOS) or download from https://github.com/boyter/scc/releases"
       );
     }
-    if (errorMessage.includes("EACCES")) {
+    if (errorMessage.includes("EACCES") || errorMessage.includes("Permission denied")) {
       throw new Error(`Permission denied accessing: ${path}`);
     }
     throw new Error(`SCC execution failed: ${errorMessage}`);
   }
 
   // Parse JSON output
-  const sccOutput: SccOutput = JSON.parse(output);
+  let sccOutput: SccOutput;
+  try {
+    sccOutput = JSON.parse(output);
+  } catch {
+    throw new Error(`Failed to parse SCC output. Expected JSON but got: ${output.slice(0, 100)}`);
+  }
 
   if (sccOutput.length === 0) {
     return 0;
