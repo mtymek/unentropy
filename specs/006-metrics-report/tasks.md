@@ -95,6 +95,7 @@
 - [ ] T026 [US3] Add custom tooltip callback in src/reporter/charts.ts to show "No data recorded for this build" when hovering over null data point region
 - [ ] T027 [US3] Configure tooltip interaction mode in src/reporter/charts.ts with intersect: false to allow tooltips at X positions without data points
 - [ ] T028 [US3] Update ChartScripts.tsx in src/reporter/templates/default/components/ChartScripts.tsx to include tooltip callback configuration in serialized chart config
+- [ ] T029 [US3] Create visual review fixture at tests/fixtures/visual-review/gaps/ demonstrating consistent X-axis with missing data points (Metric A with full data, Metric B with gaps)
 
 **Checkpoint**: User Story 3 complete - gaps visible with informative tooltips
 
@@ -104,16 +105,16 @@
 
 **Purpose**: Visual validation, edge cases, and accessibility
 
-- [ ] T029 [P] Update minimal fixture in tests/fixtures/visual-review/minimal/ to have exactly 5 builds (toggle visible)
-- [ ] T030 [P] Update sparse-data fixture in tests/fixtures/visual-review/sparse-data/ to have 3 builds with gaps in metric data
-- [ ] T031 [P] Verify full-featured fixture in tests/fixtures/visual-review/full-featured/ has 25 builds (toggle hidden)
-- [ ] T032 [P] Update edge-cases fixture in tests/fixtures/visual-review/edge-cases/ to include metric with single data point and flatline data
-- [ ] T033 Run bun run visual-review to generate fixtures and manually verify all acceptance scenarios
-- [ ] T034 Verify toggle keyboard accessibility (Tab navigation, Space/Enter activation, focus ring visibility)
-- [ ] T035 Verify ARIA attributes on toggle (role="switch") and charts (aria-label)
-- [ ] T036 Run bun run typecheck to ensure no TypeScript errors
-- [ ] T037 Run bun run lint to ensure code style compliance
-- [ ] T038 Run bun test to verify existing tests still pass
+- [ ] T030 [P] Update minimal fixture in tests/fixtures/visual-review/minimal/ to have exactly 5 builds (toggle visible)
+- [ ] T031 [P] Update sparse-data fixture in tests/fixtures/visual-review/sparse-data/ to have 3 builds with gaps in metric data
+- [ ] T032 [P] Verify full-featured fixture in tests/fixtures/visual-review/full-featured/ has 25 builds (toggle hidden)
+- [ ] T033 [P] Update edge-cases fixture in tests/fixtures/visual-review/edge-cases/ to include metric with single data point and flatline data
+- [ ] T034 Run bun run visual-review to generate fixtures and manually verify all acceptance scenarios
+- [ ] T035 Verify toggle keyboard accessibility (Tab navigation, Space/Enter activation, focus ring visibility)
+- [ ] T036 Verify ARIA attributes on toggle (role="switch") and charts (aria-label)
+- [ ] T037 Run bun run typecheck to ensure no TypeScript errors
+- [ ] T038 Run bun run lint to ensure code style compliance
+- [ ] T039 Run bun test to verify existing tests still pass
 
 ---
 
@@ -160,7 +161,7 @@
 
 **Phase 6 (Polish)**:
 ```bash
-# T029, T030, T031, T032 can run in parallel (different fixture directories)
+# T030, T031, T032, T033 can run in parallel (different fixture directories)
 ```
 
 ---
@@ -202,15 +203,15 @@ Since most files are shared across stories, sequential execution is recommended:
 2. T005-T008 (Foundational)
 3. T009-T013 (US1) → Validate
 4. T014-T024 (US2) → Validate
-5. T025-T028 (US3) → Validate
-6. T029-T038 (Polish)
+5. T025-T029 (US3) → Validate
+6. T030-T039 (Polish)
 
 ---
 
 ## Notes
 
-- All tasks modify existing files except T001 (new synthetic.ts) and T016 (new PreviewToggle.tsx)
+- All tasks modify existing files except T001 (new synthetic.ts), T016 (new PreviewToggle.tsx), and T029 (new gaps/ fixture)
 - Visual review (`bun run visual-review`) is the primary validation method
 - No unit tests explicitly requested; visual fixtures serve as acceptance tests
 - Commit after each phase completion for easy rollback
-- T033 is manual verification - open generated HTML files in browser
+- T034 is manual verification - open generated HTML files in browser
