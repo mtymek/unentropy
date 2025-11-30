@@ -92,25 +92,27 @@ describe("Full reporting workflow integration (Bun runtime)", () => {
     expect(html).toContain("Total bundle size");
   });
 
-  test("includes chart configurations for numeric metrics", () => {
+  test("includes semantic chart data for line charts", () => {
     const html = generateReport(db, {
       repository: "test-org/test-repo",
     });
 
-    expect(html).toContain("const chartsData = ");
+    expect(html).toContain("__chartData");
+    expect(html).toContain("timeline:");
+    expect(html).toContain("lineCharts:");
     expect(html).toMatch(/"id":"test-coverage"/);
     expect(html).toMatch(/"id":"bundle-size"/);
-    expect(html).toMatch(/"type":"line"/);
+    expect(html).toContain("buildLineChart");
   });
 
-  test("includes charts for label metrics as bar charts", () => {
+  test("includes semantic chart data for bar charts", () => {
     const html = generateReport(db, {
       repository: "test-org/test-repo",
     });
 
-    expect(html).toContain("build-status");
+    expect(html).toContain("barCharts:");
     expect(html).toMatch(/"id":"build-status"/);
-    expect(html).toMatch(/"type":"bar"/);
+    expect(html).toContain("buildBarChart");
   });
 
   test("does not show sparse data warning for metrics with sufficient data", () => {

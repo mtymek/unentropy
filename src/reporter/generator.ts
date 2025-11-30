@@ -1,5 +1,5 @@
 import type { Storage } from "../storage/storage";
-import { buildChartConfig } from "./charts";
+import { buildLineChartData, buildBarChartData } from "./charts";
 import render from "preact-render-to-string";
 import { h } from "preact";
 import { HtmlDocument } from "./templates/default/components";
@@ -12,6 +12,9 @@ import type {
   MetricReportData,
   ReportData,
   GenerateReportOptions,
+  ChartsData,
+  LineChartData,
+  BarChartData,
 } from "./types";
 import type { BuildContext } from "../storage/types";
 
@@ -209,35 +212,35 @@ export function generateReport(db: Storage, options: GenerateReportOptions = {})
   }
 
   const metrics: MetricReportData[] = [];
+  const lineCharts: LineChartData[] = [];
+  const barCharts: BarChartData[] = [];
+
+  // Extract shared timeline from all builds (once)
+  const timeline = allBuilds.map((b) => b.timestamp);
 
   for (const metricName of metricNames) {
     try {
       const timeSeries = getMetricTimeSeries(db, metricName);
       const stats = calculateSummaryStats(timeSeries);
+      const metricId = metricName.replace(/[^a-zA-Z0-9-]/g, "-");
 
-      // For numeric metrics, normalize to all builds for consistent X-axis
-      // For label metrics, use legacy aggregation (counts by label value)
-      let chartConfig;
+      // Build semantic chart data
       if (timeSeries.metricType === "numeric") {
         const normalizedData = normalizeMetricToBuilds(allBuilds, timeSeries);
-        chartConfig = buildChartConfig({
-          metricName: timeSeries.metricName,
-          metricType: timeSeries.metricType,
-          normalizedData,
-        });
+        lineCharts.push(buildLineChartData(metricId, timeSeries.metricName, normalizedData));
       } else {
-        chartConfig = buildChartConfig(timeSeries);
+        barCharts.push(buildBarChartData(metricId, timeSeries.metricName, timeSeries));
       }
 
       // Sparse is based on actual data points, not normalized length
       const sparse = timeSeries.dataPoints.length < 10;
 
       metrics.push({
-        id: metricName.replace(/[^a-zA-Z0-9-]/g, "-"),
+        id: metricId,
         name: timeSeries.metricName,
         description: timeSeries.description,
         stats,
-        chartConfig,
+        chartType: timeSeries.metricType === "numeric" ? "line" : "bar",
         sparse,
         dataPointCount: timeSeries.dataPoints.length,
       });
@@ -248,11 +251,17 @@ export function generateReport(db: Storage, options: GenerateReportOptions = {})
 
   const metadata = getReportMetadata(db, repository);
 
+  const chartsData: ChartsData = {
+    timeline,
+    lineCharts,
+    barCharts,
+  };
+
   const reportData: ReportData = {
     metadata,
     metrics,
   };
 
-  const jsx = h(HtmlDocument, { data: reportData });
+  const jsx = h(HtmlDocument, { data: reportData, chartsData });
   return "<!DOCTYPE html>" + render(jsx);
 }

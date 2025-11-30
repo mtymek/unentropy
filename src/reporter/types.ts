@@ -1,5 +1,4 @@
 import type { MetricType } from "../storage/types";
-import type { ChartConfig } from "./charts";
 
 export interface TimeSeriesDataPoint {
   timestamp: string;
@@ -49,9 +48,34 @@ export interface MetricReportData {
   name: string;
   description: string | null;
   stats: SummaryStats;
-  chartConfig: ChartConfig;
+  chartType: "line" | "bar";
   sparse: boolean;
   dataPointCount: number;
+}
+
+export interface MetadataPoint {
+  sha: string;
+  run: number;
+}
+
+export interface LineChartData {
+  id: string;
+  name: string;
+  values: (number | null)[];
+  metadata: (MetadataPoint | null)[];
+}
+
+export interface BarChartData {
+  id: string;
+  name: string;
+  labels: string[];
+  counts: number[];
+}
+
+export interface ChartsData {
+  timeline: string[];
+  lineCharts: LineChartData[];
+  barCharts: BarChartData[];
 }
 
 export interface ReportData {

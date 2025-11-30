@@ -1,4 +1,4 @@
-import type { ReportData } from "../../../types";
+import type { ReportData, ChartsData } from "../../../types";
 import { Header } from "./Header";
 import { Footer } from "./Footer";
 import { MetricCard } from "./MetricCard";
@@ -8,9 +8,10 @@ import { PrintStyles } from "./PrintStyles";
 
 interface HtmlDocumentProps {
   data: ReportData;
+  chartsData: ChartsData;
 }
 
-export function HtmlDocument({ data }: HtmlDocumentProps) {
+export function HtmlDocument({ data, chartsData }: HtmlDocumentProps) {
   return (
     <html lang="en">
       <head>
@@ -39,7 +40,7 @@ export function HtmlDocument({ data }: HtmlDocumentProps) {
 
         <Footer />
 
-        <ChartScripts metrics={data.metrics} />
+        <ChartScripts chartsData={chartsData} />
       </body>
     </html>
   );
