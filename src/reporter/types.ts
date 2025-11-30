@@ -62,7 +62,6 @@ export interface LineChartData {
   id: string;
   name: string;
   values: (number | null)[];
-  metadata: (MetadataPoint | null)[];
 }
 
 export interface BarChartData {
@@ -74,6 +73,7 @@ export interface BarChartData {
 
 export interface ChartsData {
   timeline: string[];
+  metadata: (MetadataPoint | null)[];
   lineCharts: LineChartData[];
   barCharts: BarChartData[];
 }

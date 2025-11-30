@@ -10,10 +10,11 @@ export function ChartScripts({ chartsData }: ChartScriptsProps) {
   const dataScript = `
     var __chartData = {
       timeline: ${serialize(chartsData.timeline)},
+      metadata: ${serialize(chartsData.metadata)},
       lineCharts: ${serialize(chartsData.lineCharts)},
       barCharts: ${serialize(chartsData.barCharts)}
     };
-    initializeCharts(__chartData.timeline, __chartData.lineCharts, __chartData.barCharts);
+    initializeCharts(__chartData.timeline, __chartData.metadata, __chartData.lineCharts, __chartData.barCharts);
   `;
 
   return (

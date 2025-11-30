@@ -15,6 +15,7 @@ import type {
   ChartsData,
   LineChartData,
   BarChartData,
+  MetadataPoint,
 } from "./types";
 import type { BuildContext } from "../storage/types";
 
@@ -215,8 +216,12 @@ export function generateReport(db: Storage, options: GenerateReportOptions = {})
   const lineCharts: LineChartData[] = [];
   const barCharts: BarChartData[] = [];
 
-  // Extract shared timeline from all builds (once)
+  // Extract shared timeline and metadata from all builds (once)
   const timeline = allBuilds.map((b) => b.timestamp);
+  const sharedMetadata: (MetadataPoint | null)[] = allBuilds.map((b) => ({
+    sha: b.commit_sha.substring(0, 7),
+    run: b.run_number,
+  }));
 
   for (const metricName of metricNames) {
     try {
@@ -253,6 +258,7 @@ export function generateReport(db: Storage, options: GenerateReportOptions = {})
 
   const chartsData: ChartsData = {
     timeline,
+    metadata: sharedMetadata,
     lineCharts,
     barCharts,
   };

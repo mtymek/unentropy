@@ -1,10 +1,4 @@
-import type {
-  TimeSeriesData,
-  NormalizedDataPoint,
-  LineChartData,
-  BarChartData,
-  MetadataPoint,
-} from "./types";
+import type { TimeSeriesData, NormalizedDataPoint, LineChartData, BarChartData } from "./types";
 
 export function buildLineChartData(
   metricId: string,
@@ -15,9 +9,6 @@ export function buildLineChartData(
     id: metricId,
     name: metricName,
     values: normalizedData.map((dp) => dp.value),
-    metadata: normalizedData.map((dp): MetadataPoint | null =>
-      dp.value !== null ? { sha: dp.commitSha.substring(0, 7), run: dp.runNumber } : null
-    ),
   };
 }
 

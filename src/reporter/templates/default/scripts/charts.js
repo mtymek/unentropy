@@ -25,7 +25,7 @@ var COMMON_OPTIONS = {
   plugins: { legend: { display: false } },
 };
 
-function createTimeSeriesTooltip(metricName, timeline) {
+function createTimeSeriesTooltip(metricName, timeline, metadata) {
   return {
     callbacks: {
       title: function (items) {
@@ -41,7 +41,7 @@ function createTimeSeriesTooltip(metricName, timeline) {
         if (ctx.raw === null || ctx.raw === undefined) {
           return "No data recorded for this build";
         }
-        var meta = ctx.dataset.metadata && ctx.dataset.metadata[ctx.dataIndex];
+        var meta = metadata && metadata[ctx.dataIndex];
         var label = metricName + ": " + ctx.raw;
         if (meta) {
           label += " (Build #" + meta.run + ", " + meta.sha + ")";
@@ -52,7 +52,7 @@ function createTimeSeriesTooltip(metricName, timeline) {
   };
 }
 
-function buildLineChart(chart, timeline) {
+function buildLineChart(chart, timeline, metadata) {
   return {
     type: "line",
     data: {
@@ -61,7 +61,6 @@ function buildLineChart(chart, timeline) {
         {
           label: chart.name,
           data: chart.values,
-          metadata: chart.metadata,
           borderColor: LINE_STYLE.borderColor,
           backgroundColor: LINE_STYLE.backgroundColor,
           tension: LINE_STYLE.tension,
@@ -78,7 +77,7 @@ function buildLineChart(chart, timeline) {
       interaction: COMMON_OPTIONS.interaction,
       plugins: {
         legend: COMMON_OPTIONS.plugins.legend,
-        tooltip: createTimeSeriesTooltip(chart.name, timeline),
+        tooltip: createTimeSeriesTooltip(chart.name, timeline, metadata),
       },
       scales: {
         x: {
@@ -126,10 +125,10 @@ function buildBarChart(chart) {
   };
 }
 
-function initializeCharts(timeline, lineCharts, barCharts) {
+function initializeCharts(timeline, metadata, lineCharts, barCharts) {
   lineCharts.forEach(function (chart) {
     var ctx = document.getElementById("chart-" + chart.id);
-    if (ctx) new Chart(ctx, buildLineChart(chart, timeline));
+    if (ctx) new Chart(ctx, buildLineChart(chart, timeline, metadata));
   });
 
   barCharts.forEach(function (chart) {
