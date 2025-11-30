@@ -6,12 +6,14 @@ import { HtmlDocument } from "./templates/default/components";
 import type {
   TimeSeriesData,
   TimeSeriesDataPoint,
+  NormalizedDataPoint,
   SummaryStats,
   ReportMetadata,
   MetricReportData,
   ReportData,
   GenerateReportOptions,
 } from "./types";
+import type { BuildContext } from "../storage/types";
 
 export function getMetricTimeSeries(db: Storage, metricName: string): TimeSeriesData {
   const repository = db.getRepository();
@@ -112,6 +114,34 @@ export function calculateSummaryStats(data: TimeSeriesData): SummaryStats {
   };
 }
 
+export function normalizeMetricToBuilds(
+  allBuilds: BuildContext[],
+  timeSeries: TimeSeriesData
+): NormalizedDataPoint[] {
+  const dataPointMap = new Map<string, TimeSeriesDataPoint>();
+  for (const dp of timeSeries.dataPoints) {
+    dataPointMap.set(dp.timestamp, dp);
+  }
+
+  return allBuilds.map((build) => {
+    const dp = dataPointMap.get(build.timestamp);
+    if (dp) {
+      return {
+        timestamp: build.timestamp,
+        value: dp.valueNumeric,
+        commitSha: dp.commitSha,
+        runNumber: dp.runNumber,
+      };
+    }
+    return {
+      timestamp: build.timestamp,
+      value: null,
+      commitSha: build.commit_sha,
+      runNumber: build.run_number,
+    };
+  });
+}
+
 function getReportMetadata(db: Storage, repository: string): ReportMetadata {
   const allBuilds = db.getRepository().getAllBuildContexts();
 
@@ -160,6 +190,7 @@ export function generateReport(db: Storage, options: GenerateReportOptions = {})
   const repository = options.repository || "unknown/repository";
 
   const allMetrics = db.getRepository().getAllMetricDefinitions();
+  const allBuilds = db.getRepository().getAllBuildContexts();
 
   // If config is provided, only show metrics that are configured
   let metricNames: string[];
@@ -183,8 +214,22 @@ export function generateReport(db: Storage, options: GenerateReportOptions = {})
     try {
       const timeSeries = getMetricTimeSeries(db, metricName);
       const stats = calculateSummaryStats(timeSeries);
-      const chartConfig = buildChartConfig(timeSeries);
 
+      // For numeric metrics, normalize to all builds for consistent X-axis
+      // For label metrics, use legacy aggregation (counts by label value)
+      let chartConfig;
+      if (timeSeries.metricType === "numeric") {
+        const normalizedData = normalizeMetricToBuilds(allBuilds, timeSeries);
+        chartConfig = buildChartConfig({
+          metricName: timeSeries.metricName,
+          metricType: timeSeries.metricType,
+          normalizedData,
+        });
+      } else {
+        chartConfig = buildChartConfig(timeSeries);
+      }
+
+      // Sparse is based on actual data points, not normalized length
       const sparse = timeSeries.dataPoints.length < 10;
 
       metrics.push({

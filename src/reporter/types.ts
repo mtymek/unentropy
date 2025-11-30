@@ -10,6 +10,13 @@ export interface TimeSeriesDataPoint {
   runNumber: number;
 }
 
+export interface NormalizedDataPoint {
+  timestamp: string;
+  value: number | null;
+  commitSha: string;
+  runNumber: number;
+}
+
 export interface TimeSeriesData {
   metricName: string;
   metricType: MetricType;

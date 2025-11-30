@@ -24,10 +24,11 @@ This guide provides quick implementation steps for enhancing the Metrics Report 
 Create `src/reporter/synthetic.ts`:
 
 ```typescript
-// Seeded PRNG for deterministic generation
+import type { SummaryStats } from "./types";
+
 function createSeededRng(seed: number): () => number {
   let state = seed;
-  return function(): number {
+  return function (): number {
     state |= 0;
     state = (state + 0x6d2b79f5) | 0;
     let t = Math.imul(state ^ (state >>> 15), 1 | state);
@@ -36,7 +37,14 @@ function createSeededRng(seed: number): () => number {
   };
 }
 
-// Generate synthetic data for preview mode
+function hashString(str: string): number {
+  let hash = 5381;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) + hash) ^ str.charCodeAt(i);
+  }
+  return Math.abs(hash);
+}
+
 export function generateSyntheticData(
   metricName: string,
   existingStats: SummaryStats,
@@ -44,23 +52,25 @@ export function generateSyntheticData(
 ): number[] {
   const seed = hashString(metricName);
   const rng = createSeededRng(seed);
-  
+
   const mean = existingStats.average ?? 50;
   const values: number[] = [];
   let current = mean * (0.8 + rng() * 0.4);
-  
+
   for (let i = 0; i < 20; i++) {
     const noise = (rng() - 0.5) * mean * 0.1;
     const reversion = 0.2 * (mean - current);
     current = current + reversion + noise;
-    
-    // Apply constraints
-    if (unit === '%') current = Math.max(0, Math.min(100, current));
-    else if (unit === 'KB' || unit === 'MB') current = Math.max(0, current);
-    
+
+    if (unit === "%") {
+      current = Math.max(0, Math.min(100, current));
+    } else if (unit === "KB" || unit === "MB") {
+      current = Math.max(0, current);
+    }
+
     values.push(Math.round(current * 100) / 100);
   }
-  
+
   return values;
 }
 ```
@@ -89,31 +99,37 @@ export interface PreviewDataSet {
 Create `src/reporter/templates/default/components/PreviewToggle.tsx`:
 
 ```tsx
+import type { JSX } from "preact";
+
 interface PreviewToggleProps {
   visible: boolean;
 }
 
-export function PreviewToggle({ visible }: PreviewToggleProps) {
-  if (!visible) return null;
-  
+export function PreviewToggle({ visible }: PreviewToggleProps): JSX.Element | null {
+  if (!visible) {
+    return null;
+  }
+
   return (
     <div class="mt-4 sm:mt-0">
       <label class="inline-flex items-center cursor-pointer">
-        <input 
-          type="checkbox" 
+        <input
+          type="checkbox"
           id="preview-toggle"
           class="sr-only peer"
           role="switch"
         />
-        <div class="
-          relative w-11 h-6 bg-gray-200 dark:bg-gray-700
-          rounded-full peer peer-checked:bg-blue-600
-          peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800
-          after:content-[''] after:absolute after:top-[2px] after:start-[2px]
-          after:bg-white after:border after:rounded-full
-          after:h-5 after:w-5 after:transition-all
-          peer-checked:after:translate-x-full
-        "></div>
+        <div
+          class={[
+            "relative w-11 h-6 bg-gray-200 dark:bg-gray-700",
+            "rounded-full peer peer-checked:bg-blue-600",
+            "peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800",
+            "after:content-[''] after:absolute after:top-[2px] after:start-[2px]",
+            "after:bg-white after:border after:rounded-full",
+            "after:h-5 after:w-5 after:transition-all",
+            "peer-checked:after:translate-x-full",
+          ].join(" ")}
+        ></div>
         <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
           Show preview data
         </span>
@@ -128,25 +144,25 @@ export function PreviewToggle({ visible }: PreviewToggleProps) {
 Modify `src/reporter/templates/default/components/Header.tsx`:
 
 ```tsx
+import type { JSX } from "preact";
+import type { ReportMetadata } from "../../../types";
 import { PreviewToggle } from "./PreviewToggle";
 
 interface HeaderProps {
   metadata: ReportMetadata;
-  showToggle: boolean;  // NEW
+  showToggle: boolean;
 }
 
-export function Header({ metadata, showToggle }: HeaderProps) {
-  // ... existing code ...
-  
+export function Header({ metadata, showToggle }: HeaderProps): JSX.Element {
   return (
     <header class="bg-white dark:bg-gray-800 shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
-            {/* ... existing title/repo ... */}
+            <h1 class="text-2xl font-bold">{metadata.repository}</h1>
           </div>
           <div class="mt-4 sm:mt-0 text-sm text-gray-600 dark:text-gray-400">
-            {/* ... existing metadata ... */}
+            <span>Builds: {metadata.buildCount}</span>
             <PreviewToggle visible={showToggle} />
           </div>
         </div>
@@ -161,50 +177,63 @@ export function Header({ metadata, showToggle }: HeaderProps) {
 Modify `src/reporter/templates/default/components/ChartScripts.tsx`:
 
 ```tsx
-export function ChartScripts({ metrics, previewData, showToggle }: ChartScriptsProps) {
+import type { JSX } from "preact";
+import serialize from "serialize-javascript";
+import type { MetricReportData, PreviewDataSet } from "../../../types";
+
+interface ChartScriptsProps {
+  metrics: MetricReportData[];
+  previewData: PreviewDataSet[];
+  showToggle: boolean;
+}
+
+export function ChartScripts({
+  metrics,
+  previewData,
+  showToggle,
+}: ChartScriptsProps): JSX.Element {
   const chartsData = metrics.map((m, i) => ({
     id: m.id,
     config: m.chartConfig,
-    realData: m.chartConfig.data.datasets[0].data,
-    previewData: showToggle ? previewData[i]?.values : null,
+    realData: m.chartConfig.data.datasets[0]?.data ?? [],
+    previewData: showToggle ? previewData[i]?.values ?? null : null,
     realStats: m.stats,
-    previewStats: showToggle ? previewData[i]?.stats : null,
+    previewStats: showToggle ? previewData[i]?.stats ?? null : null,
   }));
 
   const scriptContent = `
     const chartsData = ${serialize(chartsData)};
     const chartInstances = {};
-    
-    // Initialize charts
-    chartsData.forEach(chartData => {
+
+    chartsData.forEach(function(chartData) {
       const ctx = document.getElementById('chart-' + chartData.id);
       if (ctx) {
         chartInstances[chartData.id] = new Chart(ctx, chartData.config);
       }
     });
-    
-    // Toggle handler
+
     const toggle = document.getElementById('preview-toggle');
-    toggle?.addEventListener('change', function(e) {
-      const showPreview = e.target.checked;
-      
-      chartsData.forEach(chartData => {
-        const chart = chartInstances[chartData.id];
-        if (chart && chartData.previewData) {
-          chart.data.datasets[0].data = showPreview 
-            ? chartData.previewData 
-            : chartData.realData;
-          chart.update('none');
-        }
-        
-        // Update stats display
-        const statsEl = document.getElementById('stats-' + chartData.id);
-        if (statsEl) {
-          const stats = showPreview ? chartData.previewStats : chartData.realStats;
-          // Update stats DOM elements
-        }
+    if (toggle) {
+      toggle.addEventListener('change', function(e) {
+        const showPreview = e.target.checked;
+
+        chartsData.forEach(function(chartData) {
+          const chart = chartInstances[chartData.id];
+          if (chart && chartData.previewData) {
+            chart.data.datasets[0].data = showPreview
+              ? chartData.previewData
+              : chartData.realData;
+            chart.update('none');
+          }
+
+          const statsEl = document.getElementById('stats-' + chartData.id);
+          if (statsEl) {
+            const stats = showPreview ? chartData.previewStats : chartData.realStats;
+            // Update stats DOM elements
+          }
+        });
       });
-    });
+    }
   `;
 
   return <script dangerouslySetInnerHTML={{ __html: scriptContent }} />;
@@ -216,35 +245,45 @@ export function ChartScripts({ metrics, previewData, showToggle }: ChartScriptsP
 Update `src/reporter/generator.ts`:
 
 ```typescript
-export function generateReport(db: Storage, options: GenerateReportOptions = {}): string {
+import type { Storage } from "../storage/storage";
+import type {
+  GenerateReportOptions,
+  ReportData,
+  MetricReportData,
+  PreviewDataSet,
+} from "./types";
+
+export function generateReport(
+  db: Storage,
+  options: GenerateReportOptions = {}
+): string {
   const allBuilds = db.getRepository().getAllBuildContexts();
   const buildCount = allBuilds.length;
-  const showToggle = options.enablePreviewToggle ?? (buildCount < (options.previewThreshold ?? 10));
-  
+  const threshold = options.previewThreshold ?? 10;
+  const showToggle = options.enablePreviewToggle ?? buildCount < threshold;
+
+  const metrics: MetricReportData[] = [];
   // ... existing metric processing ...
-  
-  // Normalize metric data to full build range
+
   for (const metric of metrics) {
-    metric.chartConfig.data.labels = allBuilds.map(b => b.timestamp);
-    // Fill gaps with null
+    metric.chartConfig.data.labels = allBuilds.map((b) => b.timestamp);
     metric.chartConfig.data.datasets[0].data = normalizeToBuilds(
       allBuilds,
       originalDataPoints
     );
   }
-  
-  // Generate preview data if needed
-  const previewData = showToggle 
-    ? metrics.map(m => generatePreviewDataSet(m))
+
+  const previewData: PreviewDataSet[] = showToggle
+    ? metrics.map((m) => generatePreviewDataSet(m))
     : [];
-  
+
   const reportData: ReportData = {
     metadata,
     metrics,
     showToggle,
     previewData,
   };
-  
+
   // ... render JSX ...
 }
 ```

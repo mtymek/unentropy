@@ -16,7 +16,7 @@ interface FixtureConfig {
     type: "numeric" | "label";
     description: string;
     unit?: string;
-    valueGenerator: (buildIndex: number) => number | string;
+    valueGenerator: (buildIndex: number) => number | string | null;
   }[];
 }
 
@@ -69,6 +69,18 @@ const FIXTURES: Record<string, FixtureConfig> = {
         description: "Most used programming language",
         valueGenerator: (i) =>
           ["TypeScript", "JavaScript", "TypeScript", "TypeScript", "Python"][i % 5] || "TypeScript",
+      },
+      {
+        name: "api-response-time",
+        type: "numeric",
+        description: "Average API response time (sparse data - only collected on some builds)",
+        unit: "ms",
+        valueGenerator: (i) => {
+          // Only provide values for builds 0, 2, 5, 8, 12, 15, 18, 22 (8 out of 25 builds)
+          const sparseBuilds = [0, 2, 5, 8, 12, 15, 18, 22];
+          if (!sparseBuilds.includes(i)) return null;
+          return 120 + Math.sin(i * 0.4) * 30 + i * 1.5;
+        },
       },
     ],
   },
@@ -190,6 +202,12 @@ async function generateFixture(config: FixtureConfig): Promise<void> {
       });
 
       const value = metricGen.valueGenerator(i);
+
+      // Skip inserting metric value if generator returns null (sparse data simulation)
+      if (value === null) {
+        continue;
+      }
+
       const collectedAt = new Date(
         new Date(buildTimestamp).getTime() + Math.random() * 60000
       ).toISOString();

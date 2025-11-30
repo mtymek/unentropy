@@ -32,10 +32,10 @@
 
 **CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T005 Add getAllBuildContexts() wrapper function in src/reporter/generator.ts to retrieve complete build history
-- [ ] T006 Create normalizeMetricToBuilds() helper function in src/reporter/generator.ts that maps metric data to full build range using null for gaps
-- [ ] T007 Update buildChartConfig() in src/reporter/charts.ts to accept normalized data arrays with null values
-- [ ] T008 Ensure Chart.js configuration in src/reporter/charts.ts sets spanGaps: false for line charts
+- [x] T005 Add getAllBuildContexts() wrapper function in src/reporter/generator.ts to retrieve complete build history
+- [x] T006 Create normalizeMetricToBuilds() helper function in src/reporter/generator.ts that maps metric data to full build range using null for gaps
+- [x] T007 Update buildChartConfig() in src/reporter/charts.ts to accept normalized data arrays with null values
+- [x] T008 Ensure Chart.js configuration in src/reporter/charts.ts sets spanGaps: false for line charts
 
 **Checkpoint**: Foundation ready - normalized build data infrastructure complete
 
@@ -49,7 +49,7 @@
 
 ### Implementation for User Story 1
 
-- [ ] T009 [US1] Update generateReport() in src/reporter/generator.ts to use normalized build data for all metrics
+- [x] T009 [US1] Update generateReport() in src/reporter/generator.ts to use normalized build data for all metrics
 - [ ] T010 [US1] Modify chart label generation in src/reporter/charts.ts to use full build timestamp array
 - [ ] T011 [US1] Update MetricCard component in src/reporter/templates/default/components/MetricCard.tsx to add data-metric-id attribute for stats updates
 - [ ] T012 [US1] Verify existing StatsGrid component in src/reporter/templates/default/components/StatsGrid.tsx displays Latest/Min/Max/Trend correctly
@@ -91,11 +91,11 @@
 
 ### Implementation for User Story 3
 
-- [ ] T025 [US3] Update buildNumericChartConfig() in src/reporter/charts.ts to preserve null values in data array instead of converting to 0
-- [ ] T026 [US3] Add custom tooltip callback in src/reporter/charts.ts to show "No data recorded for this build" when hovering over null data point region
-- [ ] T027 [US3] Configure tooltip interaction mode in src/reporter/charts.ts with intersect: false to allow tooltips at X positions without data points
-- [ ] T028 [US3] Update ChartScripts.tsx in src/reporter/templates/default/components/ChartScripts.tsx to include tooltip callback configuration in serialized chart config
-- [ ] T029 [US3] Create visual review fixture at tests/fixtures/visual-review/gaps/ demonstrating consistent X-axis with missing data points (Metric A with full data, Metric B with gaps)
+- [x] T025 [US3] Update buildNumericChartConfig() in src/reporter/charts.ts to preserve null values in data array instead of converting to 0
+- [x] T026 [US3] Add custom tooltip callback in src/reporter/charts.ts to show "No data recorded for this build" when hovering over null data point region
+- [x] T027 [US3] Configure tooltip interaction mode in src/reporter/charts.ts with intersect: false to allow tooltips at X positions without data points
+- [x] T028 [US3] Update ChartScripts.tsx in src/reporter/templates/default/components/ChartScripts.tsx to include tooltip callback configuration in serialized chart config
+- [x] T029 [US3] Add metric with data gaps to tests/fixtures/visual-review/full-featured/ fixture to demonstrate consistent X-axis with missing data points alongside existing metrics
 
 **Checkpoint**: User Story 3 complete - gaps visible with informative tooltips
 
@@ -210,7 +210,7 @@ Since most files are shared across stories, sequential execution is recommended:
 
 ## Notes
 
-- All tasks modify existing files except T001 (new synthetic.ts), T016 (new PreviewToggle.tsx), and T029 (new gaps/ fixture)
+- All tasks modify existing files except T001 (new synthetic.ts) and T016 (new PreviewToggle.tsx)
 - Visual review (`bun run visual-review`) is the primary validation method
 - No unit tests explicitly requested; visual fixtures serve as acceptance tests
 - Commit after each phase completion for easy rollback

@@ -1,4 +1,4 @@
-import type { TimeSeriesData } from "./types";
+import type { TimeSeriesData, NormalizedDataPoint } from "./types";
 
 export interface ChartDataPoint {
   commitSha: string;
@@ -7,8 +7,8 @@ export interface ChartDataPoint {
 
 export interface ChartDataset {
   label: string;
-  data: number[];
-  metadata?: ChartDataPoint[];
+  data: (number | null)[];
+  metadata?: (ChartDataPoint | null)[];
   borderColor: string;
   backgroundColor: string;
   tension?: number;
@@ -16,6 +16,12 @@ export interface ChartDataset {
   pointRadius?: number;
   pointHoverRadius?: number;
   borderWidth?: number;
+  spanGaps?: boolean;
+}
+
+export interface TooltipConfig {
+  enabled?: boolean;
+  useCustomCallback?: boolean;
 }
 
 export interface ChartConfig {
@@ -35,7 +41,7 @@ export interface ChartConfig {
       legend: {
         display: boolean;
       };
-      tooltip?: Record<string, unknown>;
+      tooltip?: TooltipConfig;
     };
     scales: {
       x?: {
@@ -63,21 +69,30 @@ export interface ChartConfig {
   };
 }
 
-export function buildChartConfig(data: TimeSeriesData): ChartConfig {
-  if (data.metricType === "numeric") {
-    return buildNumericChartConfig(data);
-  } else {
-    return buildLabelChartConfig(data);
-  }
+export interface NormalizedChartInput {
+  metricName: string;
+  metricType: "numeric" | "label";
+  normalizedData: NormalizedDataPoint[];
 }
 
-function buildNumericChartConfig(data: TimeSeriesData): ChartConfig {
-  const labels = data.dataPoints.map((dp) => dp.timestamp);
-  const values = data.dataPoints.map((dp) => dp.valueNumeric ?? 0);
-  const metadata = data.dataPoints.map((dp) => ({
-    commitSha: dp.commitSha,
-    runNumber: dp.runNumber,
-  }));
+export function buildChartConfig(data: TimeSeriesData | NormalizedChartInput): ChartConfig {
+  if ("normalizedData" in data) {
+    return buildNormalizedNumericChartConfig(data);
+  }
+  if (data.metricType === "numeric") {
+    throw new Error(
+      "Numeric metrics must use NormalizedChartInput. Use normalizeMetricToBuilds() first."
+    );
+  }
+  return buildLabelChartConfig(data);
+}
+
+function buildNormalizedNumericChartConfig(data: NormalizedChartInput): ChartConfig {
+  const labels = data.normalizedData.map((dp) => dp.timestamp);
+  const values = data.normalizedData.map((dp) => dp.value);
+  const metadata = data.normalizedData.map((dp) =>
+    dp.value !== null ? { commitSha: dp.commitSha, runNumber: dp.runNumber } : null
+  );
 
   return {
     type: "line",
@@ -94,6 +109,7 @@ function buildNumericChartConfig(data: TimeSeriesData): ChartConfig {
           fill: true,
           pointRadius: 4,
           pointHoverRadius: 6,
+          spanGaps: false,
         },
       ],
     },
@@ -107,6 +123,10 @@ function buildNumericChartConfig(data: TimeSeriesData): ChartConfig {
       plugins: {
         legend: {
           display: false,
+        },
+        tooltip: {
+          enabled: true,
+          useCustomCallback: true,
         },
       },
       scales: {
