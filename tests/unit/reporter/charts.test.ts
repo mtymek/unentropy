@@ -1,208 +1,221 @@
 import { describe, test, expect } from "bun:test";
-import { buildChartConfig } from "../../../src/reporter/charts";
-import type { TimeSeriesData } from "../../../src/reporter/types";
+import { buildLineChartData, buildBarChartData } from "../../../src/reporter/charts";
+import type { NormalizedDataPoint, TimeSeriesData } from "../../../src/reporter/types";
 
-describe("buildChartConfig - numeric metrics", () => {
-  const numericData: TimeSeriesData = {
-    metricName: "test-coverage",
-    metricType: "numeric",
-    unit: "%",
-    description: "Test coverage percentage",
-    dataPoints: [
-      {
-        timestamp: "2025-10-01T12:00:00Z",
-        valueNumeric: 85.2,
-        valueLabel: null,
-        commitSha: "abc123",
-        branch: "main",
-        runNumber: 1,
-      },
-      {
-        timestamp: "2025-10-02T12:00:00Z",
-        valueNumeric: 86.1,
-        valueLabel: null,
-        commitSha: "def456",
-        branch: "main",
-        runNumber: 2,
-      },
-      {
-        timestamp: "2025-10-03T12:00:00Z",
-        valueNumeric: 87.5,
-        valueLabel: null,
-        commitSha: "ghi789",
-        branch: "main",
-        runNumber: 3,
-      },
-    ],
-  };
+describe("buildLineChartData", () => {
+  const createNormalizedData = (
+    dataPoints: { timestamp: string; value: number | null; commitSha: string; runNumber: number }[]
+  ): NormalizedDataPoint[] => dataPoints;
 
-  test("creates line chart config for numeric metrics", () => {
-    const config = buildChartConfig(numericData);
-
-    expect(config.type).toBe("line");
-    expect(config.data.labels).toHaveLength(3);
-    expect(config.data.datasets).toHaveLength(1);
-    expect(config.data.datasets[0]?.label).toBe("test-coverage");
-  });
-
-  test("includes all data points in correct order", () => {
-    const config = buildChartConfig(numericData);
-
-    expect(config.data.labels).toEqual([
-      "2025-10-01T12:00:00Z",
-      "2025-10-02T12:00:00Z",
-      "2025-10-03T12:00:00Z",
+  test("extracts values from normalized data", () => {
+    const normalizedData = createNormalizedData([
+      { timestamp: "2025-10-01T12:00:00Z", value: 85.2, commitSha: "abc1234567890", runNumber: 1 },
+      { timestamp: "2025-10-02T12:00:00Z", value: 86.1, commitSha: "def4567890123", runNumber: 2 },
+      { timestamp: "2025-10-03T12:00:00Z", value: 87.5, commitSha: "ghi7890123456", runNumber: 3 },
     ]);
-    expect(config.data.datasets[0]?.data).toEqual([85.2, 86.1, 87.5]);
+
+    const data = buildLineChartData("test-coverage", "Test Coverage", normalizedData);
+
+    expect(data.values).toEqual([85.2, 86.1, 87.5]);
   });
 
-  test("includes metadata in data points", () => {
-    const config = buildChartConfig(numericData);
-
-    expect(config.data.datasets[0]?.metadata).toEqual([
-      { commitSha: "abc123", runNumber: 1 },
-      { commitSha: "def456", runNumber: 2 },
-      { commitSha: "ghi789", runNumber: 3 },
+  test("sets id and name correctly", () => {
+    const normalizedData = createNormalizedData([
+      { timestamp: "2025-10-01T12:00:00Z", value: 85.0, commitSha: "abc1234567890", runNumber: 1 },
     ]);
+
+    const data = buildLineChartData("my-metric-id", "My Metric Name", normalizedData);
+
+    expect(data.id).toBe("my-metric-id");
+    expect(data.name).toBe("My Metric Name");
   });
 
-  test("sets responsive options", () => {
-    const config = buildChartConfig(numericData);
+  test("preserves null values in values array", () => {
+    const normalizedData = createNormalizedData([
+      { timestamp: "2025-10-01T12:00:00Z", value: 85.0, commitSha: "abc1234567890", runNumber: 1 },
+      { timestamp: "2025-10-02T12:00:00Z", value: null, commitSha: "def4567890123", runNumber: 2 },
+      { timestamp: "2025-10-03T12:00:00Z", value: 87.0, commitSha: "ghi7890123456", runNumber: 3 },
+    ]);
 
-    expect(config.options.responsive).toBe(true);
-    expect(config.options.maintainAspectRatio).toBe(false);
+    const data = buildLineChartData("test-id", "Test", normalizedData);
+
+    expect(data.values).toEqual([85.0, null, 87.0]);
   });
 
-  test("configures interaction mode", () => {
-    const config = buildChartConfig(numericData);
+  test("handles all null values (empty metric)", () => {
+    const normalizedData = createNormalizedData([
+      { timestamp: "2025-10-01T12:00:00Z", value: null, commitSha: "abc1234567890", runNumber: 1 },
+      { timestamp: "2025-10-02T12:00:00Z", value: null, commitSha: "def4567890123", runNumber: 2 },
+    ]);
 
-    expect(config.options.interaction.mode).toBe("index");
-    expect(config.options.interaction.intersect).toBe(false);
+    const data = buildLineChartData("test-id", "Test", normalizedData);
+
+    expect(data.values).toEqual([null, null]);
   });
 
-  test("hides legend", () => {
-    const config = buildChartConfig(numericData);
+  test("handles empty normalized data", () => {
+    const data = buildLineChartData("test-id", "Test", []);
 
-    expect(config.options.plugins.legend.display).toBe(false);
+    expect(data.values).toEqual([]);
   });
 
-  test("configures time scale for x-axis", () => {
-    const config = buildChartConfig(numericData);
+  test("handles single data point", () => {
+    const normalizedData = createNormalizedData([
+      { timestamp: "2025-10-01T12:00:00Z", value: 85.0, commitSha: "abc1234567890", runNumber: 1 },
+    ]);
 
-    expect(config.options.scales.x?.type).toBe("time");
-    expect(config.options.scales.x?.time?.unit).toBe("day");
-    expect(config.options.scales.x?.title.display).toBe(true);
-    expect(config.options.scales.x?.title.text).toBe("Build Date");
-  });
+    const data = buildLineChartData("test-id", "Test", normalizedData);
 
-  test("configures y-axis with metric name", () => {
-    const config = buildChartConfig(numericData);
-
-    expect(config.options.scales.y.beginAtZero).toBe(true);
-    expect(config.options.scales.y.title.display).toBe(true);
-    expect(config.options.scales.y.title.text).toBe("test-coverage");
-  });
-
-  test("uses blue color theme", () => {
-    const config = buildChartConfig(numericData);
-
-    expect(config.data.datasets[0]?.borderColor).toBe("rgb(59, 130, 246)");
-    expect(config.data.datasets[0]?.backgroundColor).toBe("rgba(59, 130, 246, 0.1)");
-  });
-
-  test("sets line styling properties", () => {
-    const config = buildChartConfig(numericData);
-
-    expect(config.data.datasets[0]?.tension).toBe(0.4);
-    expect(config.data.datasets[0]?.fill).toBe(true);
-    expect(config.data.datasets[0]?.pointRadius).toBe(4);
-    expect(config.data.datasets[0]?.pointHoverRadius).toBe(6);
+    expect(data.values).toEqual([85.0]);
   });
 });
 
-describe("buildChartConfig - label metrics", () => {
-  const labelData: TimeSeriesData = {
+describe("buildBarChartData", () => {
+  const createLabelTimeSeries = (
+    dataPoints: {
+      timestamp: string;
+      valueLabel: string | null;
+      commitSha: string;
+      runNumber: number;
+    }[]
+  ): TimeSeriesData => ({
     metricName: "build-status",
     metricType: "label",
     unit: null,
     description: "Build status",
-    dataPoints: [
+    dataPoints: dataPoints.map((dp) => ({
+      timestamp: dp.timestamp,
+      valueNumeric: null,
+      valueLabel: dp.valueLabel,
+      commitSha: dp.commitSha,
+      branch: "main",
+      runNumber: dp.runNumber,
+    })),
+  });
+
+  test("sets id and name correctly", () => {
+    const timeSeries = createLabelTimeSeries([
       {
         timestamp: "2025-10-01T12:00:00Z",
-        valueNumeric: null,
         valueLabel: "success",
         commitSha: "abc123",
-        branch: "main",
+        runNumber: 1,
+      },
+    ]);
+
+    const data = buildBarChartData("my-bar-id", "My Bar Name", timeSeries);
+
+    expect(data.id).toBe("my-bar-id");
+    expect(data.name).toBe("My Bar Name");
+  });
+
+  test("aggregates label occurrences", () => {
+    const timeSeries = createLabelTimeSeries([
+      {
+        timestamp: "2025-10-01T12:00:00Z",
+        valueLabel: "success",
+        commitSha: "abc123",
         runNumber: 1,
       },
       {
         timestamp: "2025-10-02T12:00:00Z",
-        valueNumeric: null,
         valueLabel: "success",
         commitSha: "def456",
-        branch: "main",
         runNumber: 2,
       },
       {
         timestamp: "2025-10-03T12:00:00Z",
-        valueNumeric: null,
         valueLabel: "failure",
         commitSha: "ghi789",
-        branch: "main",
         runNumber: 3,
       },
-    ],
-  };
+    ]);
 
-  test("creates bar chart config for label metrics", () => {
-    const config = buildChartConfig(labelData);
+    const data = buildBarChartData("test-id", "Test", timeSeries);
 
-    expect(config.type).toBe("bar");
-    expect(config.data.datasets).toHaveLength(1);
-    expect(config.data.datasets[0]?.label).toBe("Occurrences");
-  });
+    const successIndex = data.labels.indexOf("success");
+    const failureIndex = data.labels.indexOf("failure");
 
-  test("aggregates label occurrences", () => {
-    const config = buildChartConfig(labelData);
-
-    expect(config.data.labels).toContain("success");
-    expect(config.data.labels).toContain("failure");
-
-    const successIndex = config.data.labels.indexOf("success");
-    const failureIndex = config.data.labels.indexOf("failure");
-
-    const dataset = config.data.datasets[0];
-    expect(dataset?.data[successIndex]).toBe(2);
-    expect(dataset?.data[failureIndex]).toBe(1);
-  });
-
-  test("uses blue color theme for bars", () => {
-    const config = buildChartConfig(labelData);
-
-    expect(config.data.datasets[0]?.backgroundColor).toBe("rgba(59, 130, 246, 0.8)");
-    expect(config.data.datasets[0]?.borderColor).toBe("rgb(59, 130, 246)");
-    expect(config.data.datasets[0]?.borderWidth).toBe(1);
-  });
-
-  test("configures y-axis with integer steps", () => {
-    const config = buildChartConfig(labelData);
-
-    expect(config.options.scales.y.beginAtZero).toBe(true);
-    expect(config.options.scales.y.ticks?.stepSize).toBe(1);
-    expect(config.options.scales.y.title.text).toBe("Count");
-  });
-
-  test("hides legend for label charts", () => {
-    const config = buildChartConfig(labelData);
-
-    expect(config.options.plugins.legend.display).toBe(false);
+    expect(data.counts[successIndex]).toBe(2);
+    expect(data.counts[failureIndex]).toBe(1);
   });
 
   test("sorts labels alphabetically", () => {
-    const config = buildChartConfig(labelData);
+    const timeSeries = createLabelTimeSeries([
+      { timestamp: "2025-10-01T12:00:00Z", valueLabel: "zebra", commitSha: "abc123", runNumber: 1 },
+      { timestamp: "2025-10-02T12:00:00Z", valueLabel: "apple", commitSha: "def456", runNumber: 2 },
+      { timestamp: "2025-10-03T12:00:00Z", valueLabel: "mango", commitSha: "ghi789", runNumber: 3 },
+    ]);
 
-    const labels = config.data.labels as string[];
-    const sortedLabels = [...labels].sort();
-    expect(labels).toEqual(sortedLabels);
+    const data = buildBarChartData("test-id", "Test", timeSeries);
+
+    expect(data.labels).toEqual(["apple", "mango", "zebra"]);
+  });
+
+  test("counts are aligned with sorted labels", () => {
+    const timeSeries = createLabelTimeSeries([
+      { timestamp: "2025-10-01T12:00:00Z", valueLabel: "zebra", commitSha: "abc123", runNumber: 1 },
+      { timestamp: "2025-10-02T12:00:00Z", valueLabel: "zebra", commitSha: "def456", runNumber: 2 },
+      { timestamp: "2025-10-03T12:00:00Z", valueLabel: "apple", commitSha: "ghi789", runNumber: 3 },
+    ]);
+
+    const data = buildBarChartData("test-id", "Test", timeSeries);
+
+    expect(data.labels).toEqual(["apple", "zebra"]);
+    expect(data.counts).toEqual([1, 2]);
+  });
+
+  test("ignores null labels", () => {
+    const timeSeries = createLabelTimeSeries([
+      {
+        timestamp: "2025-10-01T12:00:00Z",
+        valueLabel: "success",
+        commitSha: "abc123",
+        runNumber: 1,
+      },
+      { timestamp: "2025-10-02T12:00:00Z", valueLabel: null, commitSha: "def456", runNumber: 2 },
+      {
+        timestamp: "2025-10-03T12:00:00Z",
+        valueLabel: "success",
+        commitSha: "ghi789",
+        runNumber: 3,
+      },
+    ]);
+
+    const data = buildBarChartData("test-id", "Test", timeSeries);
+
+    expect(data.labels).toEqual(["success"]);
+    expect(data.counts).toEqual([2]);
+  });
+
+  test("handles empty data points", () => {
+    const timeSeries: TimeSeriesData = {
+      metricName: "build-status",
+      metricType: "label",
+      unit: null,
+      description: "Build status",
+      dataPoints: [],
+    };
+
+    const data = buildBarChartData("test-id", "Test", timeSeries);
+
+    expect(data.labels).toEqual([]);
+    expect(data.counts).toEqual([]);
+  });
+
+  test("handles single label", () => {
+    const timeSeries = createLabelTimeSeries([
+      {
+        timestamp: "2025-10-01T12:00:00Z",
+        valueLabel: "only-one",
+        commitSha: "abc123",
+        runNumber: 1,
+      },
+    ]);
+
+    const data = buildBarChartData("test-id", "Test", timeSeries);
+
+    expect(data.labels).toEqual(["only-one"]);
+    expect(data.counts).toEqual([1]);
   });
 });

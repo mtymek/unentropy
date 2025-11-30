@@ -1,17 +1,23 @@
 import type { Storage } from "../storage/storage";
-import { buildChartConfig } from "./charts";
+import { buildLineChartData, buildBarChartData } from "./charts";
 import render from "preact-render-to-string";
 import { h } from "preact";
 import { HtmlDocument } from "./templates/default/components";
 import type {
   TimeSeriesData,
   TimeSeriesDataPoint,
+  NormalizedDataPoint,
   SummaryStats,
   ReportMetadata,
   MetricReportData,
   ReportData,
   GenerateReportOptions,
+  ChartsData,
+  LineChartData,
+  BarChartData,
+  MetadataPoint,
 } from "./types";
+import type { BuildContext } from "../storage/types";
 
 export function getMetricTimeSeries(db: Storage, metricName: string): TimeSeriesData {
   const repository = db.getRepository();
@@ -112,6 +118,34 @@ export function calculateSummaryStats(data: TimeSeriesData): SummaryStats {
   };
 }
 
+export function normalizeMetricToBuilds(
+  allBuilds: BuildContext[],
+  timeSeries: TimeSeriesData
+): NormalizedDataPoint[] {
+  const dataPointMap = new Map<string, TimeSeriesDataPoint>();
+  for (const dp of timeSeries.dataPoints) {
+    dataPointMap.set(dp.timestamp, dp);
+  }
+
+  return allBuilds.map((build) => {
+    const dp = dataPointMap.get(build.timestamp);
+    if (dp) {
+      return {
+        timestamp: build.timestamp,
+        value: dp.valueNumeric,
+        commitSha: dp.commitSha,
+        runNumber: dp.runNumber,
+      };
+    }
+    return {
+      timestamp: build.timestamp,
+      value: null,
+      commitSha: build.commit_sha,
+      runNumber: build.run_number,
+    };
+  });
+}
+
 function getReportMetadata(db: Storage, repository: string): ReportMetadata {
   const allBuilds = db.getRepository().getAllBuildContexts();
 
@@ -160,6 +194,7 @@ export function generateReport(db: Storage, options: GenerateReportOptions = {})
   const repository = options.repository || "unknown/repository";
 
   const allMetrics = db.getRepository().getAllMetricDefinitions();
+  const allBuilds = db.getRepository().getAllBuildContexts();
 
   // If config is provided, only show metrics that are configured
   let metricNames: string[];
@@ -178,21 +213,39 @@ export function generateReport(db: Storage, options: GenerateReportOptions = {})
   }
 
   const metrics: MetricReportData[] = [];
+  const lineCharts: LineChartData[] = [];
+  const barCharts: BarChartData[] = [];
+
+  // Extract shared timeline and metadata from all builds (once)
+  const timeline = allBuilds.map((b) => b.timestamp);
+  const sharedMetadata: (MetadataPoint | null)[] = allBuilds.map((b) => ({
+    sha: b.commit_sha.substring(0, 7),
+    run: b.run_number,
+  }));
 
   for (const metricName of metricNames) {
     try {
       const timeSeries = getMetricTimeSeries(db, metricName);
       const stats = calculateSummaryStats(timeSeries);
-      const chartConfig = buildChartConfig(timeSeries);
+      const metricId = metricName.replace(/[^a-zA-Z0-9-]/g, "-");
 
+      // Build semantic chart data
+      if (timeSeries.metricType === "numeric") {
+        const normalizedData = normalizeMetricToBuilds(allBuilds, timeSeries);
+        lineCharts.push(buildLineChartData(metricId, timeSeries.metricName, normalizedData));
+      } else {
+        barCharts.push(buildBarChartData(metricId, timeSeries.metricName, timeSeries));
+      }
+
+      // Sparse is based on actual data points, not normalized length
       const sparse = timeSeries.dataPoints.length < 10;
 
       metrics.push({
-        id: metricName.replace(/[^a-zA-Z0-9-]/g, "-"),
+        id: metricId,
         name: timeSeries.metricName,
         description: timeSeries.description,
         stats,
-        chartConfig,
+        chartType: timeSeries.metricType === "numeric" ? "line" : "bar",
         sparse,
         dataPointCount: timeSeries.dataPoints.length,
       });
@@ -203,11 +256,18 @@ export function generateReport(db: Storage, options: GenerateReportOptions = {})
 
   const metadata = getReportMetadata(db, repository);
 
+  const chartsData: ChartsData = {
+    timeline,
+    metadata: sharedMetadata,
+    lineCharts,
+    barCharts,
+  };
+
   const reportData: ReportData = {
     metadata,
     metrics,
   };
 
-  const jsx = h(HtmlDocument, { data: reportData });
+  const jsx = h(HtmlDocument, { data: reportData, chartsData });
   return "<!DOCTYPE html>" + render(jsx);
 }

@@ -5,7 +5,10 @@ import {
   getMetricTimeSeries,
   calculateSummaryStats,
   generateReport,
+  normalizeMetricToBuilds,
 } from "../../../src/reporter/generator";
+import type { BuildContext } from "../../../src/storage/types";
+import type { TimeSeriesData } from "../../../src/reporter/types";
 import fs from "fs";
 
 const TEST_DB_PATH = "/tmp/test-generator.db";
@@ -480,5 +483,168 @@ describe("calculateSummaryStats", () => {
     expect(stats.min).toBe(50.0);
     expect(stats.max).toBe(50.0);
     expect(stats.average).toBe(50.0);
+  });
+});
+
+describe("normalizeMetricToBuilds", () => {
+  const createBuildContext = (
+    id: number,
+    timestamp: string,
+    commitSha: string,
+    runNumber: number
+  ): BuildContext => ({
+    id,
+    commit_sha: commitSha,
+    branch: "main",
+    run_id: `run-${id}`,
+    run_number: runNumber,
+    actor: null,
+    event_name: "push",
+    timestamp,
+    created_at: timestamp,
+    pull_request_number: null,
+    pull_request_base: null,
+    pull_request_head: null,
+  });
+
+  const createTimeSeries = (
+    dataPoints: { timestamp: string; value: number; commitSha: string; runNumber: number }[]
+  ): TimeSeriesData => ({
+    metricName: "test-metric",
+    metricType: "numeric",
+    unit: "%",
+    description: "Test metric",
+    dataPoints: dataPoints.map((dp) => ({
+      timestamp: dp.timestamp,
+      valueNumeric: dp.value,
+      valueLabel: null,
+      commitSha: dp.commitSha,
+      branch: "main",
+      runNumber: dp.runNumber,
+    })),
+  });
+
+  test("maps metric data to complete build range with values for all builds", () => {
+    const allBuilds = [
+      createBuildContext(1, "2025-10-01T12:00:00Z", "abc123", 1),
+      createBuildContext(2, "2025-10-02T12:00:00Z", "def456", 2),
+      createBuildContext(3, "2025-10-03T12:00:00Z", "ghi789", 3),
+    ];
+
+    const timeSeries = createTimeSeries([
+      { timestamp: "2025-10-01T12:00:00Z", value: 85.0, commitSha: "abc123", runNumber: 1 },
+      { timestamp: "2025-10-02T12:00:00Z", value: 86.0, commitSha: "def456", runNumber: 2 },
+      { timestamp: "2025-10-03T12:00:00Z", value: 87.0, commitSha: "ghi789", runNumber: 3 },
+    ]);
+
+    const normalized = normalizeMetricToBuilds(allBuilds, timeSeries);
+
+    expect(normalized).toHaveLength(3);
+    expect(normalized[0]).toEqual({
+      timestamp: "2025-10-01T12:00:00Z",
+      value: 85.0,
+      commitSha: "abc123",
+      runNumber: 1,
+    });
+    expect(normalized[1]).toEqual({
+      timestamp: "2025-10-02T12:00:00Z",
+      value: 86.0,
+      commitSha: "def456",
+      runNumber: 2,
+    });
+    expect(normalized[2]).toEqual({
+      timestamp: "2025-10-03T12:00:00Z",
+      value: 87.0,
+      commitSha: "ghi789",
+      runNumber: 3,
+    });
+  });
+
+  test("fills gaps with null when metric is missing for some builds", () => {
+    const allBuilds = [
+      createBuildContext(1, "2025-10-01T12:00:00Z", "abc123", 1),
+      createBuildContext(2, "2025-10-02T12:00:00Z", "def456", 2),
+      createBuildContext(3, "2025-10-03T12:00:00Z", "ghi789", 3),
+      createBuildContext(4, "2025-10-04T12:00:00Z", "jkl012", 4),
+      createBuildContext(5, "2025-10-05T12:00:00Z", "mno345", 5),
+    ];
+
+    const timeSeries = createTimeSeries([
+      { timestamp: "2025-10-01T12:00:00Z", value: 85.0, commitSha: "abc123", runNumber: 1 },
+      { timestamp: "2025-10-03T12:00:00Z", value: 87.0, commitSha: "ghi789", runNumber: 3 },
+      { timestamp: "2025-10-05T12:00:00Z", value: 89.0, commitSha: "mno345", runNumber: 5 },
+    ]);
+
+    const normalized = normalizeMetricToBuilds(allBuilds, timeSeries);
+
+    expect(normalized).toHaveLength(5);
+    expect(normalized[0]?.value).toBe(85.0);
+    expect(normalized[1]?.value).toBeNull();
+    expect(normalized[2]?.value).toBe(87.0);
+    expect(normalized[3]?.value).toBeNull();
+    expect(normalized[4]?.value).toBe(89.0);
+  });
+
+  test("returns null values for all builds when metric has no data points", () => {
+    const allBuilds = [
+      createBuildContext(1, "2025-10-01T12:00:00Z", "abc123", 1),
+      createBuildContext(2, "2025-10-02T12:00:00Z", "def456", 2),
+    ];
+
+    const timeSeries = createTimeSeries([]);
+
+    const normalized = normalizeMetricToBuilds(allBuilds, timeSeries);
+
+    expect(normalized).toHaveLength(2);
+    expect(normalized[0]?.value).toBeNull();
+    expect(normalized[1]?.value).toBeNull();
+    expect(normalized[0]?.commitSha).toBe("abc123");
+    expect(normalized[1]?.commitSha).toBe("def456");
+  });
+
+  test("handles empty build list", () => {
+    const timeSeries = createTimeSeries([
+      { timestamp: "2025-10-01T12:00:00Z", value: 85.0, commitSha: "abc123", runNumber: 1 },
+    ]);
+
+    const normalized = normalizeMetricToBuilds([], timeSeries);
+
+    expect(normalized).toHaveLength(0);
+  });
+
+  test("preserves build context metadata for missing data points", () => {
+    const allBuilds = [
+      createBuildContext(1, "2025-10-01T12:00:00Z", "abc123", 1),
+      createBuildContext(2, "2025-10-02T12:00:00Z", "def456", 2),
+    ];
+
+    const timeSeries = createTimeSeries([
+      { timestamp: "2025-10-01T12:00:00Z", value: 85.0, commitSha: "abc123", runNumber: 1 },
+    ]);
+
+    const normalized = normalizeMetricToBuilds(allBuilds, timeSeries);
+
+    expect(normalized[1]).toEqual({
+      timestamp: "2025-10-02T12:00:00Z",
+      value: null,
+      commitSha: "def456",
+      runNumber: 2,
+    });
+  });
+
+  test("output length equals input build count", () => {
+    const allBuilds = [
+      createBuildContext(1, "2025-10-01T12:00:00Z", "abc123", 1),
+      createBuildContext(2, "2025-10-02T12:00:00Z", "def456", 2),
+      createBuildContext(3, "2025-10-03T12:00:00Z", "ghi789", 3),
+    ];
+
+    const timeSeries = createTimeSeries([
+      { timestamp: "2025-10-02T12:00:00Z", value: 86.0, commitSha: "def456", runNumber: 2 },
+    ]);
+
+    const normalized = normalizeMetricToBuilds(allBuilds, timeSeries);
+
+    expect(normalized.length).toBe(allBuilds.length);
   });
 });

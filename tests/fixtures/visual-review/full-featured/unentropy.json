@@ -25,6 +25,13 @@
       "type": "label",
       "description": "Most used programming language",
       "command": "echo 'TypeScript'"
+    },
+    {
+      "name": "api-response-time",
+      "type": "numeric",
+      "description": "Average API response time (sparse data - only collected on some builds)",
+      "command": "echo '150'",
+      "unit": "ms"
     }
   ]
 }

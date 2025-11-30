@@ -1,25 +1,26 @@
-import type { MetricReportData } from "../../../types";
+import type { ChartsData } from "../../../types";
 import serialize from "serialize-javascript";
+import chartInitScript from "../scripts/charts.js" with { type: "text" };
 
 interface ChartScriptsProps {
-  metrics: MetricReportData[];
+  chartsData: ChartsData;
 }
 
-export function ChartScripts({ metrics }: ChartScriptsProps) {
-  const chartsData = metrics.map((m) => ({
-    id: m.id,
-    config: m.chartConfig,
-  }));
-
-  const scriptContent = `
-    const chartsData = ${serialize(chartsData)};
-    chartsData.forEach(chartData => {
-      const ctx = document.getElementById('chart-' + chartData.id);
-      if (ctx) {
-        new Chart(ctx, chartData.config);
-      }
-    });
+export function ChartScripts({ chartsData }: ChartScriptsProps) {
+  const dataScript = `
+    var __chartData = {
+      timeline: ${serialize(chartsData.timeline)},
+      metadata: ${serialize(chartsData.metadata)},
+      lineCharts: ${serialize(chartsData.lineCharts)},
+      barCharts: ${serialize(chartsData.barCharts)}
+    };
+    initializeCharts(__chartData.timeline, __chartData.metadata, __chartData.lineCharts, __chartData.barCharts);
   `;
 
-  return <script dangerouslySetInnerHTML={{ __html: scriptContent }} />;
+  return (
+    <>
+      <script dangerouslySetInnerHTML={{ __html: chartInitScript }} />
+      <script dangerouslySetInnerHTML={{ __html: dataScript }} />
+    </>
+  );
 }
