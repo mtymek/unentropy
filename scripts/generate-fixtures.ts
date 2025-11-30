@@ -76,10 +76,18 @@ const FIXTURES: Record<string, FixtureConfig> = {
         description: "Average API response time (sparse data - only collected on some builds)",
         unit: "ms",
         valueGenerator: (i) => {
-          // Only provide values for builds 0, 2, 5, 8, 12, 15, 18, 22 (8 out of 25 builds)
-          const sparseBuilds = [0, 2, 5, 8, 12, 15, 18, 22];
+          // Create clusters of data points with gaps to showcase discontinuity
+          // Cluster 1: builds 0-3 (4 consecutive points)
+          // Gap: builds 4-6
+          // Cluster 2: builds 7-10 (4 consecutive points)
+          // Gap: builds 11-13
+          // Cluster 3: builds 14-17 (4 consecutive points)
+          // Gap: builds 18-20
+          // Cluster 4: builds 21-24 (4 consecutive points)
+          const sparseBuilds = [0, 1, 2, 3, 7, 8, 9, 10, 14, 15, 16, 17, 21, 22, 23, 24];
           if (!sparseBuilds.includes(i)) return null;
-          return 120 + Math.sin(i * 0.4) * 30 + i * 1.5;
+          // Create a trend: starting around 140ms, gradually improving to ~110ms with some variation
+          return 140 - i * 1.2 + Math.sin(i * 0.5) * 8;
         },
       },
     ],
