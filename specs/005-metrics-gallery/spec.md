@@ -43,20 +43,32 @@ Development teams using built-in metrics need to customize aspects like the metr
 
 The following metrics will be shipped by default. Each metric provides metadata (name, description, type, unit, recommended threshold) but NOT commands. Users must always provide commands appropriate for their project's technology stack.
 
+#### Unit Types
+
+Units are semantic types that determine how metric values are formatted consistently across HTML reports and PR comments:
+
+| UnitType | Display Example | Use Case |
+|----------|-----------------|----------|
+| `percent` | `85.5%` | Coverage metrics |
+| `integer` | `1,234` | LOC, counts |
+| `bytes` | `1.5 MB` | Bundle size (auto-scales B → KB → MB → GB) |
+| `duration` | `1m 30s` | Build/test time (auto-scales ms → s → m → h) |
+| `decimal` | `3.14` | Generic numeric |
+
 #### Coverage Metrics
 
 1. **`coverage`** - Test Coverage Percentage
    - **Description**: Overall test coverage percentage across the codebase
    - **Type**: numeric
-   - **Unit**: %
-   -  **Default Threshold**: no-regression
+   - **Unit**: `percent`
+   - **Default Threshold**: no-regression
    - **Use Case**: Ensure test coverage doesn't decline with new changes
    - **Example Commands**: See built-in-metrics.md for Bun, Jest, Pytest examples
 
 2. **`function-coverage`** - Function Coverage
    - **Description**: Percentage of functions covered by tests
    - **Type**: numeric
-   - **Unit**: %
+   - **Unit**: `percent`
    - **Default Threshold**: no-regression
    - **Use Case**: Ensure functions have test coverage
    - **Example Commands**: See built-in-metrics.md for framework-specific examples
@@ -66,7 +78,7 @@ The following metrics will be shipped by default. Each metric provides metadata 
 3. **`loc`** - Lines of Code
    - **Description**: Total lines of code in the codebase
    - **Type**: numeric
-   - **Unit**: lines
+   - **Unit**: `integer`
    - **Default Threshold**: none (can increase or decrease naturally)
    - **Use Case**: Track codebase size trends over time
    - **Example Commands**: Adaptable to any language's file extensions
@@ -74,7 +86,7 @@ The following metrics will be shipped by default. Each metric provides metadata 
 4. **`bundle-size`** - Production Bundle Size
    - **Description**: Total size of production build artifacts
    - **Type**: numeric
-   - **Unit**: KB
+   - **Unit**: `bytes`
    - **Default Threshold**: delta-max-drop (5% maximum increase)
    - **Use Case**: Prevent bundle size bloat
    - **Example Commands**: Adaptable to any build output directory
@@ -83,14 +95,14 @@ The following metrics will be shipped by default. Each metric provides metadata 
 5. **`build-time`** - Build Duration
     - **Description**: Time taken to complete the build
     - **Type**: numeric
-    - **Unit**: seconds
+    - **Unit**: `duration`
     - **Default Threshold**: delta-max-drop (10% maximum increase)
     - **Use Case**: Track and limit build time increases
     - **Example Commands**: Works with any build command using time wrapper
 6. **`test-time`** - Test Suite Duration
     - **Description**: Time taken to run all tests
     - **Type**: numeric
-    - **Unit**: seconds
+    - **Unit**: `duration`
     - **Default Threshold**: delta-max-drop (10% maximum increase)
     - **Use Case**: Keep test suite execution fast
     - **Example Commands**: Works with any test runner using time wrapper
@@ -99,7 +111,7 @@ The following metrics will be shipped by default. Each metric provides metadata 
 7. **`dependencies-count`** - Dependency Count
     - **Description**: Total number of direct dependencies
     - **Type**: numeric
-    - **Unit**: count
+    - **Unit**: `integer`
     - **Default Threshold**: none (monitoring only)
     - **Use Case**: Monitor dependency footprint
     - **Example Commands**: Adaptable to package.json, requirements.txt, go.mod, etc.
@@ -118,7 +130,7 @@ The following metrics will be shipped by default. Each metric provides metadata 
 ### Functional Requirements
 
 - **FR-001**: The system MUST provide a library of built-in metric definitions that users can reference by a unique identifier (e.g., `coverage`, `bundle-size`, `loc`).
-- **FR-002**: Each built-in metric MUST include at minimum: unique ID, human-readable name, description, metric type (numeric or label), and optional unit. Built-in metrics do NOT include commands.
+- **FR-002**: Each built-in metric MUST include at minimum: unique ID, human-readable name, description, metric type (numeric or label), and optional unit type (`percent`, `integer`, `bytes`, `duration`, or `decimal`). Built-in metrics do NOT include commands.
 - **FR-003**: The system MUST allow users to reference built-in metrics in their configuration using a special `$ref` property with the metric ID.
 - **FR-004**: When a built-in metric is referenced, the system MUST resolve the reference to a complete metric configuration by combining built-in metadata with the user-provided command before metric collection begins.
 - **FR-005**: Users MUST provide a `command` field for every metric, including those that reference built-in metrics via `$ref`. Commands are never inherited from built-in metrics.
@@ -133,7 +145,7 @@ The following metrics will be shipped by default. Each metric provides metadata 
 
 ### Key Entities
 
-- **Built-in Metric Template**: A pre-defined metric template stored in the system's registry, including ID, name, description, type, unit, and recommended threshold behavior. Does NOT include command.
+- **Built-in Metric Template**: A pre-defined metric template stored in the system's registry, including ID, name, description, type, unit type (semantic formatting type), and recommended threshold behavior. Does NOT include command.
 - **Metric Reference**: A configuration entry using `$ref` to reference a built-in metric template by ID, MUST include a `command` field, and optionally includes property overrides.
 - **Resolved Metric**: The final metric configuration after resolving a built-in metric template reference, applying user-provided command, and merging any user overrides, ready for collection.
 

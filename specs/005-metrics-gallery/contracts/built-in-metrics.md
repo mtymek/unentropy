@@ -16,9 +16,64 @@ interface MetricTemplate {
   name: string;         // Default metric name
   description: string;  // What the metric measures
   type: 'numeric' | 'label';
-  unit?: string;        // Display unit
+  unit?: UnitType;      // Semantic unit type for formatting
 }
 ```
+
+## Unit Types
+
+Units are semantic types that define how metric values are formatted and displayed consistently across HTML reports and PR comments. Each unit type has specific formatting rules.
+
+```typescript
+type UnitType = 'percent' | 'integer' | 'bytes' | 'duration' | 'decimal';
+```
+
+### Unit Type Specifications
+
+| UnitType | Display Example | Decimals | Auto-scale | Use Case |
+|----------|-----------------|----------|------------|----------|
+| `percent` | `85.5%` | 1 | No | Coverage metrics |
+| `integer` | `1,234` | 0 | No | LOC, counts |
+| `bytes` | `1.5 MB` | 1 | Yes (B → KB → MB → GB) | Bundle size |
+| `duration` | `1m 30s` | 0 | Yes (ms → s → m → h) | Build/test time |
+| `decimal` | `3.14` | 2 | No | Generic numeric |
+
+### Formatting Rules
+
+#### `percent`
+- Appends `%` suffix
+- Shows 1 decimal place (or 0 if whole number)
+- Example: `85.5%`, `100%`
+
+#### `integer`
+- No decimal places
+- Uses thousands separator (US locale)
+- Example: `1,234`, `1,234,567`
+
+#### `bytes` (auto-scaling)
+- Automatically scales to appropriate unit
+- Thresholds: < 1024 → B, < 1024² → KB, < 1024³ → MB, else GB
+- Shows 1 decimal place for KB/MB/GB
+- Example: `500 B`, `1.5 KB`, `2.3 MB`, `1.1 GB`
+
+#### `duration` (auto-scaling)
+- Input is in seconds
+- Automatically scales to human-readable format
+- Thresholds: < 1 → ms, < 60 → s, < 3600 → m+s, else h+m
+- Example: `500ms`, `45s`, `1m 30s`, `1h 5m`
+
+#### `decimal`
+- Generic floating-point display
+- Shows 2 decimal places
+- Example: `3.14`, `99.99`
+
+### Delta Formatting
+
+When displaying changes between values, the same unit rules apply with sign prefix:
+- `+2.5%` (percent increase)
+- `-256 KB` (bytes decrease)
+- `+1m 15s` (duration increase)
+- `+150` (integer increase)
 
 ## Built-in Metrics
 
@@ -32,7 +87,7 @@ interface MetricTemplate {
   name: 'coverage',
   description: 'Overall test coverage percentage across the codebase',
   type: 'numeric',
-  unit: '%'
+  unit: 'percent'
 }
 ```
 
@@ -62,7 +117,7 @@ interface MetricTemplate {
   name: 'function-coverage',
   description: 'Percentage of functions covered by tests',
   type: 'numeric',
-  unit: '%'
+  unit: 'percent'
 }
 ```
 
@@ -92,7 +147,7 @@ interface MetricTemplate {
   name: 'loc',
   description: 'Total lines of code in the codebase (excluding blanks and comments)',
   type: 'numeric',
-  unit: 'lines'
+  unit: 'integer'
 }
 ```
 
@@ -124,7 +179,7 @@ interface MetricTemplate {
   name: 'bundle-size',
   description: 'Total size of production build artifacts',
   type: 'numeric',
-  unit: 'KB'
+  unit: 'bytes'
 }
 ```
 
@@ -155,7 +210,7 @@ interface MetricTemplate {
   name: 'build-time',
   description: 'Time taken to complete the build',
   type: 'numeric',
-  unit: 'seconds'
+  unit: 'duration'
 }
 ```
 
@@ -183,7 +238,7 @@ interface MetricTemplate {
   name: 'test-time',
   description: 'Time taken to run all tests',
   type: 'numeric',
-  unit: 'seconds'
+  unit: 'duration'
 }
 ```
 
@@ -213,7 +268,7 @@ interface MetricTemplate {
   name: 'dependencies-count',
   description: 'Total number of direct dependencies',
   type: 'numeric',
-  unit: 'count'
+  unit: 'integer'
 }
 ```
 
@@ -354,8 +409,15 @@ Built-in metric templates must:
 1. Have a unique `id` following lowercase-with-hyphens convention
 2. Include a clear `description` explaining what the metric measures
 3. Specify correct `type` (numeric or label)
-4. Include appropriate `unit` for numeric metrics
+4. Include appropriate `unit` for numeric metrics (must be a valid `UnitType`: `percent`, `integer`, `bytes`, `duration`, or `decimal`)
 5. Be grouped into logical categories
+
+### Unit Type Validation
+
+When users override the `unit` field for a built-in metric:
+1. The value must be one of the valid `UnitType` values: `percent`, `integer`, `bytes`, `duration`, `decimal`
+2. Invalid unit values will fail configuration validation with a clear error message
+3. Unit types determine formatting behavior - choose the type that best represents the metric's value semantics
 
 ### User Configuration Validation
 
