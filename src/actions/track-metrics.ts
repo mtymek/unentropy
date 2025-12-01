@@ -251,15 +251,6 @@ async function createOrUpdatePullRequestComment(
     if (diffs.length > 0) {
       const diffRows = diffs
         .map((diff) => {
-          const statusIcon =
-            diff.status === "improved"
-              ? "🟢"
-              : diff.status === "degraded"
-                ? "🔴"
-                : diff.status === "unchanged"
-                  ? "⚪"
-                  : "⚪";
-
           // Convert unit string to UnitType (handle both semantic and legacy units)
           const unitType = diff.unit as UnitType | null;
 
@@ -272,12 +263,12 @@ async function createOrUpdatePullRequestComment(
           const deltaStr =
             diff.absoluteDelta !== undefined ? formatDelta(diff.absoluteDelta, unitType) : "N/A";
 
-          return `| ${statusIcon} ${diff.metricName} | ${baselineStr} | ${prStr} | ${deltaStr} |`;
+          return `| ${diff.metricName} | ${baselineStr} | ${prStr} | ${deltaStr} |`;
         })
         .join("\n");
 
       metricDiffsSection = `
-### 📈 Metric Changes vs Baseline
+### Metric Changes vs Baseline
 
 | Metric | Baseline | PR | Δ |
 |--------|----------|----|---|
