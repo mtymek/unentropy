@@ -31,7 +31,7 @@ const FIXTURES: Record<string, FixtureConfig> = {
         name: "test-coverage",
         type: "numeric",
         description: "Code coverage percentage",
-        unit: "%",
+        unit: "percent",
         valueGenerator: (i) => 82.1 + i * 0.85,
       },
     ],
@@ -47,15 +47,15 @@ const FIXTURES: Record<string, FixtureConfig> = {
         name: "test-coverage",
         type: "numeric",
         description: "Percentage of code covered by tests",
-        unit: "%",
+        unit: "percent",
         valueGenerator: (i) => 75 + Math.sin(i * 0.3) * 10 + i * 0.4,
       },
       {
         name: "bundle-size",
         type: "numeric",
         description: "JavaScript bundle size in KB",
-        unit: "KB",
-        valueGenerator: (i) => 250 - Math.cos(i * 0.2) * 20 - i * 0.5,
+        unit: "bytes",
+        valueGenerator: (i) => (250 - Math.cos(i * 0.2) * 20 - i * 0.5) * 1024,
       },
       {
         name: "build-status",
@@ -74,7 +74,7 @@ const FIXTURES: Record<string, FixtureConfig> = {
         name: "api-response-time",
         type: "numeric",
         description: "Average API response time (sparse data - only collected on some builds)",
-        unit: "ms",
+        unit: "duration",
         valueGenerator: (i) => {
           // Create clusters of data points with gaps to showcase discontinuity
           // Cluster 1: builds 0-3 (4 consecutive points)
@@ -87,7 +87,8 @@ const FIXTURES: Record<string, FixtureConfig> = {
           const sparseBuilds = [0, 1, 2, 3, 7, 8, 9, 10, 14, 15, 16, 17, 21, 22, 23, 24];
           if (!sparseBuilds.includes(i)) return null;
           // Create a trend: starting around 140ms, gradually improving to ~110ms with some variation
-          return 140 - i * 1.2 + Math.sin(i * 0.5) * 8;
+          // Convert from milliseconds to seconds for duration unit
+          return (140 - i * 1.2 + Math.sin(i * 0.5) * 8) / 1000;
         },
       },
     ],
@@ -103,7 +104,7 @@ const FIXTURES: Record<string, FixtureConfig> = {
         name: "test-coverage",
         type: "numeric",
         description: "Code coverage percentage",
-        unit: "%",
+        unit: "percent",
         valueGenerator: (i) => [78.5, 82.1, 85.3][i] || 80,
       },
       {
@@ -126,28 +127,28 @@ const FIXTURES: Record<string, FixtureConfig> = {
         type: "numeric",
         description:
           "This is a very long description that tests how the template handles descriptions with many characters and ensures that the layout doesn't break when displaying lengthy explanatory text about what a particular metric represents",
-        unit: "%",
+        unit: "percent",
         valueGenerator: () => 0,
       },
       {
         name: "bundle-size-kb",
         type: "numeric",
         description: "Bundle size with special chars: @/\\*",
-        unit: "KB",
-        valueGenerator: () => 9999999.99,
+        unit: "bytes",
+        valueGenerator: () => 9999999.99 * 1024,
       },
       {
         name: "flatline-metric",
         type: "numeric",
         description: "A metric that never changes",
-        unit: "count",
+        unit: "integer",
         valueGenerator: () => 100,
       },
       {
         name: "negative-metric",
         type: "numeric",
         description: "Metric with negative values",
-        unit: "delta",
+        unit: "decimal",
         valueGenerator: (i) => -50 + i * 1.5,
       },
       {

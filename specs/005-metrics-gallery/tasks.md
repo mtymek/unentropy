@@ -319,10 +319,9 @@
 
 ### HTML Report Updates
 
-- [ ] T072 Update formatValue in src/reporter/templates/default/components/formatUtils.ts
+- [x] T072 Update formatValue in src/reporter/templates/default/components/formatUtils.ts
   - Import formatValue from src/metrics/unit-formatter.ts
   - Replace existing implementation with unit-aware version
-  - Handle legacy unit strings via migration helper
 
 - [ ] T073 [P] Add parseLegacyUnit helper in src/metrics/unit-formatter.ts
   - Map "%" -> "percent", "lines" -> "integer", "KB" -> "bytes", "seconds" -> "duration", "count" -> "integer"

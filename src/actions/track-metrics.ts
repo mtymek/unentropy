@@ -6,6 +6,8 @@ import { collectMetrics } from "../collector/collector";
 import { extractBuildContext } from "../collector/context";
 import { StorageConfig, UnentropyConfig } from "../config/schema";
 import type { StorageProviderConfig } from "../storage/providers/interface";
+import { formatValue, formatDelta } from "../metrics/unit-formatter";
+import type { UnitType } from "../metrics/types";
 
 interface ActionInputs {
   storageType: string;
@@ -134,6 +136,7 @@ function isPullRequestContext(): boolean {
 
 interface MetricDiff {
   metricName: string;
+  unit: string | null;
   baselineValue?: number;
   pullRequestValue?: number;
   absoluteDelta?: number;
@@ -218,6 +221,7 @@ async function createOrUpdatePullRequestComment(
 
               diffs.push({
                 metricName: metricConfig.name,
+                unit: metricConfig.unit || null,
                 baselineValue: latestBaseline,
                 pullRequestValue,
                 absoluteDelta,
@@ -227,6 +231,7 @@ async function createOrUpdatePullRequestComment(
             } else {
               diffs.push({
                 metricName: metricConfig.name,
+                unit: metricConfig.unit || null,
                 pullRequestValue,
                 status: "no-baseline",
               });
@@ -234,6 +239,7 @@ async function createOrUpdatePullRequestComment(
           } else {
             diffs.push({
               metricName: metricConfig.name,
+              unit: metricConfig.unit || null,
               pullRequestValue,
               status: "no-baseline",
             });
@@ -254,14 +260,17 @@ async function createOrUpdatePullRequestComment(
                   ? "⚪"
                   : "⚪";
 
+          // Convert unit string to UnitType (handle both semantic and legacy units)
+          const unitType = diff.unit as UnitType | null;
+
           const baselineStr =
-            diff.baselineValue !== undefined ? diff.baselineValue.toFixed(2) : "N/A";
+            diff.baselineValue !== undefined ? formatValue(diff.baselineValue, unitType) : "N/A";
           const prStr =
-            diff.pullRequestValue !== undefined ? diff.pullRequestValue.toFixed(2) : "N/A";
-          const deltaStr =
-            diff.relativeDeltaPercent !== undefined
-              ? `${diff.relativeDeltaPercent >= 0 ? "+" : ""}${diff.relativeDeltaPercent.toFixed(1)}%`
+            diff.pullRequestValue !== undefined
+              ? formatValue(diff.pullRequestValue, unitType)
               : "N/A";
+          const deltaStr =
+            diff.absoluteDelta !== undefined ? formatDelta(diff.absoluteDelta, unitType) : "N/A";
 
           return `| ${statusIcon} ${diff.metricName} | ${baselineStr} | ${prStr} | ${deltaStr} |`;
         })

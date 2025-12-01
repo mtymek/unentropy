@@ -1,5 +1,18 @@
 import type { UnitType } from "./types.js";
 
+/**
+ * Format values based on semantic unit types for server-side rendering.
+ *
+ * NOTE: This formatting logic is duplicated in browser scripts for chart tooltips.
+ *
+ * IMPORTANT: When updating this function, also update:
+ * - src/reporter/templates/default/scripts/charts.js (browser-compatible version)
+ * - src/reporter/templates/default/components/formatUtils.ts (legacy unit parsing wrapper)
+ *
+ * @param value - The numeric value to format
+ * @param unit - The semantic unit type (percent, integer, bytes, duration, decimal)
+ * @returns Formatted value string
+ */
 export function formatValue(value: number | null, unit: UnitType | null): string {
   if (value === null) {
     return "N/A";

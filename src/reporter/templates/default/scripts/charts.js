@@ -25,7 +25,106 @@ var COMMON_OPTIONS = {
   plugins: { legend: { display: false } },
 };
 
-function createTimeSeriesTooltip(metricName, timeline, metadata) {
+/**
+ * Format values for chart tooltips based on semantic unit types.
+ *
+ * NOTE: This function duplicates logic from src/metrics/unit-formatter.ts
+ * because this script runs in the browser without module support.
+ *
+ * IMPORTANT: When updating this function, also update:
+ * - src/metrics/unit-formatter.ts (TypeScript server-side version)
+ * - src/reporter/templates/default/components/formatUtils.ts (legacy unit parsing)
+ *
+ * @param {number|null|undefined} value - The numeric value to format
+ * @param {string|null} unit - The semantic unit type (percent, integer, bytes, duration, decimal)
+ * @returns {string} Formatted value string
+ */
+function formatChartValue(value, unit) {
+  if (value === null || value === undefined) return "N/A";
+
+  if (!unit) {
+    return value.toFixed(2);
+  }
+
+  // Handle semantic unit types
+  if (unit === "percent") {
+    return (
+      value.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "%"
+    );
+  }
+
+  if (unit === "integer") {
+    return Math.round(value).toLocaleString("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
+  }
+
+  if (unit === "bytes") {
+    var absValue = Math.abs(value);
+    var sign = value < 0 ? "-" : "";
+
+    if (absValue < 1024) {
+      return sign + Math.round(absValue) + " B";
+    }
+    if (absValue < 1024 * 1024) {
+      var kb = absValue / 1024;
+      var decimals = kb % 1 === 0 ? 0 : 1;
+      return (
+        sign +
+        kb.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: 1 }) +
+        " KB"
+      );
+    }
+    if (absValue < 1024 * 1024 * 1024) {
+      var mb = absValue / (1024 * 1024);
+      var decimals = mb % 1 === 0 ? 0 : 1;
+      return (
+        sign +
+        mb.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: 1 }) +
+        " MB"
+      );
+    }
+    var gb = absValue / (1024 * 1024 * 1024);
+    var decimals = gb % 1 === 0 ? 0 : 1;
+    return (
+      sign +
+      gb.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: 1 }) +
+      " GB"
+    );
+  }
+
+  if (unit === "duration") {
+    var absSeconds = Math.abs(value);
+    var sign = value < 0 ? "-" : "";
+
+    if (absSeconds < 1) {
+      var ms = Math.round(absSeconds * 1000);
+      return sign + ms + "ms";
+    }
+    if (absSeconds < 60) {
+      var rounded = Math.round(absSeconds);
+      return sign + rounded + "s";
+    }
+    if (absSeconds < 3600) {
+      var minutes = Math.floor(absSeconds / 60);
+      var secs = Math.round(absSeconds % 60);
+      return sign + minutes + "m " + secs + "s";
+    }
+    var hours = Math.floor(absSeconds / 3600);
+    var mins = Math.round((absSeconds % 3600) / 60);
+    return sign + hours + "h " + mins + "m";
+  }
+
+  if (unit === "decimal") {
+    return value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // Legacy unit support (e.g., "%", "KB", etc.)
+  return value.toFixed(2) + (unit ? unit : "");
+}
+
+function createTimeSeriesTooltip(metricName, unit, timeline, metadata) {
   return {
     callbacks: {
       title: function (items) {
@@ -42,7 +141,8 @@ function createTimeSeriesTooltip(metricName, timeline, metadata) {
           return "No data recorded for this build";
         }
         var meta = metadata && metadata[ctx.dataIndex];
-        var label = metricName + ": " + ctx.raw;
+        var formattedValue = formatChartValue(ctx.raw, unit);
+        var label = metricName + ": " + formattedValue;
         if (meta) {
           label += " (Build #" + meta.run + ", " + meta.sha + ")";
         }
@@ -77,7 +177,7 @@ function buildLineChart(chart, timeline, metadata) {
       interaction: COMMON_OPTIONS.interaction,
       plugins: {
         legend: COMMON_OPTIONS.plugins.legend,
-        tooltip: createTimeSeriesTooltip(chart.name, timeline, metadata),
+        tooltip: createTimeSeriesTooltip(chart.name, chart.unit, timeline, metadata),
       },
       scales: {
         x: {

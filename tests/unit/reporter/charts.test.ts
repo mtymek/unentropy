@@ -14,7 +14,7 @@ describe("buildLineChartData", () => {
       { timestamp: "2025-10-03T12:00:00Z", value: 87.5, commitSha: "ghi7890123456", runNumber: 3 },
     ]);
 
-    const data = buildLineChartData("test-coverage", "Test Coverage", normalizedData);
+    const data = buildLineChartData("test-coverage", "Test Coverage", "percent", normalizedData);
 
     expect(data.values).toEqual([85.2, 86.1, 87.5]);
   });
@@ -24,7 +24,7 @@ describe("buildLineChartData", () => {
       { timestamp: "2025-10-01T12:00:00Z", value: 85.0, commitSha: "abc1234567890", runNumber: 1 },
     ]);
 
-    const data = buildLineChartData("my-metric-id", "My Metric Name", normalizedData);
+    const data = buildLineChartData("my-metric-id", "My Metric Name", null, normalizedData);
 
     expect(data.id).toBe("my-metric-id");
     expect(data.name).toBe("My Metric Name");
@@ -37,7 +37,7 @@ describe("buildLineChartData", () => {
       { timestamp: "2025-10-03T12:00:00Z", value: 87.0, commitSha: "ghi7890123456", runNumber: 3 },
     ]);
 
-    const data = buildLineChartData("test-id", "Test", normalizedData);
+    const data = buildLineChartData("test-id", "Test", null, normalizedData);
 
     expect(data.values).toEqual([85.0, null, 87.0]);
   });
@@ -48,13 +48,13 @@ describe("buildLineChartData", () => {
       { timestamp: "2025-10-02T12:00:00Z", value: null, commitSha: "def4567890123", runNumber: 2 },
     ]);
 
-    const data = buildLineChartData("test-id", "Test", normalizedData);
+    const data = buildLineChartData("test-id", "Test", null, normalizedData);
 
     expect(data.values).toEqual([null, null]);
   });
 
   test("handles empty normalized data", () => {
-    const data = buildLineChartData("test-id", "Test", []);
+    const data = buildLineChartData("test-id", "Test", null, []);
 
     expect(data.values).toEqual([]);
   });
@@ -64,7 +64,7 @@ describe("buildLineChartData", () => {
       { timestamp: "2025-10-01T12:00:00Z", value: 85.0, commitSha: "abc1234567890", runNumber: 1 },
     ]);
 
-    const data = buildLineChartData("test-id", "Test", normalizedData);
+    const data = buildLineChartData("test-id", "Test", null, normalizedData);
 
     expect(data.values).toEqual([85.0]);
   });
