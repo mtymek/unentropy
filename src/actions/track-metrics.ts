@@ -286,8 +286,6 @@ ${diffRows}
 
 ## 📊 Unentropy Metrics Report
 
-${status} - ${successCount}/${totalMetrics} metrics collected successfully
-
 ${metricDiffsSection}
 ${
   failureCount > 0
