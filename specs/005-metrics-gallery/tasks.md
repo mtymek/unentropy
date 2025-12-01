@@ -52,11 +52,11 @@
 
 ### Unit Type Implementation
 
-- [ ] T008 [P] Create UnitType type definition in src/metrics/units/types.ts
+- [x] T008 [P] Create UnitType type definition in src/metrics/units/types.ts
   - Define: type UnitType = 'percent' | 'integer' | 'bytes' | 'duration' | 'decimal'
   - Export type for use across codebase
 
-- [ ] T009 Create formatValue function in src/metrics/units/formatter.ts
+- [x] T009 Create formatValue function in src/metrics/units/formatter.ts
   - Function signature: formatValue(value: number | null, unit: UnitType | null): string
   - Handle null values returning "N/A"
   - Implement percent formatting: 1 decimal, append %
@@ -65,27 +65,27 @@
   - Call formatBytes for bytes unit
   - Call formatDuration for duration unit
 
-- [ ] T010 [P] Implement formatBytes helper in src/metrics/units/formatter.ts
+- [x] T010 [P] Implement formatBytes helper in src/metrics/units/formatter.ts
   - Auto-scale: B -> KB -> MB -> GB (thresholds at 1024)
   - Show 1 decimal for KB/MB/GB, 0 for B
   - Examples: "500 B", "1.5 KB", "2.3 MB", "1.1 GB"
 
-- [ ] T011 [P] Implement formatDuration helper in src/metrics/units/formatter.ts
+- [x] T011 [P] Implement formatDuration helper in src/metrics/units/formatter.ts
   - Input is seconds
   - Auto-scale: < 1s -> ms, < 60s -> s, < 3600s -> m+s, else h+m
   - Examples: "500ms", "45s", "1m 30s", "1h 5m"
 
-- [ ] T012 Implement formatDelta function in src/metrics/units/formatter.ts
+- [x] T012 Implement formatDelta function in src/metrics/units/formatter.ts
   - Function signature: formatDelta(delta: number, unit: UnitType | null): string
   - Apply same formatting rules as formatValue
   - Prefix with + or - sign
   - Examples: "+2.5%", "-256 KB", "+1m 15s"
 
-- [ ] T013 [P] Implement formatInteger helper in src/metrics/units/formatter.ts
+- [x] T013 [P] Implement formatInteger helper in src/metrics/units/formatter.ts
   - No decimal places
   - US locale thousands separator (1,234,567)
 
-- [ ] T014 Create module index at src/metrics/units/index.ts
+- [x] T014 Create module index at src/metrics/units/index.ts
   - Export UnitType from types.ts
   - Export formatValue, formatDelta from formatter.ts
 
@@ -101,34 +101,34 @@
 
 ### Unit Type Tests
 
-- [ ] T017 [P] Add unit tests for formatValue with percent in tests/unit/metrics/units/formatter.test.ts
+- [x] T017 [P] Add unit tests for formatValue with percent in tests/unit/metrics/units/formatter.test.ts
   - Test 85.5 -> "85.5%"
   - Test 100 -> "100%"
   - Test 0 -> "0%"
 
-- [ ] T018 [P] Add unit tests for formatValue with integer in tests/unit/metrics/units/formatter.test.ts
+- [x] T018 [P] Add unit tests for formatValue with integer in tests/unit/metrics/units/formatter.test.ts
   - Test 1234 -> "1,234"
   - Test 1234567 -> "1,234,567"
   - Test 0 -> "0"
 
-- [ ] T019 [P] Add unit tests for formatBytes in tests/unit/metrics/units/formatter.test.ts
+- [x] T019 [P] Add unit tests for formatBytes in tests/unit/metrics/units/formatter.test.ts
   - Test 500 -> "500 B"
   - Test 1536 -> "1.5 KB"
   - Test 1572864 -> "1.5 MB"
   - Test 1610612736 -> "1.5 GB"
 
-- [ ] T020 [P] Add unit tests for formatDuration in tests/unit/metrics/units/formatter.test.ts
+- [x] T020 [P] Add unit tests for formatDuration in tests/unit/metrics/units/formatter.test.ts
   - Test 0.5 -> "500ms"
   - Test 45 -> "45s"
   - Test 90 -> "1m 30s"
   - Test 3665 -> "1h 1m"
 
-- [ ] T021 [P] Add unit tests for formatDelta in tests/unit/metrics/units/formatter.test.ts
+- [x] T021 [P] Add unit tests for formatDelta in tests/unit/metrics/units/formatter.test.ts
   - Test positive percent: +2.5 -> "+2.5%"
   - Test negative bytes: -262144 -> "-256 KB"
   - Test positive integer: +150 -> "+150"
 
-- [ ] T022 [P] Add unit tests for null handling in tests/unit/metrics/units/formatter.test.ts
+- [x] T022 [P] Add unit tests for null handling in tests/unit/metrics/units/formatter.test.ts
   - Test formatValue(null, "percent") -> "N/A"
   - Test formatValue(null, null) -> "N/A"
 
