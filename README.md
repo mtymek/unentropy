@@ -23,33 +23,6 @@
 
 ## **Getting Started**
 
-### Basic Three-Action Workflow
-
-Add the three Unentropy actions to your existing CI workflow:
-
-```yaml
-- name: Find latest database
-  id: find-database
-  uses: ./.github/actions/find-database
-  with:
-    database-artifact: "unentropy-metrics"
-    database-path: "./unentropy-metrics.db"
-
-- name: Collect metrics
-  id: collect-metrics
-  uses: ./.github/actions/collect-metrics
-  with:
-    config-path: "./unentropy.json"
-    database-path: "./unentropy-metrics.db"
-
-- name: Generate report
-  id: generate-report
-  uses: ./.github/actions/generate-report
-  with:
-    database-path: "./unentropy-metrics.db"
-    output-path: "./unentropy-report.html"
-```
-
 ### Configuration
 
 Create an `unentropy.json` file to define your metrics:
@@ -74,6 +47,36 @@ Create an `unentropy.json` file to define your metrics:
     "type": "sqlite-s3"
   }
 }
+```
+
+### Add the Unentropy Action to your GitHub workflow
+
+Add the Unentropy action to your existing CI workflow:
+
+```yaml
+- name: Collect code metrics 
+  uses: unentropy/track-metrics-action@v1 
+  with:
+    # Configure the storage backend and credentials
+    s3-endpoint: ${{ secrets.AWS_ENDPOINT_URL }}
+    s3-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    s3-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    s3-bucket: ${{ secrets.AWS_BUCKET_NAME }}
+    s3-region: ${{ secrets.AWS_REGION }}
+    database-key: "unentropy-metrics.db"
+```
+
+### Publish the report to GitHub Pages
+
+```yaml
+deploy:
+    name: Deploy to GitHub Pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: metrics
+    if: github.ref == 'refs/heads/main' && needs.metrics.result == 'success'
 ```
 
 ### Review Reports
