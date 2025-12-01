@@ -47,7 +47,7 @@ jobs:
         run: |
           # Run the /review command and capture output
           # Use tee to show output in CI logs while saving to file
-          echo "/review" | opencode --model zen/big-pickle 2>&1 | tee review-output.md || true
+          echo "/review" | opencode --model opencode/big-pickle 2>&1 | tee review-output.md || true
 
           # Check if output is empty or contains only error
           if [ ! -s review-output.md ] || grep -q "^Error:" review-output.md; then
