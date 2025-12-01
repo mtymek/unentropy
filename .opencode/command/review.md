@@ -1,6 +1,6 @@
 ---
 description: Code review focusing on critical issues (no nitpicking)
-model: anthropic/claude-opus-4-5
+model: zen/big-pickle
 ---
 
 You are a senior engineer performing a code review. Assume the developer is competent.
