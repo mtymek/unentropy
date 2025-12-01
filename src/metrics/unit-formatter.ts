@@ -1,19 +1,5 @@
 import type { UnitType } from "./types.js";
 
-/**
- * Format a number value according to its unit type for display in reports and PR comments.
- *
- * @param value - The numeric value to format, or null for missing data
- * @param unit - The semantic unit type determining format rules
- * @returns Formatted string representation of the value
- *
- * @example
- * formatValue(85.5, 'percent') // "85.5%"
- * formatValue(1234567, 'integer') // "1,234,567"
- * formatValue(1572864, 'bytes') // "1.5 MB"
- * formatValue(90, 'duration') // "1m 30s"
- * formatValue(null, 'percent') // "N/A"
- */
 export function formatValue(value: number | null, unit: UnitType | null): string {
   if (value === null) {
     return "N/A";
@@ -57,18 +43,10 @@ export function formatDelta(delta: number, unit: UnitType | null): string {
   return `${sign}${formattedValue}`;
 }
 
-/**
- * Format a percentage value with 1 decimal place and % suffix.
- * @internal
- */
 function formatPercent(value: number): string {
   return `${value.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
 }
 
-/**
- * Format an integer value with thousands separator (US locale).
- * @internal
- */
 export function formatInteger(value: number): string {
   return Math.round(value).toLocaleString("en-US", {
     minimumFractionDigits: 0,
@@ -76,18 +54,6 @@ export function formatInteger(value: number): string {
   });
 }
 
-/**
- * Format a byte value with auto-scaling to KB/MB/GB.
- * Thresholds: 1024 bytes = 1 KB, etc.
- * Shows 0 decimals for bytes, 1 decimal for KB/MB/GB.
- *
- * @internal
- * @example
- * formatBytes(500) // "500 B"
- * formatBytes(1536) // "1.5 KB"
- * formatBytes(1572864) // "1.5 MB"
- * formatBytes(1610612736) // "1.5 GB"
- */
 export function formatBytes(value: number): string {
   const absValue = Math.abs(value);
   const sign = value < 0 ? "-" : "";
@@ -114,17 +80,6 @@ export function formatBytes(value: number): string {
   return `${sign}${gb.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: 1 })} GB`;
 }
 
-/**
- * Format a duration value with auto-scaling from seconds.
- * Auto-scales: < 1s -> ms, < 60s -> s, < 3600s -> m+s, else h+m.
- *
- * @internal
- * @example
- * formatDuration(0.5) // "500ms"
- * formatDuration(45) // "45s"
- * formatDuration(90) // "1m 30s"
- * formatDuration(3665) // "1h 1m"
- */
 export function formatDuration(seconds: number): string {
   const absSeconds = Math.abs(seconds);
   const sign = seconds < 0 ? "-" : "";
@@ -150,10 +105,6 @@ export function formatDuration(seconds: number): string {
   return `${sign}${hours}h ${minutes}m`;
 }
 
-/**
- * Format a decimal value with 2 decimal places.
- * @internal
- */
 function formatDecimal(value: number): string {
   return value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }

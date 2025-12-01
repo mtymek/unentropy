@@ -5,7 +5,7 @@ import {
   formatInteger,
   formatBytes,
   formatDuration,
-} from "../../../../src/metrics/units/formatter.js";
+} from "../../../src/metrics/unit-formatter.js";
 
 describe("formatValue", () => {
   describe("percent formatting", () => {
