@@ -46,13 +46,12 @@ jobs:
       - name: Run OpenCode Review
         run: |
           # Run the /review command and capture output
-          # Use echo to pipe the command to opencode in interactive mode
-          echo "/review" | opencode --model zen/big-pickle > review-output.md 2>&1 || true
+          # Use tee to show output in CI logs while saving to file
+          echo "/review" | opencode --model zen/big-pickle 2>&1 | tee review-output.md || true
 
           # Check if output is empty or contains only error
           if [ ! -s review-output.md ] || grep -q "^Error:" review-output.md; then
-            echo "⚠️ Review generation failed or produced no output" > review-output.md
-            cat review-output.md
+            echo "⚠️ Review generation failed or produced no output" | tee review-output.md
           fi
 
       - name: Post or Update Review Comment
