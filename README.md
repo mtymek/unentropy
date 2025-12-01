@@ -58,19 +58,21 @@ Create an `unentropy.json` file to define your metrics:
 {
   "metrics": [
     {
-      "name": "test_coverage",
-      "command": "bun test --coverage",
-      "parser": "regex",
-      "pattern": "Coverage: (\\d+\\.\\d+)%",
-      "unit": "%"
+      "$ref": "loc",
+      "name": "lines-of-code",
+      "description": "Total lines of TypeScript code",
+      "command": "$collect loc ./src --language TypeScript"
     },
     {
-      "name": "lines_of_code",
-      "command": "find src/ -name '*.ts' | wc -l",
-      "parser": "raw",
-      "unit": "LOC"
+      "$ref": "coverage",
+      "name": "test-coverage",
+      "description": "Test coverage",
+      "command": "$collect coverage-lcov coverage/lcov.info"
     }
-  ]
+  ],
+  "storage": {
+    "type": "sqlite-s3"
+  }
 }
 ```
 
@@ -117,27 +119,6 @@ bun run build
 - `bun run lint:fix` - Auto-fix linting issues
 - `bun run format` - Format code with Prettier
 - `bun run format:check` - Check code formatting
-
-### Project Structure
-
-```
-unentropy/
-├── src/
-│   ├── index.ts          # Package entry point
-│   └── lib/              # Library modules
-├── tests/
-│   ├── unit/             # Unit tests
-│   ├── integration/      # Integration tests
-│   └── contract/         # Contract tests
-├── dist/                 # Build output (generated)
-└── .github/workflows/    # CI/CD configuration
-```
-
-### Performance Targets
-
-- Type checking: <5s
-- Test suite: <2s
-- 100% code passes linting
 
 ## **Contribution**
 
