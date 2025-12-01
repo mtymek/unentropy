@@ -47,6 +47,7 @@ export interface MetricReportData {
   id: string;
   name: string;
   description: string | null;
+  unit: string | null;
   stats: SummaryStats;
   chartType: "line" | "bar";
   sparse: boolean;
@@ -61,12 +62,14 @@ export interface MetadataPoint {
 export interface LineChartData {
   id: string;
   name: string;
+  unit: string | null;
   values: (number | null)[];
 }
 
 export interface BarChartData {
   id: string;
   name: string;
+  unit: string | null;
   labels: string[];
   counts: number[];
 }

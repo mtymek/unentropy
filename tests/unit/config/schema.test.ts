@@ -380,19 +380,19 @@ describe("Config Schema Validation", () => {
       expect(() => validateConfig(config)).toThrow();
     });
 
-    it("should reject unit longer than 10 characters", () => {
+    it("should reject invalid unit value", () => {
       const config = {
         metrics: [
           {
             name: "coverage",
             type: "numeric",
             command: "echo 85",
-            unit: "a".repeat(11),
+            unit: "invalid-value",
           },
         ],
       };
 
-      expect(() => validateConfig(config)).toThrow();
+      expect(() => validateConfig(config)).toThrow(/unit must be one of/);
     });
 
     it("should accept valid field lengths", () => {
@@ -403,7 +403,7 @@ describe("Config Schema Validation", () => {
             type: "numeric",
             command: "echo 85",
             description: "a".repeat(256),
-            unit: "a".repeat(10),
+            unit: "percent",
           },
         ],
       };
@@ -508,7 +508,7 @@ describe("Config Schema Validation", () => {
             {
               $ref: "bundle-size",
               command: "du -k dist/main.js | cut -f1",
-              unit: "KB",
+              unit: "bytes",
             },
           ],
         };
@@ -551,7 +551,7 @@ describe("Config Schema Validation", () => {
               $ref: "coverage",
               name: "frontend-coverage",
               command: "bun test --coverage",
-              unit: "pct",
+              unit: "percent",
               description: "Frontend test coverage",
             },
           ],
@@ -587,18 +587,18 @@ describe("Config Schema Validation", () => {
         expect(() => validateConfig(config)).toThrow();
       });
 
-      it("should reject $ref with invalid unit length", () => {
+      it("should reject $ref with invalid unit value", () => {
         const config = {
           metrics: [
             {
               $ref: "bundle-size",
               command: "echo 100",
-              unit: "a".repeat(11),
+              unit: "invalid-unit",
             },
           ],
         };
 
-        expect(() => validateConfig(config)).toThrow();
+        expect(() => validateConfig(config)).toThrow(/unit must be one of/);
       });
 
       it("should accept $ref with type field and command (validation deferred to resolver)", () => {

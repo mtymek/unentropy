@@ -105,9 +105,7 @@ We will deliver this feature incrementally:
 ## Build and CI Notes
 
 - Ensure existing build and test commands continue to run successfully:
-  - `bun run build`
-  - `bun run typecheck`
-  - `bun run lint`
+  - `bun check`
   - `bun test`
 - Add or update CI workflows as needed so that new tests are executed on every pull request.
 

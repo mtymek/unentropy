@@ -25,13 +25,15 @@ This feature extends `MetricConfig` to support an optional `$ref` property for b
 **Important**: The `command` field is ALWAYS required, regardless of whether `$ref` is used. Built-in metrics are metadata templates only and do not provide commands. This ensures Unentropy remains technology-agnostic and supports diverse project setups.
 
 ```typescript
+type UnitType = 'percent' | 'integer' | 'bytes' | 'duration' | 'decimal';
+
 interface MetricConfig {
   $ref?: string;                  // NEW: Optional built-in metric ID
   name?: string;                  // Required when no $ref, optional override when $ref present
   type?: 'numeric' | 'label';     // Required when no $ref, inherited when $ref present
   command: string;                // ALWAYS required (user must provide project-specific command)
   description?: string;           // Optional
-  unit?: string;                  // Optional
+  unit?: UnitType;                // Optional semantic unit type
   timeout?: number;               // Optional
 }
 ```
@@ -47,6 +49,24 @@ interface UnentropyConfig {
 ```
 
 ## Field Specifications
+
+### Unit Types
+
+The `unit` field accepts a semantic unit type that determines how metric values are formatted in reports and PR comments.
+
+```typescript
+type UnitType = 'percent' | 'integer' | 'bytes' | 'duration' | 'decimal';
+```
+
+| UnitType | Display Example | Description |
+|----------|-----------------|-------------|
+| `percent` | `85.5%` | Percentage values with 1 decimal |
+| `integer` | `1,234` | Whole numbers with thousands separator |
+| `bytes` | `1.5 MB` | Auto-scaling file sizes (B → KB → MB → GB) |
+| `duration` | `1m 30s` | Auto-scaling time (ms → s → m → h) |
+| `decimal` | `3.14` | Generic floating-point with 2 decimals |
+
+**Validation**: Invalid unit values will fail configuration validation with a clear error message listing valid options.
 
 ### $ref (required for built-in metric references)
 
@@ -78,7 +98,7 @@ When using `$ref`, the following rules apply:
 | `command` | **Yes** | Non-empty, Max 1024 characters | **Always required** - must be provided by user for project-specific execution |
 | `name` | No | Pattern: `^[a-z0-9-]+$`, Length: 1-64 chars | Optional override of built-in metric name |
 | `description` | No | Max 256 characters | Optional override of built-in description |
-| `unit` | No | Max 10 characters | Optional override of built-in unit |
+| `unit` | No | Must be valid UnitType: `percent`, `integer`, `bytes`, `duration`, `decimal` | Optional override of built-in unit type |
 | `timeout` | No | Positive integer, Max 300000 ms | Optional timeout specification |
 
 **Inheritance and Override Behavior**:
@@ -126,7 +146,7 @@ When using `$ref`, the following rules apply:
               },
               "unit": {
                 "type": "string",
-                "maxLength": 10
+                "enum": ["percent", "integer", "bytes", "duration", "decimal"]
               },
               "timeout": {
                 "type": "number",
@@ -169,7 +189,7 @@ When using `$ref`, the following rules apply:
               },
               "unit": {
                 "type": "string",
-                "maxLength": 10
+                "enum": ["percent", "integer", "bytes", "duration", "decimal"]
               },
               "timeout": {
                 "type": "number",
@@ -249,7 +269,7 @@ When using `$ref`, the following rules apply:
     {
       "$ref": "bundle-size",
       "command": "du -k dist/main.js | cut -f1",
-      "unit": "KB"
+      "unit": "integer"
     }
   ]
 }
@@ -268,7 +288,7 @@ When using `$ref`, the following rules apply:
     {
       "$ref": "bundle-size",
       "command": "npm run build && unentropy collect size ./dist/",
-      "unit": "KB"
+      "unit": "integer"
     }
   ]
 }

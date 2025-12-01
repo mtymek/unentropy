@@ -31,92 +31,200 @@
 
 **Purpose**: Core registry and resolution infrastructure that MUST be complete before ANY user story can be implemented
 
-**⚠️ CRITICAL**: No user story work can begin until this phase is complete
+**Warning**: No user story work can begin until this phase is complete
 
 - [x] T004 Create MetricTemplate interface in src/metrics/types.ts
+  - Define UnitType in src/metrics/types.ts
+  - Define unit field as: unit?: UnitType (semantic type, not string)
 - [x] T005 Create built-in metrics registry structure in src/metrics/registry.ts
 - [x] T006 Create resolver module skeleton in src/metrics/resolver.ts
 - [x] T007 Extend MetricConfig schema to support optional $ref in src/config/schema.ts
 
-**Checkpoint**: Foundation ready - user story implementation can now begin in parallel
+**Checkpoint**: Foundation ready - unit types phase can now begin
 
 ---
 
-## Phase 3: User Story 1 - Quick setup with pre-defined metrics (Priority: P1) 🎯 MVP
+## Phase 3: Unit Types Infrastructure
 
-**Goal**: Enable developers to reference built-in metrics by ID (e.g., `{"$ref": "coverage"}`) without writing custom commands, with automatic expansion to full metric definitions including commands, units, and types.
+**Purpose**: Implement semantic unit types for consistent value formatting across HTML reports and PR comments
 
-**Independent Test**: Add `{"$ref": "coverage"}` to unentropy.json, run metrics collection, verify coverage is collected with % unit and appropriate command without requiring custom configuration.
+**Warning**: Unit types must be complete before built-in metrics can be defined with correct units
+
+### Unit Type Implementation
+
+- [x] T008 [P] Create UnitType type definition in src/metrics/types.ts
+  - Define: type UnitType = 'percent' | 'integer' | 'bytes' | 'duration' | 'decimal'
+  - Export type for use across codebase
+
+- [x] T009 Create formatValue function in src/metrics/unit-formatter.ts
+  - Function signature: formatValue(value: number | null, unit: UnitType | null): string
+  - Handle null values returning "N/A"
+  - Implement percent formatting: 1 decimal, append %
+  - Implement integer formatting: no decimals, thousands separator
+  - Implement decimal formatting: 2 decimals
+  - Call formatBytes for bytes unit
+  - Call formatDuration for duration unit
+
+- [x] T010 [P] Implement formatBytes helper in src/metrics/unit-formatter.ts
+  - Auto-scale: B -> KB -> MB -> GB (thresholds at 1024)
+  - Show 1 decimal for KB/MB/GB, 0 for B
+  - Examples: "500 B", "1.5 KB", "2.3 MB", "1.1 GB"
+
+- [x] T011 [P] Implement formatDuration helper in src/metrics/unit-formatter.ts
+  - Input is seconds
+  - Auto-scale: < 1s -> ms, < 60s -> s, < 3600s -> m+s, else h+m
+  - Examples: "500ms", "45s", "1m 30s", "1h 5m"
+
+- [x] T012 Implement formatDelta function in src/metrics/unit-formatter.ts
+  - Function signature: formatDelta(delta: number, unit: UnitType | null): string
+  - Apply same formatting rules as formatValue
+  - Prefix with + or - sign
+  - Examples: "+2.5%", "-256 KB", "+1m 15s"
+
+- [x] T013 [P] Implement formatInteger helper in src/metrics/unit-formatter.ts
+  - No decimal places
+  - US locale thousands separator (1,234,567)
+
+- [x] T014 Export formatting functions in src/metrics/index.ts
+  - Export formatValue, formatDelta, formatInteger, formatBytes, formatDuration from unit-formatter.ts
+
+### Unit Type Validation
+
+- [x] T015 Add UnitTypeSchema to src/config/schema.ts
+  - z.enum(["percent", "integer", "bytes", "duration", "decimal"])
+  - Clear error message: "unit must be one of: percent, integer, bytes, duration, decimal"
+
+- [x] T016 Update MetricConfigSchema.unit to use UnitTypeSchema in src/config/schema.ts
+  - Replace z.string().max(10) with UnitTypeSchema
+  - Maintain optional behavior
+
+### Unit Type Tests
+
+- [x] T017 [P] Add unit tests for formatValue with percent in tests/unit/metrics/unit-formatter.test.ts
+  - Test 85.5 -> "85.5%"
+  - Test 100 -> "100%"
+  - Test 0 -> "0%"
+
+- [x] T018 [P] Add unit tests for formatValue with integer in tests/unit/metrics/unit-formatter.test.ts
+  - Test 1234 -> "1,234"
+  - Test 1234567 -> "1,234,567"
+  - Test 0 -> "0"
+
+- [x] T019 [P] Add unit tests for formatBytes in tests/unit/metrics/unit-formatter.test.ts
+  - Test 500 -> "500 B"
+  - Test 1536 -> "1.5 KB"
+  - Test 1572864 -> "1.5 MB"
+  - Test 1610612736 -> "1.5 GB"
+
+- [x] T020 [P] Add unit tests for formatDuration in tests/unit/metrics/unit-formatter.test.ts
+  - Test 0.5 -> "500ms"
+  - Test 45 -> "45s"
+  - Test 90 -> "1m 30s"
+  - Test 3665 -> "1h 1m"
+
+- [x] T021 [P] Add unit tests for formatDelta in tests/unit/metrics/unit-formatter.test.ts
+  - Test positive percent: +2.5 -> "+2.5%"
+  - Test negative bytes: -262144 -> "-256 KB"
+  - Test positive integer: +150 -> "+150"
+
+- [x] T022 [P] Add unit tests for null handling in tests/unit/metrics/unit-formatter.test.ts
+  - Test formatValue(null, "percent") -> "N/A"
+  - Test formatValue(null, null) -> "N/A"
+
+- [ ] T023 Add unit tests for UnitType validation in tests/unit/config/schema.test.ts
+  - Test valid units pass: "percent", "integer", "bytes", "duration", "decimal"
+  - Test invalid unit fails with clear error message
+  - Test missing unit is allowed (optional)
+
+**Checkpoint**: Unit types infrastructure complete - built-in metrics can now use semantic units
+
+---
+
+## Phase 4: User Story 1 - Quick setup with pre-defined metrics (Priority: P1)
+
+**Goal**: Enable developers to reference built-in metrics by ID (e.g., `{"$ref": "coverage", "command": "..."}`) with automatic expansion to full metric definitions including units and types.
+
+**Independent Test**: Add `{"$ref": "coverage", "command": "bun test --coverage ..."}` to unentropy.json, run metrics collection, verify coverage is collected with percent unit without requiring custom configuration.
 
 ### Implementation for User Story 1
 
-- [x] T008 [P] [US1] Define coverage built-in metric in src/metrics/registry.ts
-- [x] T009 [P] [US1] Define function-coverage built-in metric in src/metrics/registry.ts
-- [x] T010 [P] [US1] Define loc built-in metric in src/metrics/registry.ts
-- [x] T011 [P] [US1] Define bundle-size built-in metric in src/metrics/registry.ts
-- [x] T012 [P] [US1] Define build-time built-in metric in src/metrics/registry.ts
-- [x] T013 [P] [US1] Define test-time built-in metric in src/metrics/registry.ts
-- [x] T014 [P] [US1] Define dependencies-count built-in metric in src/metrics/registry.ts
-- [x] T015 [US1] Implement getBuiltInMetric lookup function in src/metrics/registry.ts
-- [x] T016 [US1] Implement listAvailableMetricIds function in src/metrics/registry.ts
-- [x] T017 [US1] Implement resolveMetricReference function in src/metrics/resolver.ts
-- [x] T018 [US1] Implement validateBuiltInReference function in src/metrics/resolver.ts
-- [x] T019 [US1] Add resolution step to loadConfig function in src/config/loader.ts
-- [ ] T020 [US1] Add resolution step validation in src/config/loader.ts
-- [x] T021 [P] [US1] Add unit test for built-in metrics registry in tests/unit/metrics/registry.test.ts
-- [x] T022 [P] [US1] Add unit test for resolver with valid references in tests/unit/metrics/resolver.test.ts
-- [x] T023 [P] [US1] Add unit test for resolver with invalid references in tests/unit/metrics/resolver.test.ts
+- [x] T024 [P] [US1] Define coverage built-in metric in src/metrics/registry.ts
+  - unit: "percent" (UnitType)
+- [x] T025 [P] [US1] Define function-coverage built-in metric in src/metrics/registry.ts
+  - unit: "percent" (UnitType)
+- [x] T026 [P] [US1] Define loc built-in metric in src/metrics/registry.ts
+  - unit: "integer" (UnitType)
+- [x] T027 [P] [US1] Define bundle-size built-in metric in src/metrics/registry.ts
+  - unit: "bytes" (UnitType)
+- [x] T028 [P] [US1] Define build-time built-in metric in src/metrics/registry.ts
+  - unit: "duration" (UnitType)
+- [x] T029 [P] [US1] Define test-time built-in metric in src/metrics/registry.ts
+  - unit: "duration" (UnitType)
+- [x] T030 [P] [US1] Define dependencies-count built-in metric in src/metrics/registry.ts
+  - unit: "integer" (UnitType)
+- [x] T031 [US1] Implement getBuiltInMetric lookup function in src/metrics/registry.ts
+- [x] T032 [US1] Implement listAvailableMetricIds function in src/metrics/registry.ts
+- [x] T033 [US1] Implement resolveMetricReference function in src/metrics/resolver.ts
+- [x] T034 [US1] Implement validateBuiltInReference function in src/metrics/resolver.ts
+- [x] T035 [US1] Add resolution step to loadConfig function in src/config/loader.ts
+- [ ] T036 [US1] Add resolution step validation in src/config/loader.ts
+- [x] T037 [P] [US1] Add unit test for built-in metrics registry in tests/unit/metrics/registry.test.ts
+- [x] T038 [P] [US1] Add unit test for resolver with valid references in tests/unit/metrics/resolver.test.ts
+- [x] T039 [P] [US1] Add unit test for resolver with invalid references in tests/unit/metrics/resolver.test.ts
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently. Users can reference all 7 built-in metrics by ID.
 
 ---
 
-## Phase 4: User Story 2 - Override built-in metric defaults (Priority: P2)
+## Phase 5: User Story 2 - Override built-in metric defaults (Priority: P2)
 
-**Goal**: Enable developers to customize specific properties of built-in metrics (name, command, unit, etc.) while keeping other defaults, supporting flexible adaptation to project-specific requirements.
+**Goal**: Enable developers to customize specific properties of built-in metrics (name, unit, etc.) while keeping other defaults, supporting flexible adaptation to project-specific requirements.
 
-**Independent Test**: Reference `{"$ref": "coverage", "name": "custom-coverage"}` in config, verify custom name is used while other properties (command, unit, type) are preserved from built-in defaults.
+**Independent Test**: Reference `{"$ref": "coverage", "name": "custom-coverage", "command": "..."}` in config, verify custom name is used while other properties (unit, type) are preserved from built-in defaults.
 
 ### Implementation for User Story 2
 
-- [ ] T026 [US2] Implement mergeMetricWithOverrides function in src/metrics/resolver.ts
-- [ ] T027 [US2] Add override validation logic in src/metrics/resolver.ts
-- [ ] T028 [US2] Update resolveMetricReference to support property overrides in src/metrics/resolver.ts
-- [ ] T029 [US2] Add validation for merged metric config in src/metrics/resolver.ts
-- [ ] T030 [P] [US2] Add unit test for name override in tests/unit/metrics/resolver.test.ts
-- [ ] T031 [P] [US2] Add unit test for command override in tests/unit/metrics/resolver.test.ts
-- [ ] T032 [P] [US2] Add unit test for multiple property overrides in tests/unit/metrics/resolver.test.ts
-- [ ] T033 [P] [US2] Add unit test for invalid override validation in tests/unit/metrics/resolver.test.ts
-- [ ] T034 [US2] Add integration test for mixing built-in refs with overrides in tests/integration/gallery-config.test.ts
-- [ ] T035 [US2] Add contract test for override property validation in tests/contract/gallery-schema.test.ts
+- [ ] T040 [US2] Implement mergeMetricWithOverrides function in src/metrics/resolver.ts
+- [ ] T041 [US2] Add override validation logic in src/metrics/resolver.ts
+- [ ] T042 [US2] Update resolveMetricReference to support property overrides in src/metrics/resolver.ts
+- [ ] T043 [US2] Add validation for merged metric config in src/metrics/resolver.ts
+- [ ] T044 [P] [US2] Add unit test for name override in tests/unit/metrics/resolver.test.ts
+- [ ] T045 [P] [US2] Add unit test for command override in tests/unit/metrics/resolver.test.ts
+- [ ] T046 [P] [US2] Add unit test for unit override validation in tests/unit/metrics/resolver.test.ts
+  - Test overriding unit with valid UnitType works
+  - Test overriding unit with invalid value fails validation
+- [ ] T047 [P] [US2] Add unit test for multiple property overrides in tests/unit/metrics/resolver.test.ts
+- [ ] T048 [P] [US2] Add unit test for invalid override validation in tests/unit/metrics/resolver.test.ts
+- [ ] T049 [US2] Add integration test for mixing built-in refs with overrides in tests/integration/gallery-config.test.ts
+- [ ] T050 [US2] Add contract test for override property validation in tests/contract/gallery-schema.test.ts
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently. Users can reference built-in metrics with or without overrides.
 
 ---
 
-## Phase 5: CLI Helper Implementation (Optional Enhancement)
+## Phase 6: CLI Helper Implementation (Optional Enhancement)
 
 **Purpose**: Implement CLI helpers to simplify metric collection commands for standard formats
 
 ### LOC Collector (SCC-based)
 
-- [x] T042 [P] [CLI] Create CLI collect command structure in src/cli/cmd/collect.ts
-- [x] T049 [P] [CLI] Create LocOptions interface in src/metrics/collectors/loc.ts
+- [x] T051 [P] [CLI] Create CLI collect command structure in src/cli/cmd/collect.ts
+- [x] T052 [P] [CLI] Create LocOptions interface in src/metrics/collectors/loc.ts
   - TypeScript interface with path (required), excludePatterns? (optional), languageFilter? (optional)
   - Export interface for use by collectLoc function
   - Add JSDoc documentation
-- [x] T050 [P] [CLI] Define SCC output type interfaces in src/metrics/collectors/loc.ts
+- [x] T053 [P] [CLI] Define SCC output type interfaces in src/metrics/collectors/loc.ts
   - SccLanguageResult interface: Name, Lines, Code, Comments, Blanks, Complexity
   - SccOutput type as array of SccLanguageResult
   - Document "Total" entry format
-- [x] T051 [CLI] Implement collectLoc function in src/metrics/collectors/loc.ts
+- [x] T054 [CLI] Implement collectLoc function in src/metrics/collectors/loc.ts
   - Async function: async collectLoc(options: LocOptions): Promise<number>
   - Execute: scc --format json <path> [--exclude-dir patterns...]
   - Parse JSON output and extract Code field from Total entry
   - Handle language filtering by finding matching language entry
   - Error handling: SCC unavailable, invalid path, missing Total, parsing failures
   - Return numeric LOC count
-- [x] T052 [CLI] Add loc subcommand handler to src/cli/cmd/collect.ts
+- [x] T055 [CLI] Add loc subcommand handler to src/cli/cmd/collect.ts
    - Command: "loc <path>"
    - Positional: path (required directory)
    - Options: --exclude (array), --language (string)
@@ -125,38 +233,38 @@
 
 ### LOC Collector Tests
 
-- [ ] T053 [P] [CLI] Add unit tests for LocOptions validation in tests/unit/metrics/collectors/loc.test.ts
+- [ ] T056 [P] [CLI] Add unit tests for LocOptions validation in tests/unit/metrics/collectors/loc.test.ts
   - Test valid option combinations compile
   - Test optional properties work correctly
   - Test TypeScript strict mode passes
-- [ ] T054 [P] [CLI] Add unit tests for SCC output parsing in tests/unit/metrics/collectors/loc.test.ts
+- [ ] T057 [P] [CLI] Add unit tests for SCC output parsing in tests/unit/metrics/collectors/loc.test.ts
   - Test parsing valid SCC output with Total entry
   - Test error when Total entry missing
   - Test error on invalid JSON
   - Test multiple language entries handled correctly
-- [ ] T055 [P] [CLI] Add unit tests for collectLoc with basic path in tests/unit/metrics/collectors/loc.test.ts
+- [ ] T058 [P] [CLI] Add unit tests for collectLoc with basic path in tests/unit/metrics/collectors/loc.test.ts
   - Test returns numeric value for valid directory
   - Test returns value >= 0
   - Test works with relative paths
   - Test works with absolute paths
   - Test idempotent (same result on multiple calls)
-- [ ] T056 [P] [CLI] Add unit tests for collectLoc with excludePatterns in tests/unit/metrics/collectors/loc.test.ts
+- [ ] T059 [P] [CLI] Add unit tests for collectLoc with excludePatterns in tests/unit/metrics/collectors/loc.test.ts
   - Test single exclude pattern passed to SCC
   - Test multiple exclude patterns handled
   - Test empty excludes array handled gracefully
   - Test excluded directories reduce count
-- [ ] T057 [P] [CLI] Add unit tests for collectLoc with language filtering in tests/unit/metrics/collectors/loc.test.ts
+- [ ] T060 [P] [CLI] Add unit tests for collectLoc with language filtering in tests/unit/metrics/collectors/loc.test.ts
   - Test language filter returns language-specific count
   - Test invalid language throws error
   - Test error message lists available languages
   - Test language count <= total count
-- [ ] T058 [P] [CLI] Add unit tests for collectLoc error handling in tests/unit/metrics/collectors/loc.test.ts
+- [ ] T061 [P] [CLI] Add unit tests for collectLoc error handling in tests/unit/metrics/collectors/loc.test.ts
   - Test SCC unavailable error with installation guidance
   - Test directory not found error
   - Test permission denied error
   - Test SCC returns no metrics error
   - Test malformed SCC JSON error
-- [x] T059 [CLI] Add integration tests for "collect loc" CLI command in tests/integration/cli-loc-collector.test.ts
+- [x] T062 [CLI] Add integration tests for "collect loc" CLI command in tests/integration/cli-loc-collector.test.ts
   - Use dedicated fixture: tests/fixtures/loc-collector/
   - Test: unentropy collect loc ./tests/fixtures/loc-collector/src/
   - Test: unentropy collect loc ./tests/fixtures/loc-collector/src/ --exclude dist node_modules
@@ -164,7 +272,7 @@
   - Test: unentropy collect loc ./tests/fixtures/loc-collector/src/ --exclude dist --language TypeScript
   - Test output is numeric and deterministic across runs on same fixture
   - Test exit code 0 on success
-- [ ] T060 [CLI] Add CLI error handling tests in tests/integration/cli-loc-collector.test.ts
+- [ ] T063 [CLI] Add CLI error handling tests in tests/integration/cli-loc-collector.test.ts
   - Test missing required path argument error
   - Test invalid flag format error
   - Test --help displays all options
@@ -174,20 +282,20 @@
 
 ### LOC Contract Tests
 
-- [ ] T061 [P] [CLI] Add contract test for loc metric reference in tests/contract/loc-metrics.test.ts
+- [ ] T064 [P] [CLI] Add contract test for loc metric reference in tests/contract/loc-metrics.test.ts
   - Test {"$ref": "loc"} resolves correctly
   - Test resolved metric has type: "numeric"
-  - Test resolved metric has unit: "lines"
-  - Test can override name, description, unit
+  - Test resolved metric has unit: "integer" (UnitType)
+  - Test can override name, description, unit (must be valid UnitType)
   - Test configuration validation passes
   - Test multiple LOC references with different names work
-- [ ] T062 [P] [CLI] Add contract test for LOC CLI helper output format in tests/contract/loc-metrics.test.ts
+- [ ] T065 [P] [CLI] Add contract test for LOC CLI helper output format in tests/contract/loc-metrics.test.ts
   - Test output is numeric integer
   - Test output is non-negative
   - Test output is reasonable (> 100 for unentropy repo)
   - Test output integrates with metric collection
   - Test value persists in storage
-- [ ] T063 [CLI] Update loc metric in src/metrics/registry.ts with SCC command reference
+- [ ] T066 [CLI] Update loc metric in src/metrics/registry.ts with SCC command reference
   - Update description to: "Total lines of code in the codebase (excluding blanks and comments)"
   - Update command example to: "unentropy collect loc ./src/"
   - Add comment explaining SCC-based collection
@@ -195,30 +303,66 @@
 
 ### Other CLI Helpers
 
-- [ ] T043 [P] [CLI] Implement coverage-lcov parser in src/metrics/collectors/coverage-lcov.ts
-- [ ] T044 [P] [CLI] Implement coverage-json parser in src/metrics/collectors/coverage-json.ts  
-- [ ] T045 [P] [CLI] Implement coverage-xml parser in src/metrics/collectors/coverage-xml.ts
-- [ ] T047 [P] [CLI] Add integration tests for CLI helpers in tests/integration/cli-helpers.test.ts
-- [ ] T048 [P] [CLI] Add contract tests for CLI helper outputs in tests/contract/cli-helpers.test.ts
+- [ ] T067 [P] [CLI] Implement coverage-lcov parser in src/metrics/collectors/lcov.ts
+- [ ] T068 [P] [CLI] Implement coverage-json parser in src/metrics/collectors/coverage-json.ts  
+- [ ] T069 [P] [CLI] Implement coverage-xml parser in src/metrics/collectors/coverage-xml.ts
+- [ ] T070 [P] [CLI] Add integration tests for CLI helpers in tests/integration/cli-helpers.test.ts
+- [ ] T071 [P] [CLI] Add contract tests for CLI helper outputs in tests/contract/cli-helpers.test.ts
 
 **Checkpoint**: LOC collector complete with comprehensive testing. Other CLI helpers available for additional metric collection commands
 
 ---
 
-## Phase 6: Polish & Cross-Cutting Concerns
+## Phase 7: Report Integration
+
+**Purpose**: Integrate unit type formatting into HTML reports and PR comments
+
+### HTML Report Updates
+
+- [x] T072 Update formatValue in src/reporter/templates/default/components/formatUtils.ts
+  - Import formatValue from src/metrics/unit-formatter.ts
+  - Replace existing implementation with unit-aware version
+
+- [ ] T073 [P] Add parseLegacyUnit helper in src/metrics/unit-formatter.ts
+  - Map "%" -> "percent", "lines" -> "integer", "KB" -> "bytes", "seconds" -> "duration", "count" -> "integer"
+  - Return null for unknown legacy units
+  - Support both new UnitType and legacy strings
+
+- [ ] T074 [P] Add unit tests for parseLegacyUnit in tests/unit/metrics/unit-formatter.test.ts
+  - Test "%" -> "percent"
+  - Test "lines" -> "integer"
+  - Test "KB" -> "bytes"
+  - Test "seconds" -> "duration"
+  - Test "count" -> "integer"
+  - Test already valid UnitType passes through
+  - Test unknown string -> null
+
+- [ ] T075 Update report generator to pass unit to formatValue in src/reporter/generator.ts
+  - Ensure unit from metric definition is passed to formatting functions
+
+- [ ] T076 Add visual test for unit formatting in tests/fixtures/visual-review/
+  - Add metrics with each unit type to fixture
+  - Verify display in generated HTML report
+
+**Checkpoint**: HTML reports now use semantic unit formatting
+
+---
+
+## Phase 8: Polish & Cross-Cutting Concerns
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T036 [P] Add JSDoc documentation to all public functions in src/metrics/
-- [ ] T037 [P] Add error message improvements with available metric IDs in src/metrics/resolver.ts
-- [ ] T038 [P] Update root-level unentropy.json to use built-in metric reference as example
-- [ ] T039 Run build and typecheck to ensure no type errors
-- [ ] T040 Run all tests to ensure full suite passes
-- [ ] T041 Run quickstart.md validation with built-in metric examples
-- [ ] T049 [US1] Enhance validateBuiltInReference with available IDs list in src/metrics/resolver.ts
-- [ ] T050 [US1] Add error message tests for invalid reference scenarios in tests/unit/metrics/resolver.test.ts
-- [ ] T051 [P] [US1] Organize built-in metrics by categories in src/metrics/registry.ts
-- [ ] T052 [US1] Add getCategory function for metric organization in src/metrics/registry.ts
+- [ ] T077 [P] Add JSDoc documentation to all public functions in src/metrics/unit-formatter.ts
+- [ ] T078 [P] Add JSDoc documentation to all public functions in src/metrics/
+- [ ] T079 [P] Add error message improvements with available metric IDs in src/metrics/resolver.ts
+- [ ] T080 [P] Update root-level unentropy.json to use built-in metric reference as example
+- [ ] T081 Run build and typecheck to ensure no type errors
+- [ ] T082 Run all tests to ensure full suite passes
+- [ ] T083 Run quickstart.md validation with built-in metric examples
+- [ ] T084 [US1] Enhance validateBuiltInReference with available IDs list in src/metrics/resolver.ts
+- [ ] T085 [US1] Add error message tests for invalid reference scenarios in tests/unit/metrics/resolver.test.ts
+- [ ] T086 [P] [US1] Organize built-in metrics by categories in src/metrics/registry.ts
+- [ ] T087 [US1] Add getCategory function for metric organization in src/metrics/registry.ts
 
 ---
 
@@ -227,43 +371,68 @@
 ### Phase Dependencies
 
 - **Setup (Phase 1)**: No dependencies - can start immediately
-- **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
-- **User Stories (Phase 3+)**: All depend on Foundational phase completion
-  - User stories can then proceed in parallel (if staffed)
-  - Or sequentially in priority order (P1 → P2)
-- **Polish (Phase 5)**: Depends on all desired user stories being complete
+- **Foundational (Phase 2)**: Depends on Setup completion
+- **Unit Types (Phase 3)**: Depends on Setup completion - BLOCKS built-in metric definitions
+- **User Story 1 (Phase 4)**: Depends on BOTH Foundational AND Unit Types completion
+- **User Story 2 (Phase 5)**: Depends on User Story 1 completion
+- **CLI Helpers (Phase 6)**: Can start after User Story 1 completion - Independent of User Story 2
+- **Report Integration (Phase 7)**: Depends on Unit Types (Phase 3) completion
+- **Polish (Phase 8)**: Depends on all desired phases being complete
 
 ### User Story Dependencies
 
-- **User Story 1 (P1)**: Can start after Foundational (Phase 2) - No dependencies on other stories
+- **User Story 1 (P1)**: Can start after Foundational + Unit Types - No dependencies on other stories
 - **User Story 2 (P2)**: Depends on User Story 1 completion (extends resolution logic with override support)
 - **CLI Helpers (Optional)**: Can start after User Story 1 completion - Independent of User Story 2
 
-### Within Each User Story
+### Within Each Phase
 
-- Built-in metric definitions (T008-T014) can run in parallel
+- Unit type helpers (T010, T011, T013) can run in parallel
+- Built-in metric definitions (T024-T030) can run in parallel
 - Registry lookup functions before resolver implementation
 - Resolver implementation before config loader integration
 - Implementation before tests
 - Unit tests can run in parallel
 - Integration and contract tests after implementation
-- CLI helper parsers (T043-T046) can run in parallel after CLI command structure (T042)
+- CLI helper parsers (T067-T069) can run in parallel after CLI command structure (T051)
 
 ### Parallel Opportunities
 
 - All Setup tasks marked [P] can run in parallel (T002, T003)
-- All built-in metric definitions marked [P] can run in parallel (T008-T014)
-- Unit tests for User Story 1 marked [P] can run in parallel (T021-T023)
-- User Story 2 unit tests marked [P] can run in parallel (T030-T033)
-- LOC collector interfaces marked [P] can run in parallel (T049, T050)
-- LOC collector unit tests marked [P] can run in parallel (T053-T058)
-- LOC contract tests marked [P] can run in parallel (T061, T062)
-- Other CLI helper parsers marked [P] can run in parallel (T043-T045)
-- Polish tasks marked [P] can run in parallel (T036-T038)
+- Unit type helpers marked [P] can run in parallel (T008, T010, T011, T013)
+- Unit type tests marked [P] can run in parallel (T017-T022)
+- All built-in metric definitions marked [P] can run in parallel (T024-T030)
+- Unit tests for User Story 1 marked [P] can run in parallel (T037-T039)
+- User Story 2 unit tests marked [P] can run in parallel (T044-T048)
+- LOC collector interfaces marked [P] can run in parallel (T052, T053)
+- LOC collector unit tests marked [P] can run in parallel (T056-T061)
+- LOC contract tests marked [P] can run in parallel (T064, T065)
+- Other CLI helper parsers marked [P] can run in parallel (T067-T069)
+- Polish tasks marked [P] can run in parallel (T077-T080, T086)
 
 ---
 
-## Parallel Example: User Story 1
+## Parallel Example: Unit Types (Phase 3)
+
+```bash
+# Launch unit type helpers together:
+Task: "Create UnitType type definition in src/metrics/types.ts"
+Task: "Implement formatBytes helper in src/metrics/unit-formatter.ts"
+Task: "Implement formatDuration helper in src/metrics/unit-formatter.ts"
+Task: "Implement formatInteger helper in src/metrics/unit-formatter.ts"
+
+# Launch unit type tests together (after implementation):
+Task: "Add unit tests for formatValue with percent"
+Task: "Add unit tests for formatValue with integer"
+Task: "Add unit tests for formatBytes"
+Task: "Add unit tests for formatDuration"
+Task: "Add unit tests for formatDelta"
+Task: "Add unit tests for null handling"
+```
+
+---
+
+## Parallel Example: User Story 1 (Phase 4)
 
 ```bash
 # Launch all built-in metric definitions together:
@@ -283,26 +452,27 @@ Task: "Add unit test for resolver with invalid references in tests/unit/metrics/
 
 ---
 
-## Parallel Example: User Story 2
+## Parallel Example: User Story 2 (Phase 5)
 
 ```bash
 # Launch all unit tests for User Story 2 together:
 Task: "Add unit test for name override in tests/unit/metrics/resolver.test.ts"
 Task: "Add unit test for command override in tests/unit/metrics/resolver.test.ts"
+Task: "Add unit test for unit override validation in tests/unit/metrics/resolver.test.ts"
 Task: "Add unit test for multiple property overrides in tests/unit/metrics/resolver.test.ts"
 Task: "Add unit test for invalid override validation in tests/unit/metrics/resolver.test.ts"
 ```
 
 ---
 
-## Parallel Example: LOC Collector (Phase 5)
+## Parallel Example: LOC Collector (Phase 6)
 
 ```bash
-# Launch LOC collector interfaces together (can start immediately after T042):
+# Launch LOC collector interfaces together (can start immediately after T051):
 Task: "Create LocOptions interface in src/metrics/collectors/loc.ts"
 Task: "Define SCC output type interfaces in src/metrics/collectors/loc.ts"
 
-# Launch LOC unit tests together (after T051 collectLoc implementation):
+# Launch LOC unit tests together (after T054 collectLoc implementation):
 Task: "Add unit tests for LocOptions validation in tests/unit/metrics/collectors/loc.test.ts"
 Task: "Add unit tests for SCC output parsing in tests/unit/metrics/collectors/loc.test.ts"
 Task: "Add unit tests for collectLoc with basic path in tests/unit/metrics/collectors/loc.test.ts"
@@ -310,7 +480,7 @@ Task: "Add unit tests for collectLoc with excludePatterns in tests/unit/metrics/
 Task: "Add unit tests for collectLoc with language filtering in tests/unit/metrics/collectors/loc.test.ts"
 Task: "Add unit tests for collectLoc error handling in tests/unit/metrics/collectors/loc.test.ts"
 
-# Launch LOC contract tests together (after T062 implementation):
+# Launch LOC contract tests together (after T065 implementation):
 Task: "Add contract test for loc metric reference in tests/contract/loc-metrics.test.ts"
 Task: "Add contract test for LOC CLI helper output format in tests/contract/loc-metrics.test.ts"
 ```
@@ -319,25 +489,28 @@ Task: "Add contract test for LOC CLI helper output format in tests/contract/loc-
 
 ## Implementation Strategy
 
-### MVP First (User Stories 1 + 2 + LOC Collector)
+### MVP First (Unit Types + User Stories 1 + 2 + LOC Collector)
 
 1. Complete Phase 1: Setup
 2. Complete Phase 2: Foundational (CRITICAL - blocks all stories)
-3. Complete Phase 3: User Story 1
-4. Complete Phase 5: LOC Collector (T049-T063) - High priority for out-of-box value
-5. Complete Phase 4: User Story 2 (optional, can be parallel with Phase 5)
-6. **STOP and VALIDATE**: Test with quickstart examples including LOC collector
-7. Deploy/demo if ready
-8. Complete other CLI helpers (coverage, etc.) and Phase 6 polish
+3. Complete Phase 3: Unit Types (CRITICAL - blocks built-in metric definitions)
+4. Complete Phase 4: User Story 1
+5. Complete Phase 6: LOC Collector (T051-T066) - High priority for out-of-box value
+6. Complete Phase 5: User Story 2 (optional, can be parallel with Phase 6)
+7. Complete Phase 7: Report Integration
+8. **STOP and VALIDATE**: Test with quickstart examples including LOC collector
+9. Deploy/demo if ready
+10. Complete other CLI helpers and Phase 8 polish
 
 ### Incremental Delivery
 
-1. Complete Setup + Foundational → Foundation ready
-2. Add User Story 1 → Test independently → Deploy/Demo (MVP! - 7 built-in metrics available by reference)
-3. Add LOC Collector (Phase 5: T049-T063) → Test independently → Deploy/Demo (Enhanced MVP - primary out-of-box metric with SCC)
-4. Add User Story 2 → Test independently → Deploy/Demo (Full feature - overrides supported)
-5. Add other CLI helpers + Phase 6 polish → Deploy/Demo (Complete feature suite)
-6. Each addition builds on previous without breaking existing functionality
+1. Complete Setup + Foundational + Unit Types -> Foundation ready
+2. Add User Story 1 -> Test independently -> Deploy/Demo (MVP! - 7 built-in metrics available by reference)
+3. Add LOC Collector (Phase 6: T051-T066) -> Test independently -> Deploy/Demo (Enhanced MVP - primary out-of-box metric with SCC)
+4. Add User Story 2 -> Test independently -> Deploy/Demo (Full feature - overrides supported)
+5. Add Report Integration -> Test independently -> Deploy/Demo (Consistent formatting)
+6. Add other CLI helpers + Phase 8 polish -> Deploy/Demo (Complete feature suite)
+7. Each addition builds on previous without breaking existing functionality
 
 ### Parallel Team Strategy
 
@@ -345,14 +518,18 @@ With multiple developers:
 
 1. Team completes Setup + Foundational together
 2. Once Foundational is done:
+   - Developer A: Unit Types (Phase 3)
+   - Developer B: Can prepare User Story 1 structure while A works on unit types
+3. Once Unit Types complete:
    - Developer A: User Story 1 (built-in metrics + basic resolution)
    - Developer B: Can start User Story 2 tests while A works on implementation
-3. After User Story 1 complete, immediately start LOC Collector (T049-T063):
-   - Developer A: T049-T052 (interfaces + core implementation)
-   - Developer B: T053-T062 (comprehensive testing)
-   - Developer C (if available): T061-T062 contract tests in parallel
-4. User Story 2 can proceed in parallel with LOC collector work
-5. Other CLI helpers follow after LOC collector complete
+4. After User Story 1 complete, immediately start LOC Collector (T051-T066):
+   - Developer A: T052-T055 (interfaces + core implementation)
+   - Developer B: T056-T065 (comprehensive testing)
+   - Developer C (if available): T064-T065 contract tests in parallel
+5. User Story 2 can proceed in parallel with LOC collector work
+6. Report Integration can start after Unit Types complete
+7. Other CLI helpers follow after LOC collector complete
 
 ---
 
@@ -365,6 +542,7 @@ With multiple developers:
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independently
 - Built-in metric commands follow contract specifications in contracts/built-in-metrics.md
+- Built-in metrics use UnitType for semantic unit definitions (percent, integer, bytes, duration, decimal)
 - LOC collector uses SCC as implementation detail (not exposed in naming or API)
 - LOC collector supports directory exclusion (--exclude) and language filtering (--language)
 - CLI helpers support standard formats (LCOV, JSON, XML, size, LOC) as documented in quickstart.md
@@ -372,3 +550,4 @@ With multiple developers:
 - Resolution happens during config loading before validation
 - Error messages include available metric IDs for invalid references
 - LOC is prioritized as primary "out of box" metric for maximum user value
+- Unit type validation is strict - invalid unit values fail configuration validation

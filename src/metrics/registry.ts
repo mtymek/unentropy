@@ -8,7 +8,7 @@ export const BUILT_IN_METRICS: BuiltInMetricsRegistry = {
     type: "numeric",
     command:
       'bun test --coverage --coverage-reporter=json 2>/dev/null | jq -r ".total.lines.pct" 2>/dev/null || echo "0"',
-    unit: "%",
+    unit: "percent",
   },
   "function-coverage": {
     id: "function-coverage",
@@ -17,7 +17,7 @@ export const BUILT_IN_METRICS: BuiltInMetricsRegistry = {
     type: "numeric",
     command:
       'bun test --coverage --coverage-reporter=json 2>/dev/null | jq -r ".total.functions.pct" 2>/dev/null || echo "0"',
-    unit: "%",
+    unit: "percent",
   },
   loc: {
     id: "loc",
@@ -26,7 +26,7 @@ export const BUILT_IN_METRICS: BuiltInMetricsRegistry = {
     type: "numeric",
     command:
       'find src/ -name "*.ts" -o -name "*.tsx" 2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk \'{print $1}\' || echo "0"',
-    unit: "lines",
+    unit: "integer",
   },
   "bundle-size": {
     id: "bundle-size",
@@ -35,7 +35,7 @@ export const BUILT_IN_METRICS: BuiltInMetricsRegistry = {
     type: "numeric",
     command:
       'find dist/ -name "*.js" -type f 2>/dev/null | xargs wc -c 2>/dev/null | tail -1 | awk \'{print int($1/1024)}\' || echo "0"',
-    unit: "KB",
+    unit: "bytes",
   },
   "build-time": {
     id: "build-time",
@@ -44,7 +44,7 @@ export const BUILT_IN_METRICS: BuiltInMetricsRegistry = {
     type: "numeric",
     command:
       "(time bun run build) 2>&1 | grep real | awk '{print $2}' | sed 's/[^0-9.]//g' || echo \"0\"",
-    unit: "seconds",
+    unit: "duration",
   },
   "test-time": {
     id: "test-time",
@@ -53,7 +53,7 @@ export const BUILT_IN_METRICS: BuiltInMetricsRegistry = {
     type: "numeric",
     command:
       "(time bun test) 2>&1 | grep real | awk '{print $2}' | sed 's/[^0-9.]//g' || echo \"0\"",
-    unit: "seconds",
+    unit: "duration",
   },
   "dependencies-count": {
     id: "dependencies-count",
@@ -61,7 +61,7 @@ export const BUILT_IN_METRICS: BuiltInMetricsRegistry = {
     description: "Total number of dependencies",
     type: "numeric",
     command: "bun pm ls --all | wc -l",
-    unit: "count",
+    unit: "integer",
   },
 };
 

@@ -14,7 +14,7 @@ describe("registry", () => {
       expect(result?.id).toBe("coverage");
       expect(result?.name).toBe("coverage");
       expect(result?.type).toBe("numeric");
-      expect(result?.unit).toBe("%");
+      expect(result?.unit).toBe("percent");
       expect(result?.command).toContain("bun test --coverage");
     });
 
@@ -25,7 +25,7 @@ describe("registry", () => {
       expect(result?.id).toBe("function-coverage");
       expect(result?.name).toBe("function-coverage");
       expect(result?.type).toBe("numeric");
-      expect(result?.unit).toBe("%");
+      expect(result?.unit).toBe("percent");
       expect(result?.command).toContain("bun test --coverage");
     });
 
@@ -36,7 +36,7 @@ describe("registry", () => {
       expect(result?.id).toBe("loc");
       expect(result?.name).toBe("loc");
       expect(result?.type).toBe("numeric");
-      expect(result?.unit).toBe("lines");
+      expect(result?.unit).toBe("integer");
       expect(result?.command).toContain("find src/");
     });
 
@@ -47,7 +47,7 @@ describe("registry", () => {
       expect(result?.id).toBe("bundle-size");
       expect(result?.name).toBe("bundle-size");
       expect(result?.type).toBe("numeric");
-      expect(result?.unit).toBe("KB");
+      expect(result?.unit).toBe("bytes");
       expect(result?.command).toContain("find dist/");
     });
 
@@ -58,7 +58,7 @@ describe("registry", () => {
       expect(result?.id).toBe("build-time");
       expect(result?.name).toBe("build-time");
       expect(result?.type).toBe("numeric");
-      expect(result?.unit).toBe("seconds");
+      expect(result?.unit).toBe("duration");
       expect(result?.command).toContain("bun run build");
     });
 
@@ -69,7 +69,7 @@ describe("registry", () => {
       expect(result?.id).toBe("test-time");
       expect(result?.name).toBe("test-time");
       expect(result?.type).toBe("numeric");
-      expect(result?.unit).toBe("seconds");
+      expect(result?.unit).toBe("duration");
       expect(result?.command).toContain("bun test");
     });
 
@@ -80,7 +80,7 @@ describe("registry", () => {
       expect(result?.id).toBe("dependencies-count");
       expect(result?.name).toBe("dependencies-count");
       expect(result?.type).toBe("numeric");
-      expect(result?.unit).toBe("count");
+      expect(result?.unit).toBe("integer");
       expect(result?.command).toContain("bun pm ls");
     });
 

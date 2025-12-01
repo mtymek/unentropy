@@ -9,7 +9,7 @@
 The Metrics Gallery provides built-in metrics you can add to your project with a simple reference, instead of writing custom collection commands. Each built-in metric includes:
 
 - Optimized collection command
-- Appropriate unit (%, KB, seconds, etc.)
+- Semantic unit type for consistent formatting (`percent`, `bytes`, `duration`, etc.)
 - Sensible defaults for thresholds
 - Well-tested implementation
 
@@ -26,7 +26,7 @@ Instead of writing this:
       "name": "coverage",
       "type": "numeric",
       "command": "bun test --coverage --coverage-reporter=json | jq -r '.total.lines.pct'",
-      "unit": "%"
+      "unit": "percent"
     }
   ]
 }
@@ -152,32 +152,44 @@ For standard formats, you can use CLI helpers to simplify metric collection comm
 
 ## Available Metrics
 
+### Unit Types
+
+Each metric has a semantic unit type that determines how values are formatted:
+
+| Unit Type | Display Example | Description |
+|-----------|-----------------|-------------|
+| `percent` | `85.5%` | Percentage values |
+| `integer` | `1,234` | Whole numbers with thousands separator |
+| `bytes` | `1.5 MB` | Auto-scaling file sizes |
+| `duration` | `1m 30s` | Auto-scaling time values |
+| `decimal` | `3.14` | Generic floating-point |
+
 ### Coverage Metrics
 
 | ID | Description | Unit | Threshold |
 |----|-------------|------|-----------|
-| `coverage` | Overall test coverage | % | No regression |
-| `function-coverage` | Function coverage | % | No regression |
+| `coverage` | Overall test coverage | `percent` | No regression |
+| `function-coverage` | Function coverage | `percent` | No regression |
 
 ### Code Size Metrics
 
 | ID | Description | Unit | Threshold |
 |----|-------------|------|-----------|
-| `loc` | Lines of code | lines | None |
-| `bundle-size` | Production bundle size | KB | Max 5% increase |
+| `loc` | Lines of code | `integer` | None |
+| `bundle-size` | Production bundle size | `bytes` | Max 5% increase |
 
 ### Performance Metrics
 
 | ID | Description | Unit | Threshold |
 |----|-------------|------|-----------|
-| `build-time` | Build duration | seconds | Max 10% increase |
-| `test-time` | Test suite duration | seconds | Max 10% increase |
+| `build-time` | Build duration | `duration` | Max 10% increase |
+| `test-time` | Test suite duration | `duration` | Max 10% increase |
 
 ### Dependency Metrics
 
 | ID | Description | Unit | Threshold |
 |----|-------------|------|-----------|
-| `dependencies-count` | Direct dependencies | count | None |
+| `dependencies-count` | Direct dependencies | `integer` | None |
 
 ## Common Patterns
 

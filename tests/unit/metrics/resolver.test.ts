@@ -10,7 +10,7 @@ describe("resolver", () => {
         type: "numeric",
         command: "echo '42'",
         description: "Custom metric",
-        unit: "count",
+        unit: "integer",
       };
 
       const result = resolveMetricReference(config);
@@ -29,7 +29,7 @@ describe("resolver", () => {
 
       expect(result.name).toBe("coverage");
       expect(result.type).toBe("numeric");
-      expect(result.unit).toBe("%");
+      expect(result.unit).toBe("percent");
       expect(result.command).toBe("bun test --coverage | jq '.coverage'");
       expect(result.description).toBe("Overall test coverage percentage across the codebase");
       expect(result.$ref).toBeUndefined();
@@ -45,7 +45,7 @@ describe("resolver", () => {
 
       expect(result.name).toBe("function-coverage");
       expect(result.type).toBe("numeric");
-      expect(result.unit).toBe("%");
+      expect(result.unit).toBe("percent");
       expect(result.command).toBe("npm test --coverage | jq '.functions'");
       expect(result.description).toBe("Percentage of functions covered by tests");
       expect(result.$ref).toBeUndefined();
@@ -61,7 +61,7 @@ describe("resolver", () => {
 
       expect(result.name).toBe("loc");
       expect(result.type).toBe("numeric");
-      expect(result.unit).toBe("lines");
+      expect(result.unit).toBe("integer");
       expect(result.command).toBe("find lib/ -name '*.js' | wc -l");
       expect(result.description).toBe("Total lines of code in the codebase");
       expect(result.$ref).toBeUndefined();
@@ -77,7 +77,7 @@ describe("resolver", () => {
 
       expect(result.name).toBe("bundle-size");
       expect(result.type).toBe("numeric");
-      expect(result.unit).toBe("KB");
+      expect(result.unit).toBe("bytes");
       expect(result.command).toBe("du -sk dist/ | cut -f1");
       expect(result.description).toBe("Total size of production build artifacts");
       expect(result.$ref).toBeUndefined();
@@ -93,7 +93,7 @@ describe("resolver", () => {
 
       expect(result.name).toBe("build-time");
       expect(result.type).toBe("numeric");
-      expect(result.unit).toBe("seconds");
+      expect(result.unit).toBe("duration");
       expect(result.command).toBe("time npm run build");
       expect(result.description).toBe("Time taken to complete the build");
       expect(result.$ref).toBeUndefined();
@@ -109,7 +109,7 @@ describe("resolver", () => {
 
       expect(result.name).toBe("test-time");
       expect(result.type).toBe("numeric");
-      expect(result.unit).toBe("seconds");
+      expect(result.unit).toBe("duration");
       expect(result.command).toBe("time npm test");
       expect(result.description).toBe("Time taken to run all tests");
       expect(result.$ref).toBeUndefined();
@@ -125,7 +125,7 @@ describe("resolver", () => {
 
       expect(result.name).toBe("dependencies-count");
       expect(result.type).toBe("numeric");
-      expect(result.unit).toBe("count");
+      expect(result.unit).toBe("integer");
       expect(result.command).toBe("cat package.json | jq '.dependencies | length'");
       expect(result.description).toBe("Total number of dependencies");
       expect(result.$ref).toBeUndefined();
@@ -142,7 +142,7 @@ describe("resolver", () => {
 
       expect(result.name).toBe("my-custom-coverage");
       expect(result.type).toBe("numeric");
-      expect(result.unit).toBe("%");
+      expect(result.unit).toBe("percent");
       expect(result.command).toBe("npm run test:coverage");
       expect(result.$ref).toBeUndefined();
     });
@@ -157,7 +157,7 @@ describe("resolver", () => {
 
       expect(result.name).toBe("loc");
       expect(result.type).toBe("numeric");
-      expect(result.unit).toBe("lines");
+      expect(result.unit).toBe("integer");
       expect(result.command).toBe("find src/ -name '*.ts' | wc -l");
       expect(result.$ref).toBeUndefined();
     });
@@ -189,7 +189,7 @@ describe("resolver", () => {
 
       expect(result.name).toBe("build-time");
       expect(result.type).toBe("numeric");
-      expect(result.unit).toBe("seconds");
+      expect(result.unit).toBe("duration");
       expect(result.command).toBe("time make build");
       expect(result.description).toBe("Custom build time measurement");
       expect(result.$ref).toBeUndefined();
@@ -206,7 +206,7 @@ describe("resolver", () => {
 
       expect(result.name).toBe("test-time");
       expect(result.type).toBe("numeric");
-      expect(result.unit).toBe("seconds");
+      expect(result.unit).toBe("duration");
       expect(result.command).toBe("time pytest");
       expect(result.timeout).toBe(120000);
       expect(result.$ref).toBeUndefined();

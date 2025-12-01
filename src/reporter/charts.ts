@@ -3,11 +3,13 @@ import type { TimeSeriesData, NormalizedDataPoint, LineChartData, BarChartData }
 export function buildLineChartData(
   metricId: string,
   metricName: string,
+  unit: string | null,
   normalizedData: NormalizedDataPoint[]
 ): LineChartData {
   return {
     id: metricId,
     name: metricName,
+    unit,
     values: normalizedData.map((dp) => dp.value),
   };
 }
@@ -30,6 +32,7 @@ export function buildBarChartData(
   return {
     id: metricId,
     name: metricName,
+    unit: timeSeries.unit,
     labels,
     counts: labels.map((label) => labelCounts.get(label) ?? 0),
   };

@@ -232,7 +232,9 @@ export function generateReport(db: Storage, options: GenerateReportOptions = {})
       // Build semantic chart data
       if (timeSeries.metricType === "numeric") {
         const normalizedData = normalizeMetricToBuilds(allBuilds, timeSeries);
-        lineCharts.push(buildLineChartData(metricId, timeSeries.metricName, normalizedData));
+        lineCharts.push(
+          buildLineChartData(metricId, timeSeries.metricName, timeSeries.unit, normalizedData)
+        );
       } else {
         barCharts.push(buildBarChartData(metricId, timeSeries.metricName, timeSeries));
       }
@@ -244,6 +246,7 @@ export function generateReport(db: Storage, options: GenerateReportOptions = {})
         id: metricId,
         name: timeSeries.metricName,
         description: timeSeries.description,
+        unit: timeSeries.unit,
         stats,
         chartType: timeSeries.metricType === "numeric" ? "line" : "bar",
         sparse,

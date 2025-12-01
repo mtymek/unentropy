@@ -3,37 +3,32 @@ import { formatTrendArrow, getTrendColor, formatValue } from "./formatUtils";
 
 interface StatsGridProps {
   stats: SummaryStats;
+  unit: string | null;
 }
 
-export function StatsGrid({ stats }: StatsGridProps) {
+export function StatsGrid({ stats, unit }: StatsGridProps) {
   const trendArrow = formatTrendArrow(stats.trendDirection);
   const trendColor = getTrendColor(stats.trendDirection);
   const trendPercent =
     stats.trendPercent !== null ? Math.abs(stats.trendPercent).toFixed(1) : "0.0";
 
-  const hasLargeValue =
-    (stats.latest !== null && stats.latest > 100) ||
-    (stats.min !== null && stats.min > 100) ||
-    (stats.max !== null && stats.max > 100);
-  const showDecimals = !hasLargeValue;
-
   return (
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
       <div class="text-center">
         <div class="text-2xl font-bold text-gray-900 dark:text-white">
-          {formatValue(stats.latest, null, showDecimals)}
+          {formatValue(stats.latest, unit)}
         </div>
         <div class="text-xs text-gray-600 dark:text-gray-400">Latest</div>
       </div>
       <div class="text-center">
         <div class="text-2xl font-bold text-gray-900 dark:text-white">
-          {formatValue(stats.min, null, showDecimals)}
+          {formatValue(stats.min, unit)}
         </div>
         <div class="text-xs text-gray-600 dark:text-gray-400">Min</div>
       </div>
       <div class="text-center">
         <div class="text-2xl font-bold text-gray-900 dark:text-white">
-          {formatValue(stats.max, null, showDecimals)}
+          {formatValue(stats.max, unit)}
         </div>
         <div class="text-xs text-gray-600 dark:text-gray-400">Max</div>
       </div>

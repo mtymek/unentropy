@@ -5,7 +5,7 @@
       "type": "numeric",
       "description": "Code coverage percentage",
       "command": "echo '85.5'",
-      "unit": "%"
+      "unit": "percent"
     }
   ]
 }
