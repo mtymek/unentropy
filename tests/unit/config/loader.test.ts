@@ -27,7 +27,7 @@ describe("Config Loader", () => {
     expect(metric?.name).toBe("test-coverage");
     expect(metric?.type).toBe("numeric");
     expect(metric?.description).toBe("Percentage of code covered by tests");
-    expect(metric?.unit).toBe("%");
+    expect(metric?.unit).toBe("percent");
     expect(metric?.command).toBe("npm run test:coverage -- --json | jq -r '.total.lines.pct'");
   });
 

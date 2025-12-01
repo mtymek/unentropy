@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+export const UnitTypeSchema = z.enum(["percent", "integer", "bytes", "duration", "decimal"], {
+  message: "unit must be one of: percent, integer, bytes, duration, decimal",
+});
+
 export const ResolvedMetricConfigSchema = z.object({
   name: z
     .string()
@@ -13,7 +17,7 @@ export const ResolvedMetricConfigSchema = z.object({
   }),
   description: z.string().max(256).optional(),
   command: z.string().min(1, { message: "command cannot be empty" }).max(1024),
-  unit: z.string().max(10).optional(),
+  unit: UnitTypeSchema.optional(),
   timeout: z.number().int().positive().max(300000).optional(),
 });
 
@@ -37,7 +41,7 @@ export const MetricConfigSchema = z
     command: z.string().min(1, { message: "command cannot be empty" }).max(1024, {
       message: "command must be 1024 characters or less",
     }),
-    unit: z.string().max(10).optional(),
+    unit: UnitTypeSchema.optional(),
     timeout: z.number().int().positive().max(300000).optional(),
   })
   .strict()

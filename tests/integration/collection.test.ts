@@ -52,7 +52,7 @@ describe("End-to-end collection workflow", () => {
         type: "numeric",
         command: 'echo "85.5"',
         description: "Test coverage percentage",
-        unit: "%",
+        unit: "percent",
       },
       {
         name: "build-status",

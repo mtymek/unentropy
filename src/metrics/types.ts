@@ -4,7 +4,7 @@ export interface MetricTemplate {
   description: string;
   type: "numeric" | "label";
   command: string;
-  unit?: string;
+  unit?: UnitType;
 }
 
 export type BuiltInMetricsRegistry = Record<string, MetricTemplate>;

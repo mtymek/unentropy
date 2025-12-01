@@ -90,11 +90,11 @@
 
 ### Unit Type Validation
 
-- [ ] T015 Add UnitTypeSchema to src/config/schema.ts
+- [x] T015 Add UnitTypeSchema to src/config/schema.ts
   - z.enum(["percent", "integer", "bytes", "duration", "decimal"])
   - Clear error message: "unit must be one of: percent, integer, bytes, duration, decimal"
 
-- [ ] T016 Update MetricConfigSchema.unit to use UnitTypeSchema in src/config/schema.ts
+- [x] T016 Update MetricConfigSchema.unit to use UnitTypeSchema in src/config/schema.ts
   - Replace z.string().max(10) with UnitTypeSchema
   - Maintain optional behavior
 

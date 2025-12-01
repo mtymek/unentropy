@@ -172,7 +172,7 @@ test("configuration contract: storage type with complex metrics", () => {
         type: "numeric",
         description: "Test coverage percentage",
         command: "npm run test:coverage",
-        unit: "%",
+        unit: "percent",
         timeout: 30000,
       },
       {
@@ -187,6 +187,6 @@ test("configuration contract: storage type with complex metrics", () => {
   const result = validateConfig(configWithComplexMetrics);
   expect(result.storage?.type).toBe("sqlite-s3");
   expect(result.metrics).toHaveLength(2);
-  expect(result.metrics[0]?.unit).toBe("%");
+  expect(result.metrics[0]?.unit).toBe("percent");
   expect(result.metrics[1]?.type).toBe("label");
 });
