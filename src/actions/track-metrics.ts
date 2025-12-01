@@ -176,7 +176,6 @@ async function createOrUpdatePullRequestComment(
   const successCount = collectedMetrics.length;
   const failureCount = failures.length;
   const totalMetrics = config.metrics.length;
-  const status = failureCount === 0 ? "✅ Success" : "⚠️ Partial Success";
 
   // Calculate metric diffs based on config and collected metrics
   let metricDiffsSection = "";
