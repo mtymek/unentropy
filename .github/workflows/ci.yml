@@ -50,7 +50,6 @@ jobs:
         uses: ./.github/actions/track-metrics
         with:
           verbose: true
-          enable-pr-comment: true
           s3-endpoint: ${{ secrets.AWS_ENDPOINT_URL }}
           s3-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           s3-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
