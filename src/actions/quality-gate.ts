@@ -407,9 +407,7 @@ function buildMetricSamples(
   return samples;
 }
 
-function determineReferenceBranch(
-  config: { qualityGate?: QualityGateConfig }
-): string {
+function determineReferenceBranch(config: { qualityGate?: QualityGateConfig }): string {
   const contextBase = process.env.GITHUB_BASE_REF;
   return config.qualityGate?.baseline?.referenceBranch ?? contextBase ?? "main";
 }

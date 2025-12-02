@@ -54,8 +54,8 @@ Create an `unentropy.json` file to define your metrics:
 Add the Unentropy action to your existing CI workflow:
 
 ```yaml
-- name: Collect code metrics 
-  uses: unentropy/track-metrics-action@v1 
+- name: Collect code metrics
+  uses: unentropy/track-metrics-action@v1
   with:
     # Configure the storage backend and credentials
     s3-endpoint: ${{ secrets.AWS_ENDPOINT_URL }}
@@ -70,13 +70,13 @@ Add the Unentropy action to your existing CI workflow:
 
 ```yaml
 deploy:
-    name: Deploy to GitHub Pages
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: metrics
-    if: github.ref == 'refs/heads/main' && needs.metrics.result == 'success'
+  name: Deploy to GitHub Pages
+  environment:
+    name: github-pages
+    url: ${{ steps.deployment.outputs.page_url }}
+  runs-on: ubuntu-latest
+  needs: metrics
+  if: github.ref == 'refs/heads/main' && needs.metrics.result == 'success'
 ```
 
 ### Review Reports

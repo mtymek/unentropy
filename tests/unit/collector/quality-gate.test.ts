@@ -375,7 +375,8 @@ describe("MetricEvaluationResult", () => {
         result.baselineMedian !== undefined &&
         result.baselineMedian !== 0
       ) {
-        const expectedPercent = ((result.pullRequestValue - result.baselineMedian) / result.baselineMedian) * 100;
+        const expectedPercent =
+          ((result.pullRequestValue - result.baselineMedian) / result.baselineMedian) * 100;
         expect(result.relativeDeltaPercent).toBe(expectedPercent);
       }
     });
@@ -396,7 +397,8 @@ describe("MetricEvaluationResult", () => {
         result.baselineMedian !== undefined &&
         result.baselineMedian !== 0
       ) {
-        const expectedPercent = ((result.pullRequestValue - result.baselineMedian) / result.baselineMedian) * 100;
+        const expectedPercent =
+          ((result.pullRequestValue - result.baselineMedian) / result.baselineMedian) * 100;
         expect(result.relativeDeltaPercent).toBe(expectedPercent);
       }
     });
@@ -826,7 +828,9 @@ describe("QualityGateResult", () => {
       };
 
       expect(result.baselineInfo.buildsConsidered).toBe(15);
-      expect(result.baselineInfo.buildsConsidered).toBeLessThanOrEqual(result.baselineInfo.maxBuilds);
+      expect(result.baselineInfo.buildsConsidered).toBeLessThanOrEqual(
+        result.baselineInfo.maxBuilds
+      );
     });
 
     it("should include baseline window configuration", () => {
