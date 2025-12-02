@@ -488,41 +488,71 @@ async function createQualityGateComment(
       commentBody += `\n`;
     }
 
-    commentBody += `### Threshold Evaluation\n\n`;
-    commentBody += `| Metric | Baseline | PR Value | Δ | Status | Threshold |\n`;
-    commentBody += `|--------|----------|----------|---|--------|-----------|\n`;
+    const evaluatedMetrics = gateResult.metrics.filter((m) => m.threshold !== undefined);
+    const trackedMetrics = gateResult.metrics.filter((m) => m.threshold === undefined);
 
-    const metricsToShow = gateResult.metrics.slice(0, maxMetrics);
-    for (const metric of metricsToShow) {
-      const baselineStr =
-        metric.baselineMedian !== undefined
-          ? formatValue(metric.baselineMedian, metric.unit as UnitType)
-          : "N/A";
-      const prStr =
-        metric.pullRequestValue !== undefined
-          ? formatValue(metric.pullRequestValue, metric.unit as UnitType)
-          : "N/A";
-      const deltaStr =
-        metric.absoluteDelta !== undefined
-          ? formatDelta(metric.absoluteDelta, metric.unit as UnitType)
-          : "N/A";
-      const statusIcon = metric.status === "pass" ? "✅" : metric.status === "fail" ? "❌" : "⚠️";
-      const thresholdDesc = metric.threshold
-        ? `${metric.threshold.mode}${metric.threshold.target !== undefined ? `: ${metric.threshold.target}` : ""}`
-        : "none";
+    if (evaluatedMetrics.length > 0) {
+      commentBody += `### Evaluated Metrics\n\n`;
+      commentBody += `| Metric | Baseline | PR Value | Δ | Status | Threshold |\n`;
+      commentBody += "|--------|----------|----------|---|--------|-----------|" + "\n";
 
-      commentBody += `| ${metric.metric} | ${baselineStr} | ${prStr} | ${deltaStr} | ${statusIcon} ${metric.status.toUpperCase()} | ${thresholdDesc} |\n`;
+      const metricsToShow = evaluatedMetrics.slice(0, maxMetrics);
+      for (const metric of metricsToShow) {
+        const baselineStr =
+          metric.baselineMedian !== undefined
+            ? formatValue(metric.baselineMedian, metric.unit as UnitType)
+            : "N/A";
+        const prStr =
+          metric.pullRequestValue !== undefined
+            ? formatValue(metric.pullRequestValue, metric.unit as UnitType)
+            : "N/A";
+        const deltaStr =
+          metric.absoluteDelta !== undefined
+            ? formatDelta(metric.absoluteDelta, metric.unit as UnitType)
+            : "N/A";
+        const statusIcon = metric.status === "pass" ? "✅" : metric.status === "fail" ? "❌" : "⚠️";
+        const thresholdDesc = metric.threshold
+          ? `${metric.threshold.mode}${metric.threshold.target !== undefined ? `: ${metric.threshold.target}` : ""}`
+          : "none";
+
+        commentBody += `| ${metric.metric} | ${baselineStr} | ${prStr} | ${deltaStr} | ${statusIcon} ${metric.status.toUpperCase()} | ${thresholdDesc} |\n`;
+      }
+
+      if (evaluatedMetrics.length > maxMetrics) {
+        commentBody += `\n_...and ${evaluatedMetrics.length - maxMetrics} more evaluated metrics_\n`;
+      }
+
+      commentBody += "\n";
+      const passIcon = gateResult.summary.passed > 0 ? "✅" : "";
+      const failIcon = gateResult.summary.failed > 0 ? "❌" : "";
+      commentBody += `${passIcon} **${gateResult.summary.passed} passed** • ${failIcon} **${gateResult.summary.failed} failed**\n\n`;
     }
 
-    if (gateResult.metrics.length > maxMetrics) {
-      commentBody += `\n_...and ${gateResult.metrics.length - maxMetrics} more metrics_\n`;
-    }
+    if (trackedMetrics.length > 0) {
+      commentBody += "<details>\n";
+      commentBody += "<summary>Other tracked metrics (no thresholds configured)</summary>\n\n";
+      commentBody += "| Metric | Baseline | PR Value | Δ |\n";
+      commentBody += "|--------|----------|----------|---|\n";
 
-    commentBody += `\n### Summary\n`;
-    commentBody += `- **Evaluated**: ${gateResult.summary.evaluatedMetrics} metrics (${gateResult.summary.evaluatedMetrics} with thresholds)\n`;
-    commentBody += `- **Passed**: ${gateResult.summary.passed} metrics\n`;
-    commentBody += `- **Failed**: ${gateResult.summary.failed} metrics\n`;
-    commentBody += `- **Unknown**: ${gateResult.summary.unknown} metrics\n`;
+      for (const metric of trackedMetrics) {
+        const baselineStr =
+          metric.baselineMedian !== undefined
+            ? formatValue(metric.baselineMedian, metric.unit as UnitType)
+            : "N/A";
+        const prStr =
+          metric.pullRequestValue !== undefined
+            ? formatValue(metric.pullRequestValue, metric.unit as UnitType)
+            : "N/A";
+        const deltaStr =
+          metric.absoluteDelta !== undefined
+            ? formatDelta(metric.absoluteDelta, metric.unit as UnitType)
+            : "N/A";
+
+        commentBody += `| ${metric.metric} | ${baselineStr} | ${prStr} | ${deltaStr} |\n`;
+      }
+
+      commentBody += "\n</details>\n\n";
+    }
   }
 
   commentBody += `\n---\n`;
