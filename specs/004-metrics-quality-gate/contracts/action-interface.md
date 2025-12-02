@@ -2,101 +2,135 @@
 
 **Feature**: 004-metrics-quality-gate  
 **Date**: 2025-11-19  
-**Purpose**: Define the GitHub Action interface changes required to support the Metrics Quality Gate and pull request comment behaviour in the `track-metrics` workflow.
+**Updated**: 2025-12-02 (Split into separate action)
+**Purpose**: Define the GitHub Action interface for the standalone `quality-gate` action that evaluates PR metrics against baseline thresholds.
 
-## Action Definition
+## Architecture Overview
 
-The quality gate feature builds on the existing `track-metrics` action interface defined in previous specs. This document focuses on new or extended inputs and outputs that control gate evaluation and pull request feedback.
+The quality gate feature is delivered as a **separate GitHub Action** from `track-metrics`:
 
-### Action Metadata (unchanged)
+### track-metrics Action
+- **Context**: Main branch pushes
+- **Purpose**: Build and maintain historical metrics database
+- **Behavior**: Collect → Record → Report → Persist to S3
+- **No changes for quality gate feature**
+
+### quality-gate Action (NEW)
+- **Context**: Pull request events  
+- **Purpose**: Evaluate PR metrics against baseline thresholds
+- **Behavior**: Download baseline DB → Collect PR metrics → Evaluate → Comment → Pass/Fail
+- **This document defines this action**
+
+## Quality Gate Action Definition
+
+### Action Metadata
 
 ```yaml
-name: 'Unentropy Track Metrics'
-description: 'End-to-end metrics workflow with optional quality gate and pull request feedback'
+name: 'Unentropy Quality Gate'
+description: 'Evaluate PR metrics against baseline thresholds and post results'
 author: 'Unentropy'
 branding:
-  icon: 'bar-chart'
-  color: 'blue'
+  icon: 'shield'
+  color: 'green'
 ```
 
-### New and Extended Input Parameters
+### Input Parameters
 
 ```yaml
 inputs:
-  # Existing inputs (storage, config-file, database, report, etc.) remain as defined
-  # in the core and storage-related specs. Only new/changed inputs are listed here.
-
+  # Storage Configuration (required to download baseline database)
+  storage-type:
+    description: "Storage backend type (sqlite-local, sqlite-s3, sqlite-artifact)"
+    required: false
+    default: "sqlite-s3"
+  
+  s3-endpoint:
+    description: "S3-compatible endpoint URL"
+    required: false
+  
+  s3-bucket:
+    description: "S3 bucket name"
+    required: false
+  
+  s3-region:
+    description: "S3 region"
+    required: false
+  
+  s3-access-key-id:
+    description: "S3 access key ID (from GitHub Secrets)"
+    required: false
+  
+  s3-secret-access-key:
+    description: "S3 secret access key (from GitHub Secrets)"
+    required: false
+  
+  database-key:
+    description: "Database file key in storage"
+    required: false
+    default: "unentropy.db"
+  
+  # Quality Gate Configuration
+  config-file:
+    description: "Path to unentropy.json configuration file"
+    required: false
+    default: "unentropy.json"
+  
   quality-gate-mode:
-    description: >-
-      Quality gate behaviour: 'off' (no gate), 'soft' (informational only),
-      or 'hard' (may fail the job when thresholds are violated). When omitted,
-      the value from unentropy.json qualityGate.mode is used.
+    description: "Gate mode: off, soft, or hard (overrides config file)"
     required: false
-
-  quality-gate-config-file:
-    description: >-
-      Optional path to an override configuration file for quality gate settings
-      (thresholds, mode, baseline window). When provided, this file is merged
-      on top of unentropy.json for gate-related fields only.
-    required: false
-
+  
   enable-pr-comment:
-    description: >-
-      Whether to post or update a pull request comment with metric deltas and
-      gate status when running in a pull_request context. When omitted, the
-      value from unentropy.json qualityGate.enablePullRequestComment is used.
+    description: "Post/update PR comment with gate results"
     required: false
-    default: true 
-
-  max-pr-comment-metrics:
-    description: >-
-      Maximum number of metrics to show explicitly in the pull request comment.
-      Excess metrics are summarised. Defaults to the qualityGate.maxCommentMetrics
-      value from configuration when omitted.
-    required: false
-    default: 10
-
+    default: "true"
+  
   pr-comment-marker:
-    description: >-
-      Custom HTML marker used to identify the canonical Unentropy metrics
-      comment on a pull request (e.g., '<!-- unentropy-metrics-quality-gate -->').
-      When omitted, a sensible default marker is used.
+    description: "HTML marker to identify canonical gate comment"
     required: false
-
-  quality-gate-timeout-seconds:
-    description: >-
-      Optional timeout in seconds for the quality gate evaluation and PR comment
-      update. If exceeded, the gate degrades to an 'unknown' soft result and
-      the job continues.
+    default: "<!-- unentropy-quality-gate -->"
+  
+  max-pr-comment-metrics:
+    description: "Maximum metrics to show in PR comment"
     required: false
+    default: "30"
 ```
 
-### New Output Parameters
+### Output Parameters
 
 ```yaml
 outputs:
-  # Existing outputs (success, storage-type, database-location, etc.) remain
-  # as defined in previous specs. Only new outputs are listed here.
-
   quality-gate-status:
-    description: >-
-      Overall quality gate status for this run: 'pass', 'fail', or 'unknown'.
-      'unknown' indicates that the gate was disabled, not fully configured,
-      or could not be evaluated (for example, missing baseline data).
-
+    description: "Overall gate status: pass, fail, or unknown"
+  
+  quality-gate-mode:
+    description: "Gate mode used: off, soft, or hard"
+  
   quality-gate-failing-metrics:
-    description: >-
-      Comma-separated list of metric names that failed blocking thresholds
-      in this run. Empty when the gate passed or was not configured.
-
+    description: "Comma-separated list of failing metric names"
+  
   quality-gate-comment-url:
-    description: >-
-      URL of the pull request comment that contains the metrics summary and
-      gate status, when enable-pr-comment is true and the action runs in a
-      pull_request context.
+    description: "URL of the PR comment (if created)"
+  
+  metrics-collected:
+    description: "Number of metrics collected from PR"
+  
+  baseline-builds-considered:
+    description: "Number of baseline builds used for comparison"
+  
+  baseline-reference-branch:
+    description: "Reference branch used for baseline"
 ```
 
 ## Behavioural Contract
+
+### Baseline Database Access
+
+- The action MUST download the baseline metrics database from the configured storage backend at the start of execution.
+- If the baseline database does not exist (first-time setup), the action MUST:
+  - Return `quality-gate-status` of `unknown`
+  - Post a helpful PR comment explaining that no baseline data is available yet
+  - Exit with code 0 (soft landing, does not fail the job)
+- The action operates in **read-only mode** on the baseline database and MUST NOT persist any changes back to storage.
 
 ### Gate Evaluation
 
@@ -114,16 +148,15 @@ outputs:
 - When mode is `hard`:
   - Thresholds are evaluated as above.
   - If any blocking metric fails its threshold, `quality-gate-status` is `fail`
-    and the action is allowed to fail the job according to repository policies
-    (for example, by setting a non-zero exit code or marking the check as failed).
-  - Missing baselines, configuration errors, or timeouts should result in an
-    `unknown` status rather than failing the job outright.
+    and the action MUST fail the job with a non-zero exit code.
+  - Missing baselines, configuration errors, or evaluation exceptions MUST result in an
+    `unknown` status and exit code 0 (soft landing, does not block PRs).
 
 ### Pull Request Comment Behaviour
 
-- The action posts or updates a pull request comment **only** when:
+- The action posts or updates a pull request comment when:
   - The workflow is running in a pull_request context, and
-  - `enable-pr-comment` is explicitly `true` (or the configuration enables it).
+  - `enable-pr-comment` is `true` (default).
 
 - A single canonical comment is maintained per pull request:
   - The action locates an existing comment using the configured `pr-comment-marker`
@@ -133,11 +166,11 @@ outputs:
     the gate to hard-fail; results remain available in the job summary.
 
 - The comment content MUST:
-  - Include a clear overall status line (pass/fail/unknown) and gate mode.
+  - Include a clear overall status badge (✅ PASS, ❌ FAIL, ⚠️ UNKNOWN) and gate mode.
   - Show a compact table of key metrics (up to `max-pr-comment-metrics`),
-    including baseline value, pull request value, delta, and pass/fail state.
-  - Summarise additional metrics beyond the display limit and, when possible,
-    link to a full HTML report or artifact generated by the workflow.
+    including baseline value, pull request value, delta, threshold, and pass/fail state.
+  - List any blocking violations clearly in a dedicated section.
+  - For first PRs with no baseline, show a helpful message explaining the situation.
 
 ## Security Considerations
 
@@ -150,12 +183,57 @@ outputs:
   for safe use of `GITHUB_TOKEN` and avoid executing untrusted code with
   elevated permissions.
 
+## Usage Examples
+
+### Main Branch Workflow (track-metrics)
+```yaml
+name: Metrics
+on:
+  push:
+    branches: [main]
+jobs:
+  metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/track-metrics
+        with:
+          storage-type: sqlite-s3
+          s3-endpoint: ${{ secrets.AWS_ENDPOINT_URL }}
+          s3-bucket: ${{ secrets.AWS_BUCKET_NAME }}
+          s3-region: ${{ secrets.AWS_REGION }}
+          s3-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          s3-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          database-key: unentropy-metrics.db
+```
+
+### Pull Request Workflow (quality-gate)
+```yaml
+name: Quality Gate
+on:
+  pull_request:
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/quality-gate
+        with:
+          storage-type: sqlite-s3
+          quality-gate-mode: soft  # Change to 'hard' when ready
+          s3-endpoint: ${{ secrets.AWS_ENDPOINT_URL }}
+          s3-bucket: ${{ secrets.AWS_BUCKET_NAME }}
+          s3-region: ${{ secrets.AWS_REGION }}
+          s3-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          s3-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          database-key: unentropy-metrics.db
+```
+
 ## Compatibility Notes
 
-- Repositories that do not configure `qualityGate` or related action inputs
-  continue to use the existing track-metrics behaviour with no gate.
-- Existing workflows can adopt the quality gate incrementally by:
-  - Defining thresholds in `unentropy.json`.
-  - Enabling `quality-gate-mode: 'soft'` and, optionally, `enable-pr-comment`.
-  - Later switching to `quality-gate-mode: 'hard'` on protected branches once
-    thresholds are stable and teams are comfortable with the behaviour.
+- The `track-metrics` action remains unchanged and continues to work as before.
+- The `quality-gate` action is a new, separate action specifically for pull requests.
+- Teams can adopt the quality gate incrementally by:
+  - First: Running `track-metrics` on main to build baseline data
+  - Second: Adding `quality-gate` workflow with `mode: soft` to observe behavior
+  - Third: Switching to `mode: hard` once thresholds are stable and validated

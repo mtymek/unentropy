@@ -77,12 +77,17 @@ description: "Task list for Metrics Quality Gate feature"
 - [x] T018 [P] [US1] Extend configuration loader to parse and default the qualityGate block in src/config/loader.ts
 - [x] T019 [P] [US1] Implement MetricSample MetricEvaluationResult and QualityGateResult types from data-model in src/actions/quality-gate.ts
 - [x] T020 [US1] Implement quality gate evaluation function using baseline and pull request MetricSample data in src/actions/quality-gate.ts
-- [ ] T021 [US1] Integrate quality gate evaluation into track-metrics workflow after metrics collection in src/actions/track-metrics.ts
-- [ ] T022 [P] [US1] Extend action interface with quality-gate-mode input and gate status outputs in .github/actions/track-metrics/action.yml
-- [ ] T023 [US1] Map quality-gate-mode and configuration into evaluation mode selection in src/actions/track-metrics.ts
-- [ ] T024 [US1] Fail or pass job based on hard quality gate status while treating unknown as non-blocking in src/actions/track-metrics.ts
+- [x] T021 [US1] Create quality-gate action entrypoint that downloads baseline DB collects PR metrics and evaluates thresholds in src/actions/quality-gate.ts
+- [x] T022 [P] [US1] Create quality-gate action interface with inputs and outputs in .github/actions/quality-gate/action.yml
+- [x] T023 [US1] Map quality-gate-mode input and configuration into evaluation mode selection in src/actions/quality-gate.ts
+- [x] T024 [US1] Fail or pass job based on hard quality gate status while treating unknown as non-blocking in src/actions/quality-gate.ts
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently, with thresholds evaluated and overall gate status exposed to CI.
+
+**Note**: The quality gate is implemented as a standalone action separate from track-metrics:
+- `track-metrics` action: Main branch only, builds historical database, persists to S3
+- `quality-gate` action: PR context only, downloads baseline, evaluates thresholds, posts comment
+- This separation provides clearer responsibilities, simpler testing, and database safety
 
 ---
 

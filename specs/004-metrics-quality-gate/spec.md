@@ -3,7 +3,9 @@
 **Feature Branch**: `004-metrics-quality-gate`  
 **Created**: 2025-11-19  
 **Status**: Draft  
-**Input**: User description: "\"Quality gate\" feature. Users should be able to set threshold for each metric. track-metrics action should have an option to create a comment when being executed in a PR. The comment should list how the metrics have changed (in comparison to main branch) and flag if one of them is crossing the threshold."
+**Input**: User description: ""Quality gate" feature. Users should be able to set threshold for each metric. A separate quality-gate action should be used in PRs to evaluate thresholds and create a comment. The comment should list how the metrics have changed (in comparison to main branch) and flag if one of them is crossing the threshold."
+
+**Architecture**: This feature introduces a new standalone `quality-gate` GitHub Action that runs in pull request contexts, separate from the existing `track-metrics` action which runs on main branch to build the historical database.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -93,10 +95,12 @@ Teams may start using metrics tracking before they define thresholds for every m
 - Teams are already using metrics tracking and have a basic configuration of metrics in place before enabling quality gates.
 - Thresholds are defined on numeric metrics where it is meaningful to compare values between the reference branch and a pull request.
 - Repository access controls and permissions for posting comments or statuses on pull requests are already managed by the hosting platform and are not changed by this feature.
+- The `track-metrics` action runs on main branch to build historical database, and the `quality-gate` action runs on pull requests to evaluate thresholds (two separate actions with distinct responsibilities).
 
 ## Dependencies
 
-- Availability of up-to-date metric data on the reference branch so that baseline comparisons reflect the current agreed standard.
+- Availability of up-to-date metric data on the reference branch so that baseline comparisons reflect the current agreed standard (built by `track-metrics` action on main branch).
 - Correct configuration of metrics and thresholds by repository maintainers, including clear metric identifiers and sensible threshold values.
-- Continuous integration pipelines that already run metrics tracking on both the reference branch and pull requests so that comparable data exists for evaluation.
+- Continuous integration pipelines that run `track-metrics` action on the reference branch to build historical database, and `quality-gate` action on pull requests to evaluate against that baseline.
 - Pull request workflows that allow automated systems to post or update comments and status indicators associated with a pull request.
+- Storage backend (S3-compatible or GitHub Artifacts) accessible by both main branch and pull request workflows to share the metrics database.
