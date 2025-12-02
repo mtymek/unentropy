@@ -65,29 +65,64 @@ description: "Task list for Metrics Quality Gate feature"
 
 **Independent Test**: Configure thresholds for several metrics, open a pull request that intentionally violates one or more thresholds, and verify that the system evaluates all configured metrics and clearly reports which ones pass or fail.
 
-### Tests for User Story 1
+**Architecture**: The quality gate uses a layered design:
+- `src/quality-gate/`: Core library with types, evaluation logic, and sample building (pure functions, no GitHub dependencies)
+- `src/actions/quality-gate.ts`: Thin action wrapper with input parsing, storage config, PR comment rendering, and orchestration
 
-- [x] T014 [P] [US1] Add qualityGate schema validation tests for thresholds and baseline in tests/unit/config/schema.test.ts
-- [x] T015 [P] [US1] Add loader tests ensuring UnentropyConfigWithQualityGate is returned in tests/unit/config/loader.test.ts
-- [x] T016 [P] [US1] Add unit tests for MetricEvaluationResult and QualityGateResult behaviour in tests/unit/collector/quality-gate.test.ts
-
-### Implementation for User Story 1
-
-- [x] T017 [P] [US1] Extend configuration schema with QualityGateConfig BaselineConfig and MetricThresholdConfig in src/config/schema.ts
-- [x] T018 [P] [US1] Extend configuration loader to parse and default the qualityGate block in src/config/loader.ts
-- [x] T019 [P] [US1] Implement MetricSample MetricEvaluationResult and QualityGateResult types from data-model in src/actions/quality-gate.ts
-- [x] T020 [US1] Implement quality gate evaluation function using baseline and pull request MetricSample data in src/actions/quality-gate.ts
-- [x] T021 [US1] Create quality-gate action entrypoint that downloads baseline DB collects PR metrics and evaluates thresholds in src/actions/quality-gate.ts
-- [x] T022 [P] [US1] Create quality-gate action interface with inputs and outputs in .github/actions/quality-gate/action.yml
-- [x] T023 [US1] Map quality-gate-mode input and configuration into evaluation mode selection in src/actions/quality-gate.ts
-- [x] T024 [US1] Fail or pass job based on hard quality gate status while treating unknown as non-blocking in src/actions/quality-gate.ts
-
-**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently, with thresholds evaluated and overall gate status exposed to CI.
+This separation enables better testability (pure functions), clearer responsibilities, and smaller files.
 
 **Note**: The quality gate is implemented as a standalone action separate from track-metrics:
 - `track-metrics` action: Main branch only, builds historical database, persists to S3
 - `quality-gate` action: PR context only, downloads baseline, evaluates thresholds, posts comment
-- This separation provides clearer responsibilities, simpler testing, and database safety
+
+### Module Structure
+
+```
+src/quality-gate/
+├── index.ts          # Re-exports public API
+├── types.ts          # Types: MetricGateStatus, MetricSample, MetricEvaluationResult, QualityGateResult
+├── evaluator.ts      # Pure functions: calculateMedian, evaluateThreshold, evaluateQualityGate
+└── samples.ts        # Utilities: buildMetricSamples, determineReferenceBranch, calculateBuildsConsidered
+
+src/actions/
+└── quality-gate.ts   # Action entrypoint: input parsing, storage config, PR comment rendering
+
+tests/unit/quality-gate/
+├── evaluator.test.ts # Unit tests for evaluation logic
+└── samples.test.ts   # Unit tests for sample building
+```
+
+### Tests for User Story 1
+
+- [x] T014 [P] [US1] Add qualityGate schema validation tests for thresholds and baseline in tests/unit/config/schema.test.ts
+- [x] T015 [P] [US1] Add loader tests ensuring UnentropyConfigWithQualityGate is returned in tests/unit/config/loader.test.ts
+- [ ] T016 [P] [US1] Add unit tests for evaluator functions (calculateMedian, evaluateThreshold, evaluateQualityGate) in tests/unit/quality-gate/evaluator.test.ts
+- [ ] T016b [P] [US1] Add unit tests for sample building functions in tests/unit/quality-gate/samples.test.ts
+
+### Implementation for User Story 1
+
+#### Core Library (src/quality-gate/)
+
+- [x] T017 [P] [US1] Extend configuration schema with QualityGateConfig BaselineConfig and MetricThresholdConfig in src/config/schema.ts
+- [x] T018 [P] [US1] Extend configuration loader to parse and default the qualityGate block in src/config/loader.ts
+- [ ] T019 [P] [US1] Implement MetricGateStatus, MetricSample, MetricEvaluationResult, QualityGateOverallStatus, QualityGateResult types in src/quality-gate/types.ts
+- [ ] T020 [P] [US1] Implement calculateMedian, evaluateThreshold, evaluateQualityGate functions in src/quality-gate/evaluator.ts
+- [ ] T020b [P] [US1] Implement buildMetricSamples, determineReferenceBranch, calculateBuildsConsidered functions in src/quality-gate/samples.ts
+- [ ] T020c [US1] Create src/quality-gate/index.ts re-exporting public API (types + public functions)
+
+#### Action Entrypoint (src/actions/quality-gate.ts)
+
+- [ ] T021 [US1] Create quality-gate action entrypoint that downloads baseline DB, collects PR metrics, evaluates thresholds using src/quality-gate/ library in src/actions/quality-gate.ts
+- [x] T022 [P] [US1] Create quality-gate action interface with inputs and outputs in .github/actions/quality-gate/action.yml
+- [ ] T023 [US1] Map quality-gate-mode input and configuration into evaluation mode selection in src/actions/quality-gate.ts
+- [ ] T024 [US1] Implement PR comment rendering and GitHub API integration in src/actions/quality-gate.ts
+- [ ] T024b [US1] Fail or pass job based on hard quality gate status while treating unknown as non-blocking in src/actions/quality-gate.ts
+
+### Verification
+
+- [ ] T024c [US1] Run bun run build, bun run typecheck, bun run lint, bun test to verify implementation
+
+**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently, with thresholds evaluated and overall gate status exposed to CI.
 
 ---
 
@@ -121,14 +156,14 @@ description: "Task list for Metrics Quality Gate feature"
 
 ### Tests for User Story 3
 
-- [ ] T031 [US3] Extend quality gate unit tests for no-thresholds and partial-thresholds scenarios in tests/unit/collector/quality-gate.test.ts
+- [ ] T031 [US3] Extend quality gate unit tests for no-thresholds and partial-thresholds scenarios in tests/unit/quality-gate/evaluator.test.ts
 - [ ] T032 [US3] Add integration tests covering runs with missing baselines and mixed configured thresholds in tests/integration/track-metrics.test.ts
 - [ ] T033 [US3] Add unit tests for invalid threshold configuration error messages in tests/unit/config/schema.test.ts
 
 ### Implementation for User Story 3
 
-- [ ] T034 [US3] Implement behaviour when no thresholds are configured returning overall unknown gate status in src/actions/quality-gate.ts
-- [ ] T035 [US3] Implement missing baseline handling marking metrics as unknown with baselineInfo populated in src/actions/quality-gate.ts
+- [ ] T034 [US3] Implement behaviour when no thresholds are configured returning overall unknown gate status in src/quality-gate/evaluator.ts
+- [ ] T035 [US3] Implement missing baseline handling marking metrics as unknown with baselineInfo populated in src/quality-gate/evaluator.ts
 - [ ] T036 [US3] Harden validation for MetricThresholdConfig fields with user friendly errors in src/config/schema.ts
 - [ ] T037 [US3] Ensure track-metrics treats evaluation exceptions and unknown results as soft outcomes that do not fail CI in src/actions/track-metrics.ts
 
@@ -189,12 +224,15 @@ description: "Task list for Metrics Quality Gate feature"
 # Launch key tests for User Story 1 together:
 Task: "T014 [US1] Add qualityGate schema validation tests in tests/unit/config/schema.test.ts"
 Task: "T015 [US1] Add loader tests for qualityGate block in tests/unit/config/loader.test.ts"
-Task: "T016 [US1] Add unit tests for MetricEvaluationResult and QualityGateResult in tests/unit/collector/quality-gate.test.ts"
+Task: "T016 [US1] Add unit tests for evaluator functions in tests/unit/quality-gate/evaluator.test.ts"
+Task: "T016b [US1] Add unit tests for sample building in tests/unit/quality-gate/samples.test.ts"
 
-# Launch core implementation tasks for User Story 1 together (different files):
+# Launch core library implementation tasks together (different files):
 Task: "T017 [US1] Extend QualityGateConfig schema in src/config/schema.ts"
 Task: "T018 [US1] Extend configuration loader in src/config/loader.ts"
-Task: "T019 [US1] Implement evaluation types in src/actions/quality-gate.ts"
+Task: "T019 [US1] Implement types in src/quality-gate/types.ts"
+Task: "T020 [US1] Implement evaluator functions in src/quality-gate/evaluator.ts"
+Task: "T020b [US1] Implement sample building in src/quality-gate/samples.ts"
 ```
 
 ---
@@ -206,7 +244,9 @@ Task: "T019 [US1] Implement evaluation types in src/actions/quality-gate.ts"
 1. Complete Phase 1: Setup
 2. Complete Phase 2: Foundational basic and diff-only PR comment (CRITICAL - blocks all stories)
 3. Complete Phase 3: User Story 1 (threshold configuration, evaluation, and gate status outputs)
-4. **STOP and VALIDATE**: Test User Story 1 independently using tests in tests/unit/config/, tests/unit/collector/, and tests/integration/track-metrics.test.ts
+   - Core library first: types.ts → evaluator.ts → samples.ts → index.ts
+   - Action wrapper: quality-gate.ts imports from library
+4. **STOP and VALIDATE**: Test User Story 1 independently using tests in tests/unit/config/, tests/unit/quality-gate/, and tests/integration/track-metrics.test.ts
 5. Integrate quality gate outputs into CI policies if desired
 
 ### Incremental Delivery

@@ -3,289 +3,26 @@ import * as github from "@actions/github";
 import { loadConfig } from "../config/loader.js";
 import { Storage } from "../storage/storage.js";
 import { collectMetrics } from "../collector/collector.js";
-import type { MetricThresholdConfig, QualityGateConfig, StorageConfig } from "../config/schema.js";
+import type { StorageConfig } from "../config/schema.js";
 import type { StorageProviderConfig } from "../storage/providers/interface.js";
-import type { MetricsRepository } from "../storage/repository.js";
 import { formatValue, formatDelta } from "../metrics/unit-formatter.js";
 import type { UnitType } from "../metrics/types.js";
-
-// ============================================================================
-// Evaluation Types and Logic
-// ============================================================================
-
-export type MetricGateStatus = "pass" | "fail" | "unknown";
-
-export interface MetricSample {
-  name: string;
-  unit?: string;
-  type: "numeric" | "label";
-  baselineValues: number[];
-  pullRequestValue?: number;
-}
-
-export interface MetricEvaluationResult {
-  metric: string;
-  unit?: string;
-  baselineMedian?: number;
-  pullRequestValue?: number;
-  absoluteDelta?: number;
-  relativeDeltaPercent?: number;
-  threshold?: MetricThresholdConfig;
-  status: MetricGateStatus;
-  message?: string;
-  isBlocking?: boolean;
-}
-
-export type QualityGateOverallStatus = "pass" | "fail" | "unknown";
-
-export interface QualityGateResult {
-  status: QualityGateOverallStatus;
-  mode: "off" | "soft" | "hard";
-  metrics: MetricEvaluationResult[];
-  failingMetrics: MetricEvaluationResult[];
-  summary: {
-    totalMetrics: number;
-    evaluatedMetrics: number;
-    passed: number;
-    failed: number;
-    unknown: number;
-  };
-  baselineInfo: {
-    referenceBranch: string;
-    buildsConsidered: number;
-    maxBuilds: number;
-    maxAgeDays: number;
-  };
-}
-
-function calculateMedian(values: number[]): number | undefined {
-  if (values.length === 0) {
-    return undefined;
-  }
-
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-
-  if (sorted.length % 2 === 0) {
-    const left = sorted[mid - 1];
-    const right = sorted[mid];
-    if (left === undefined || right === undefined) {
-      return undefined;
-    }
-    return (left + right) / 2;
-  }
-
-  return sorted[mid];
-}
-
-function evaluateThreshold(
-  sample: MetricSample,
-  threshold: MetricThresholdConfig,
-  baselineMedian: number | undefined
-): MetricEvaluationResult {
-  const result: MetricEvaluationResult = {
-    metric: sample.name,
-    unit: sample.unit,
-    baselineMedian,
-    pullRequestValue: sample.pullRequestValue,
-    threshold,
-    status: "unknown",
-    isBlocking: threshold.severity !== "warning",
-  };
-
-  if (baselineMedian !== undefined && sample.pullRequestValue !== undefined) {
-    result.absoluteDelta = sample.pullRequestValue - baselineMedian;
-    if (baselineMedian !== 0) {
-      result.relativeDeltaPercent = (result.absoluteDelta / baselineMedian) * 100;
-    }
-  }
-
-  if (sample.pullRequestValue === undefined) {
-    result.status = "unknown";
-    result.message = "Metric value not available for pull request";
-    return result;
-  }
-
-  if (baselineMedian === undefined) {
-    result.status = "unknown";
-    result.message = "Baseline data not available";
-    return result;
-  }
-
-  switch (threshold.mode) {
-    case "min":
-      if (threshold.target === undefined) {
-        result.status = "unknown";
-        result.message = "Threshold target not specified";
-        break;
-      }
-      if (sample.pullRequestValue >= threshold.target) {
-        result.status = "pass";
-      } else {
-        result.status = "fail";
-        result.message = `${sample.name} (${sample.pullRequestValue}) is below minimum threshold of ${threshold.target}`;
-      }
-      break;
-
-    case "max":
-      if (threshold.target === undefined) {
-        result.status = "unknown";
-        result.message = "Threshold target not specified";
-        break;
-      }
-      if (sample.pullRequestValue <= threshold.target) {
-        result.status = "pass";
-      } else {
-        result.status = "fail";
-        result.message = `${sample.name} (${sample.pullRequestValue}) exceeds maximum threshold of ${threshold.target}`;
-      }
-      break;
-
-    case "no-regression": {
-      const tolerance = threshold.tolerance ?? 0.5;
-      if (sample.pullRequestValue >= baselineMedian - tolerance) {
-        result.status = "pass";
-      } else {
-        result.status = "fail";
-        result.message = `${sample.name} regressed beyond tolerance (${sample.pullRequestValue} vs baseline ${baselineMedian}, tolerance: ${tolerance})`;
-      }
-      break;
-    }
-
-    case "delta-max-drop": {
-      if (threshold.maxDropPercent === undefined) {
-        result.status = "unknown";
-        result.message = "maxDropPercent not specified";
-        break;
-      }
-
-      if (baselineMedian === 0) {
-        result.status = "unknown";
-        result.message = "Cannot calculate percentage drop from zero baseline";
-        break;
-      }
-
-      const dropPercent = ((baselineMedian - sample.pullRequestValue) / baselineMedian) * 100;
-
-      if (dropPercent <= threshold.maxDropPercent) {
-        result.status = "pass";
-      } else {
-        result.status = "fail";
-        result.message = `${sample.name} dropped by ${dropPercent.toFixed(2)}%, exceeding max allowed drop of ${threshold.maxDropPercent}%`;
-      }
-      break;
-    }
-  }
-
-  return result;
-}
-
-export function evaluateQualityGate(
-  samples: MetricSample[],
-  config: QualityGateConfig,
-  baselineInfo: {
-    referenceBranch: string;
-    buildsConsidered: number;
-    maxBuilds: number;
-    maxAgeDays: number;
-  }
-): QualityGateResult {
-  const mode = config.mode ?? "soft";
-  const thresholds = config.thresholds ?? [];
-
-  if (mode === "off") {
-    return {
-      status: "unknown",
-      mode: "off",
-      metrics: [],
-      failingMetrics: [],
-      summary: {
-        totalMetrics: samples.length,
-        evaluatedMetrics: 0,
-        passed: 0,
-        failed: 0,
-        unknown: samples.length,
-      },
-      baselineInfo,
-    };
-  }
-
-  const thresholdMap = new Map<string, MetricThresholdConfig>();
-  for (const threshold of thresholds) {
-    thresholdMap.set(threshold.metric, threshold);
-  }
-
-  const evaluationResults: MetricEvaluationResult[] = [];
-
-  for (const sample of samples) {
-    const threshold = thresholdMap.get(sample.name);
-
-    if (!threshold) {
-      const baselineMedian = calculateMedian(sample.baselineValues);
-      const result: MetricEvaluationResult = {
-        metric: sample.name,
-        unit: sample.unit,
-        baselineMedian,
-        pullRequestValue: sample.pullRequestValue,
-        status: "unknown",
-        message: "No threshold configured for this metric",
-        isBlocking: false,
-      };
-
-      if (baselineMedian !== undefined && sample.pullRequestValue !== undefined) {
-        result.absoluteDelta = sample.pullRequestValue - baselineMedian;
-        if (baselineMedian !== 0) {
-          result.relativeDeltaPercent = (result.absoluteDelta / baselineMedian) * 100;
-        }
-      }
-
-      evaluationResults.push(result);
-      continue;
-    }
-
-    const baselineMedian = calculateMedian(sample.baselineValues);
-    const result = evaluateThreshold(sample, threshold, baselineMedian);
-    evaluationResults.push(result);
-  }
-
-  const failingMetrics = evaluationResults.filter(
-    (r) => r.status === "fail" && r.isBlocking === true
-  );
-
-  const summary = {
-    totalMetrics: samples.length,
-    evaluatedMetrics: evaluationResults.filter((r) => r.threshold !== undefined).length,
-    passed: evaluationResults.filter((r) => r.status === "pass").length,
-    failed: evaluationResults.filter((r) => r.status === "fail").length,
-    unknown: evaluationResults.filter((r) => r.status === "unknown").length,
-  };
-
-  let overallStatus: QualityGateOverallStatus;
-  if (thresholds.length === 0) {
-    overallStatus = "unknown";
-  } else if (failingMetrics.length > 0) {
-    overallStatus = "fail";
-  } else if (summary.evaluatedMetrics === 0) {
-    overallStatus = "unknown";
-  } else if (summary.passed > 0) {
-    overallStatus = "pass";
-  } else {
-    overallStatus = "unknown";
-  }
-
-  return {
-    status: overallStatus,
-    mode,
-    metrics: evaluationResults,
-    failingMetrics,
-    summary,
-    baselineInfo,
-  };
-}
+import {
+  evaluateQualityGate,
+  buildMetricSamples,
+  calculateBuildsConsidered,
+} from "../quality-gate/index.js";
+import type { QualityGateResult } from "../quality-gate/index.js";
+import type { QualityGateConfig } from "../config/schema.js";
 
 // ============================================================================
 // GitHub Action Entrypoint
 // ============================================================================
+
+function determineReferenceBranch(config: { qualityGate?: QualityGateConfig }): string {
+  const contextBase = process.env.GITHUB_BASE_REF;
+  return config.qualityGate?.baseline?.referenceBranch ?? contextBase ?? "main";
+}
 
 interface QualityGateInputs {
   storageType: string;
@@ -374,56 +111,6 @@ function createStorageConfig(
   return {
     type: "sqlite-artifact",
   };
-}
-
-function buildMetricSamples(
-  collectedMetrics: {
-    definition: {
-      name: string;
-      type: "numeric" | "label";
-      unit?: string;
-      description?: string;
-    };
-    value_numeric?: number;
-    value_label?: string;
-  }[],
-  repository: MetricsRepository,
-  referenceBranch: string,
-  maxBuilds: number,
-  maxAgeDays: number
-): MetricSample[] {
-  const samples: MetricSample[] = [];
-
-  for (const collected of collectedMetrics) {
-    const def = collected.definition;
-
-    if (def.type !== "numeric") {
-      continue;
-    }
-
-    const baselineValues = repository
-      .getBaselineMetricValues(def.name, referenceBranch, maxBuilds, maxAgeDays)
-      .map((v) => v.value_numeric);
-
-    samples.push({
-      name: def.name,
-      unit: def.unit,
-      type: "numeric",
-      baselineValues,
-      pullRequestValue: collected.value_numeric,
-    });
-  }
-
-  return samples;
-}
-
-function determineReferenceBranch(config: { qualityGate?: QualityGateConfig }): string {
-  const contextBase = process.env.GITHUB_BASE_REF;
-  return config.qualityGate?.baseline?.referenceBranch ?? contextBase ?? "main";
-}
-
-function calculateBuildsConsidered(samples: MetricSample[]): number {
-  return Math.max(...samples.map((s) => s.baselineValues.length), 0);
 }
 
 async function createQualityGateComment(
@@ -556,7 +243,7 @@ async function createQualityGateComment(
   }
 
   commentBody += `\n---\n`;
-  commentBody += `<details>\n<summary>ℹ️ What is this?</summary>\n\n`;
+  commentBody += `<details>\n<summary>What is this?</summary>\n\n`;
   commentBody += `This is an automated quality gate check powered by [Unentropy](https://github.com/unentropy/unentropy).\n`;
   commentBody += `The gate compares your PR metrics against the baseline from the \`${gateResult.baselineInfo.referenceBranch}\` branch.\n\n`;
   commentBody += `**Current mode: ${gateResult.mode}**`;

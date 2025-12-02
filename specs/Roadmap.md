@@ -14,26 +14,33 @@
 * [x] First-class support for standard metrics (e.g. "size in bytes", "coverage in %"). 
   * [ ] Each metric may have a default chart type.
   * [ ] MetricCard may look differently based on the metric type.
-* [ ] Quality gates
-* [ ] Thresholds
+* [x] Quality gates
+* [x] Thresholds
 * [ ] Separate GH action for quality gate
 
 ## 0.2
+* [ ] Move to a dedicated organization
 * [ ] Properly packaged Github actions
 * [ ] "Main branch"
 * [ ] Scaffolding: `npx unentropy init`, an interactive CLI that creates a basic Unentropy configuration based on the current projects.
 * [ ] Public config schema 
 
 ## 0.3
+* [ ] Simplify the config schema when using $ref
+* [ ] Polish quality gate comment, introduce some sort of templating
+  * It should be less "dry"
 * [ ] Collectors and metrics gallery
 * [ ] Custom collectors and metrics / simple plugins
-* [ ] Heuristic alerts ("Your bundle suddenly increased in size by X%")
 
 ## TBD
 * Support for more robust, cloud databases (Postgres, MySQL, ...)
 * Templated PR comments
 * Garbage collection from metrics database
 * What to do when the number of metrics grows too large?
+* Heuristic alerts ("Your bundle suddenly increased in size by X%")
+* Review the tests.
+  * Remove redundancy
+  * Cleanup the split between contract/integration/unit
 
 ## Technical improvements
 * [x] Cleanup queries.js - clear contract
@@ -42,7 +49,11 @@
 * [ ] Proper tests for Storage class
 * [ ] Allow replacing existing build context
 
+## Spec-kit
+* [ ] Create a contract spec for GH quailty gate comment - how it should look like, what it should contain, etc.
+
 ## Long term ideas
-* Browsing the coverage report
-* Customizable templates
 * A website
+* Badges
+* Browsing coverage reports (can we still do it with small sqlite storage?)
+* Customizable templates

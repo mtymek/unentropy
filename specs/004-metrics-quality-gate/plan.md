@@ -105,9 +105,14 @@ src/
 ├── actions/
 │   ├── collect.ts              # Existing metrics collection entrypoint
 │   ├── track-metrics.ts        # Existing - main branch only (unchanged)
-│   ├── quality-gate.ts         # Evaluation logic + action entrypoint (T019-T024)
+│   ├── quality-gate.ts         # Action entrypoint + PR comment rendering (~350 lines)
 │   ├── find-database.ts        # Database discovery for reporting workflows
 │   └── report.ts               # Report generation entrypoint
+├── quality-gate/               # Core quality gate library (extracted from action)
+│   ├── index.ts                # Re-exports public API
+│   ├── types.ts                # Types: MetricSample, MetricEvaluationResult, QualityGateResult
+│   ├── evaluator.ts            # Pure evaluation: calculateMedian, evaluateThreshold, evaluateQualityGate
+│   └── samples.ts              # Sample building: buildMetricSamples, determineReferenceBranch
 ├── collector/
 │   ├── collector.ts      # Metric collection orchestration
 │   ├── context.ts        # Build context extraction
@@ -145,11 +150,23 @@ tests/
 └── unit/
     ├── collector/
     ├── config/
+    ├── quality-gate/           # Unit tests for quality gate library
+    │   ├── evaluator.test.ts   # Tests for evaluation logic
+    │   └── samples.test.ts     # Tests for sample building
     ├── reporter/
     └── storage/
 ```
 
-**Structure Decision**: Reuse the existing single-project structure under `src/` and `tests/`, extending `src/actions/quality-gate.ts` with the action entrypoint that orchestrates baseline download, metrics collection, threshold evaluation, and PR commenting. The file contains both evaluation logic (T019-T020, already implemented) and the action entrypoint (T021-T024). Configuration extensions are in `src/config/schema.ts` (already implemented). The action leverages the existing three-layer storage architecture in read-only mode and reuses the metrics collection infrastructure. No changes to `track-metrics` action are required. Documentation and contracts for this feature live exclusively under `specs/004-metrics-quality-gate/`.
+**Structure Decision**: The quality gate feature follows a layered architecture:
+- **`src/quality-gate/`**: Core library with pure evaluation logic, types, and sample building utilities. This module has no GitHub Action dependencies and is easily unit-testable.
+- **`src/actions/quality-gate.ts`**: Thin action wrapper (~350 lines) handling input parsing, storage configuration, PR comment rendering, and orchestration. Imports core logic from `src/quality-gate/`.
+
+This separation enables:
+- **Better testability**: Pure functions in `evaluator.ts` can be unit tested without mocking GitHub Actions
+- **Clearer responsibilities**: Types and evaluation logic separate from GitHub-specific concerns
+- **Smaller files**: Action file reduced from ~745 lines to ~350 lines
+
+Configuration extensions are in `src/config/schema.ts` (already implemented). The action leverages the existing three-layer storage architecture in read-only mode and reuses the metrics collection infrastructure. No changes to `track-metrics` action are required. Documentation and contracts for this feature live exclusively under `specs/004-metrics-quality-gate/`.
 
 ## Complexity Tracking
 
