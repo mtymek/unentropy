@@ -221,15 +221,25 @@ export function evaluateQualityGate(
     const threshold = thresholdMap.get(sample.name);
 
     if (!threshold) {
-      evaluationResults.push({
+      const baselineMedian = calculateMedian(sample.baselineValues);
+      const result: MetricEvaluationResult = {
         metric: sample.name,
         unit: sample.unit,
-        baselineMedian: calculateMedian(sample.baselineValues),
+        baselineMedian,
         pullRequestValue: sample.pullRequestValue,
         status: "unknown",
         message: "No threshold configured for this metric",
         isBlocking: false,
-      });
+      };
+
+      if (baselineMedian !== undefined && sample.pullRequestValue !== undefined) {
+        result.absoluteDelta = sample.pullRequestValue - baselineMedian;
+        if (baselineMedian !== 0) {
+          result.relativeDeltaPercent = (result.absoluteDelta / baselineMedian) * 100;
+        }
+      }
+
+      evaluationResults.push(result);
       continue;
     }
 
