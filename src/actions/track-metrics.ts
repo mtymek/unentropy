@@ -116,10 +116,6 @@ function createStorageConfig(inputs: ActionInputs, config: StorageConfig): Stora
   };
 }
 
-function isPullRequestContext(): boolean {
-  return process.env.GITHUB_EVENT_NAME === "pull_request";
-}
-
 export async function runTrackMetricsAction(): Promise<void> {
   const startTime = Date.now();
 
@@ -187,12 +183,8 @@ export async function runTrackMetricsAction(): Promise<void> {
 
   // Phase 4: Persist storage (upload for S3) - only on main branch, not PRs
   // This closes the database for S3 providers, so must happen after report generation
-  if (!isPullRequestContext()) {
-    core.info("Uploading database to S3...");
-    await storage.persist();
-  } else {
-    core.info("Skipping database upload in pull request context");
-  }
+  core.info("Uploading database to S3...");
+  await storage.persist();
 
   const duration = Date.now() - startTime;
 
