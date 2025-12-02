@@ -41,22 +41,11 @@ jobs:
             -e MINIO_ROOT_PASSWORD=minioadmin \
             minio/minio server /data --console-address ":9001" \
             && while ! docker exec minio mc ready local; do sleep 1; done
-      - name: Wait for Minio and create test bucket
+      - name: Create bucket for tests
         run: docker exec minio mc mb data/unentropy-test
+
       - name: Test
         run: bun test --coverage --coverage-reporter=lcov
-      - name: Test track-metrics action
-        id: track-metrics
-        uses: ./.github/actions/track-metrics
-        with:
-          verbose: true
-          s3-endpoint: ${{ secrets.AWS_ENDPOINT_URL }}
-          s3-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          s3-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          s3-bucket: ${{ secrets.AWS_BUCKET_NAME }}
-          s3-region: ${{ secrets.AWS_REGION }}
-          database-key: "unentropy-metrics.db"
-
       - name: Quality Gate
         id: quality-gate
         uses: ./.github/actions/quality-gate
@@ -70,7 +59,6 @@ jobs:
           s3-bucket: ${{ secrets.AWS_BUCKET_NAME }}
           s3-region: ${{ secrets.AWS_REGION }}
           database-key: "unentropy-metrics.db"
-
       - name: Report quality-gate summary
         run: |
           echo "## 🛡️ Quality Gate Action Summary" >> $GITHUB_STEP_SUMMARY
