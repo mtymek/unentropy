@@ -19,7 +19,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -31,7 +30,6 @@ jobs:
           scc --version
       - name: Install dependencies
         run: bun install
-
       - name: Build GitHub Actions
         run: bun run build:actions
       - name: Start Minio container
@@ -44,11 +42,11 @@ jobs:
           -e MINIO_ROOT_PASSWORD=minioadmin \
           minio/minio server /data --console-address ":9001" \
           && while ! docker exec minio mc ready local; do sleep 1; done
-      - name: Wait for Minio and create test bucket
+      - name: Create bucket for tests
         run: docker exec minio mc mb data/unentropy-test
+
       - name: Run tests to generate coverage report
         run: bun run test --coverage --coverage-reporter=lcov
-
       - name: Track metrics
         id: track-metrics
         uses: ./.github/actions/track-metrics
@@ -60,12 +58,10 @@ jobs:
           s3-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           database-key: unentropy-metrics.db
           report-dir: pages
-
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: pages/
-
       - name: Report summary
         run: |
           echo "## 📊 Metrics Collection Summary" >> $GITHUB_STEP_SUMMARY

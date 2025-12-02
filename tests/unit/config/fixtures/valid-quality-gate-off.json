@@ -1,0 +1,12 @@
+{
+  "metrics": [
+    {
+      "name": "coverage",
+      "type": "numeric",
+      "command": "echo 85"
+    }
+  ],
+  "qualityGate": {
+    "mode": "off"
+  }
+}

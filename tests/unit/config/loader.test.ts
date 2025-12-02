@@ -51,4 +51,89 @@ describe("Config Loader", () => {
 
     await expect(loadConfig(configPath)).rejects.toThrow(Error);
   });
+
+  describe("Quality Gate Configuration", () => {
+    it("should parse config with qualityGate in soft mode", async () => {
+      const configPath = path.join(fixturesDir, "valid-quality-gate-soft.json");
+      const config = await loadConfig(configPath);
+
+      expect(config.qualityGate).toBeDefined();
+      expect(config.qualityGate?.mode).toBe("soft");
+      expect(config.qualityGate?.enablePullRequestComment).toBe(true);
+      expect(config.qualityGate?.maxCommentMetrics).toBe(30);
+      expect(config.qualityGate?.maxCommentCharacters).toBe(8000);
+    });
+
+    it("should parse config with qualityGate baseline configuration", async () => {
+      const configPath = path.join(fixturesDir, "valid-quality-gate-soft.json");
+      const config = await loadConfig(configPath);
+
+      expect(config.qualityGate?.baseline).toBeDefined();
+      expect(config.qualityGate?.baseline?.referenceBranch).toBe("main");
+      expect(config.qualityGate?.baseline?.maxBuilds).toBe(20);
+      expect(config.qualityGate?.baseline?.maxAgeDays).toBe(90);
+      expect(config.qualityGate?.baseline?.aggregate).toBe("median");
+    });
+
+    it("should parse config with qualityGate thresholds", async () => {
+      const configPath = path.join(fixturesDir, "valid-quality-gate-soft.json");
+      const config = await loadConfig(configPath);
+
+      expect(config.qualityGate?.thresholds).toBeDefined();
+      expect(config.qualityGate?.thresholds).toHaveLength(2);
+
+      const coverageThreshold = config.qualityGate?.thresholds?.[0];
+      expect(coverageThreshold?.metric).toBe("coverage");
+      expect(coverageThreshold?.mode).toBe("no-regression");
+      expect(coverageThreshold?.tolerance).toBe(0.5);
+      expect(coverageThreshold?.severity).toBe("blocker");
+
+      const bundleSizeThreshold = config.qualityGate?.thresholds?.[1];
+      expect(bundleSizeThreshold?.metric).toBe("bundle-size");
+      expect(bundleSizeThreshold?.mode).toBe("delta-max-drop");
+      expect(bundleSizeThreshold?.maxDropPercent).toBe(5);
+      expect(bundleSizeThreshold?.severity).toBe("warning");
+    });
+
+    it("should parse config with qualityGate in hard mode", async () => {
+      const configPath = path.join(fixturesDir, "valid-quality-gate-hard.json");
+      const config = await loadConfig(configPath);
+
+      expect(config.qualityGate).toBeDefined();
+      expect(config.qualityGate?.mode).toBe("hard");
+      expect(config.qualityGate?.thresholds).toHaveLength(1);
+
+      const threshold = config.qualityGate?.thresholds?.[0];
+      expect(threshold?.metric).toBe("coverage");
+      expect(threshold?.mode).toBe("min");
+      expect(threshold?.target).toBe(80);
+      expect(threshold?.severity).toBe("blocker");
+    });
+
+    it("should parse config with qualityGate in off mode", async () => {
+      const configPath = path.join(fixturesDir, "valid-quality-gate-off.json");
+      const config = await loadConfig(configPath);
+
+      expect(config.qualityGate).toBeDefined();
+      expect(config.qualityGate?.mode).toBe("off");
+    });
+
+    it("should parse config without qualityGate block", async () => {
+      const configPath = path.join(fixturesDir, "valid-minimal.json");
+      const config = await loadConfig(configPath);
+
+      expect(config.qualityGate).toBeUndefined();
+    });
+
+    it("should return UnentropyConfigWithQualityGate type", async () => {
+      const configPath = path.join(fixturesDir, "valid-quality-gate-soft.json");
+      const config = await loadConfig(configPath);
+
+      expect(config).toHaveProperty("metrics");
+      expect(config).toHaveProperty("storage");
+      expect(config).toHaveProperty("qualityGate");
+      expect(config.metrics).toBeInstanceOf(Array);
+      expect(config.storage).toHaveProperty("type");
+    });
+  });
 });

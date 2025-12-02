@@ -412,6 +412,755 @@ describe("Config Schema Validation", () => {
     });
   });
 
+  describe("Quality Gate Configuration", () => {
+    describe("Valid Quality Gate Configurations", () => {
+      it("should accept qualityGate with mode set to off", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "off",
+          },
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should accept qualityGate with mode set to soft", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            thresholds: [{ metric: "coverage", mode: "no-regression", tolerance: 0.5 }],
+          },
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should accept qualityGate with mode set to hard", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "hard",
+            thresholds: [{ metric: "coverage", mode: "min", target: 80 }],
+          },
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should accept qualityGate with enablePullRequestComment", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            enablePullRequestComment: true,
+            thresholds: [{ metric: "coverage", mode: "no-regression" }],
+          },
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should accept qualityGate with maxCommentMetrics", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            maxCommentMetrics: 50,
+            thresholds: [],
+          },
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should accept qualityGate with maxCommentCharacters", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            maxCommentCharacters: 5000,
+            thresholds: [],
+          },
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should accept qualityGate with baseline configuration", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            baseline: {
+              referenceBranch: "main",
+              maxBuilds: 20,
+              maxAgeDays: 90,
+              aggregate: "median",
+            },
+            thresholds: [],
+          },
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+    });
+
+    describe("Threshold Configuration Validation", () => {
+      it("should accept no-regression threshold mode", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            thresholds: [{ metric: "coverage", mode: "no-regression", tolerance: 0.5 }],
+          },
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should accept min threshold mode with target", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            thresholds: [{ metric: "coverage", mode: "min", target: 80 }],
+          },
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should accept max threshold mode with target", () => {
+        const config = {
+          metrics: [
+            {
+              name: "bundle-size",
+              type: "numeric",
+              command: "echo 100",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            thresholds: [{ metric: "bundle-size", mode: "max", target: 500 }],
+          },
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should accept delta-max-drop threshold mode with maxDropPercent", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            thresholds: [{ metric: "coverage", mode: "delta-max-drop", maxDropPercent: 5 }],
+          },
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should accept threshold with warning severity", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            thresholds: [{ metric: "coverage", mode: "min", target: 80, severity: "warning" }],
+          },
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should accept threshold with blocker severity", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            thresholds: [{ metric: "coverage", mode: "min", target: 80, severity: "blocker" }],
+          },
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should accept multiple threshold rules for different metrics", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+            {
+              name: "bundle-size",
+              type: "numeric",
+              command: "echo 100",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            thresholds: [
+              { metric: "coverage", mode: "min", target: 80 },
+              { metric: "bundle-size", mode: "max", target: 500 },
+            ],
+          },
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+    });
+
+    describe("Invalid Quality Gate Configurations", () => {
+      it("should reject invalid mode value", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "invalid",
+            thresholds: [],
+          },
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject invalid threshold mode", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            thresholds: [{ metric: "coverage", mode: "invalid-mode" }],
+          },
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject threshold referencing non-existent metric", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            thresholds: [{ metric: "nonexistent", mode: "min", target: 80 }],
+          },
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject min mode without target", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            thresholds: [{ metric: "coverage", mode: "min" }],
+          },
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject max mode without target", () => {
+        const config = {
+          metrics: [
+            {
+              name: "bundle-size",
+              type: "numeric",
+              command: "echo 100",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            thresholds: [{ metric: "bundle-size", mode: "max" }],
+          },
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject delta-max-drop mode without maxDropPercent", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            thresholds: [{ metric: "coverage", mode: "delta-max-drop" }],
+          },
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject negative tolerance", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            thresholds: [{ metric: "coverage", mode: "no-regression", tolerance: -1 }],
+          },
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject negative maxDropPercent", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            thresholds: [{ metric: "coverage", mode: "delta-max-drop", maxDropPercent: -5 }],
+          },
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject maxCommentMetrics less than 1", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            maxCommentMetrics: 0,
+            thresholds: [],
+          },
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject maxCommentMetrics greater than 100", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            maxCommentMetrics: 101,
+            thresholds: [],
+          },
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject maxCommentCharacters less than or equal to 0", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            maxCommentCharacters: 0,
+            thresholds: [],
+          },
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject maxCommentCharacters greater than 20000", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            maxCommentCharacters: 20001,
+            thresholds: [],
+          },
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject baseline maxBuilds less than 5", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            baseline: {
+              maxBuilds: 4,
+            },
+            thresholds: [],
+          },
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject baseline maxBuilds greater than 200", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            baseline: {
+              maxBuilds: 201,
+            },
+            thresholds: [],
+          },
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject baseline maxAgeDays less than or equal to 0", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            baseline: {
+              maxAgeDays: 0,
+            },
+            thresholds: [],
+          },
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject invalid severity value", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            thresholds: [{ metric: "coverage", mode: "min", target: 80, severity: "invalid" }],
+          },
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject threshold missing metric field", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            thresholds: [{ mode: "min", target: 80 }],
+          },
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject threshold missing mode field", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            thresholds: [{ metric: "coverage", target: 80 }],
+          },
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+
+      it("should reject invalid baseline aggregate value", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            baseline: {
+              aggregate: "mean",
+            },
+            thresholds: [],
+          },
+        };
+
+        expect(() => validateConfig(config)).toThrow();
+      });
+    });
+
+    describe("Clear Error Messages for Quality Gate", () => {
+      it("should provide clear error for threshold referencing non-existent metric", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            thresholds: [{ metric: "nonexistent", mode: "min", target: 80 }],
+          },
+        };
+
+        try {
+          validateConfig(config);
+          expect(true).toBe(false);
+        } catch (error) {
+          expect(error).toBeInstanceOf(Error);
+          const message = (error as Error).message;
+          expect(message.toLowerCase()).toContain("metric");
+          expect(message).toContain("nonexistent");
+        }
+      });
+
+      it("should provide clear error for min mode missing target", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            thresholds: [{ metric: "coverage", mode: "min" }],
+          },
+        };
+
+        try {
+          validateConfig(config);
+          expect(true).toBe(false);
+        } catch (error) {
+          expect(error).toBeInstanceOf(Error);
+          const message = (error as Error).message;
+          expect(message.toLowerCase()).toMatch(/target|required/);
+        }
+      });
+
+      it("should provide clear error for delta-max-drop mode missing maxDropPercent", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          qualityGate: {
+            mode: "soft",
+            thresholds: [{ metric: "coverage", mode: "delta-max-drop" }],
+          },
+        };
+
+        try {
+          validateConfig(config);
+          expect(true).toBe(false);
+        } catch (error) {
+          expect(error).toBeInstanceOf(Error);
+          const message = (error as Error).message;
+          expect(message.toLowerCase()).toMatch(/maxdroppercent|required/);
+        }
+      });
+    });
+
+    describe("Backward Compatibility", () => {
+      it("should accept config without qualityGate block", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+
+      it("should accept config with storage and qualityGate", () => {
+        const config = {
+          metrics: [
+            {
+              name: "coverage",
+              type: "numeric",
+              command: "echo 85",
+            },
+          ],
+          storage: {
+            type: "sqlite-local",
+          },
+          qualityGate: {
+            mode: "soft",
+            thresholds: [],
+          },
+        };
+
+        expect(() => validateConfig(config)).not.toThrow();
+      });
+    });
+  });
+
   describe("Built-in Metric References ($ref)", () => {
     describe("Pure $ref Usage", () => {
       it("should reject $ref without command field", () => {

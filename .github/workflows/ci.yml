@@ -41,15 +41,17 @@ jobs:
             -e MINIO_ROOT_PASSWORD=minioadmin \
             minio/minio server /data --console-address ":9001" \
             && while ! docker exec minio mc ready local; do sleep 1; done
-      - name: Wait for Minio and create test bucket
+      - name: Create bucket for tests
         run: docker exec minio mc mb data/unentropy-test
+
       - name: Test
         run: bun test --coverage --coverage-reporter=lcov
-      - name: Test track-metrics action
-        id: track-metrics
-        uses: ./.github/actions/track-metrics
+      - name: Quality Gate
+        id: quality-gate
+        uses: ./.github/actions/quality-gate
         with:
-          verbose: true
+          storage-type: sqlite-s3
+          quality-gate-mode: soft
           enable-pr-comment: true
           s3-endpoint: ${{ secrets.AWS_ENDPOINT_URL }}
           s3-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -57,14 +59,14 @@ jobs:
           s3-bucket: ${{ secrets.AWS_BUCKET_NAME }}
           s3-region: ${{ secrets.AWS_REGION }}
           database-key: "unentropy-metrics.db"
-
-      - name: Report track-metrics summary
+      - name: Report quality-gate summary
         run: |
-          echo "## 📊 Track-Metrics Action Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## 🛡️ Quality Gate Action Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Success**: ${{ steps.track-metrics.outputs.success }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Storage Type**: ${{ steps.track-metrics.outputs.storage-type }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Database Location**: ${{ steps.track-metrics.outputs.database-location }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Metrics Collected**: ${{ steps.track-metrics.outputs.metrics-collected }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Duration**: ${{ steps.track-metrics.outputs.duration }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **PR Comment URL**: ${{ steps.track-metrics.outputs.pr-comment-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ steps.quality-gate.outputs.quality-gate-status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Mode**: ${{ steps.quality-gate.outputs.quality-gate-mode }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Failing Metrics**: ${{ steps.quality-gate.outputs.quality-gate-failing-metrics }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Comment URL**: ${{ steps.quality-gate.outputs.quality-gate-comment-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Metrics Collected**: ${{ steps.quality-gate.outputs.metrics-collected }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Baseline Builds**: ${{ steps.quality-gate.outputs.baseline-builds-considered }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Reference Branch**: ${{ steps.quality-gate.outputs.baseline-reference-branch }}" >> $GITHUB_STEP_SUMMARY

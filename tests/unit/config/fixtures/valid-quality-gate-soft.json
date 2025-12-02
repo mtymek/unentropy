@@ -1,0 +1,42 @@
+{
+  "metrics": [
+    {
+      "name": "coverage",
+      "type": "numeric",
+      "command": "echo 85",
+      "unit": "percent"
+    },
+    {
+      "name": "bundle-size",
+      "type": "numeric",
+      "command": "du -k dist/bundle.js | cut -f1",
+      "unit": "bytes"
+    }
+  ],
+  "qualityGate": {
+    "mode": "soft",
+    "enablePullRequestComment": true,
+    "maxCommentMetrics": 30,
+    "maxCommentCharacters": 8000,
+    "baseline": {
+      "referenceBranch": "main",
+      "maxBuilds": 20,
+      "maxAgeDays": 90,
+      "aggregate": "median"
+    },
+    "thresholds": [
+      {
+        "metric": "coverage",
+        "mode": "no-regression",
+        "tolerance": 0.5,
+        "severity": "blocker"
+      },
+      {
+        "metric": "bundle-size",
+        "mode": "delta-max-drop",
+        "maxDropPercent": 5,
+        "severity": "warning"
+      }
+    ]
+  }
+}

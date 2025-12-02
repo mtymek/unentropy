@@ -45,56 +45,123 @@ Create an `unentropy.json` file to define your metrics:
   ],
   "storage": {
     "type": "sqlite-s3"
+  },
+  "qualityGate": {
+    "mode": "soft",
+    "thresholds": [
+      {
+        "metric": "test-coverage",
+        "mode": "min",
+        "target": 80,
+        "severity": "blocker"
+      }
+    ]
   }
 }
 ```
 
-### Add the Unentropy Action to your GitHub workflow
+### Set up GitHub Workflows
 
-Add the Unentropy action to your existing CI workflow:
+Unentropy uses two separate workflows:
+
+1. **Main branch workflow** - Tracks metrics and builds historical database
+2. **Pull request workflow** - Evaluates PRs against quality gate thresholds
+
+#### Main Branch Workflow
+
+Create `.github/workflows/metrics.yml`:
 
 ```yaml
-- name: Collect code metrics 
-  uses: unentropy/track-metrics-action@v1 
-  with:
-    # Configure the storage backend and credentials
-    s3-endpoint: ${{ secrets.AWS_ENDPOINT_URL }}
-    s3-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    s3-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    s3-bucket: ${{ secrets.AWS_BUCKET_NAME }}
-    s3-region: ${{ secrets.AWS_REGION }}
-    database-key: "unentropy-metrics.db"
+name: Metrics Tracking
+on:
+  push:
+    branches: [main]
+
+jobs:
+  track-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run tests with coverage
+        run: npm test -- --coverage
+
+      - name: Track metrics
+        uses: unentropy/track-metrics-action@v1
+        with:
+          s3-endpoint: ${{ secrets.AWS_ENDPOINT_URL }}
+          s3-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          s3-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          s3-bucket: ${{ secrets.AWS_BUCKET_NAME }}
+          s3-region: ${{ secrets.AWS_REGION }}
+          database-key: "unentropy-metrics.db"
+```
+
+#### Pull Request Workflow with Quality Gate
+
+Create `.github/workflows/quality-gate.yml`:
+
+```yaml
+name: Quality Gate
+on:
+  pull_request:
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run tests with coverage
+        run: bun test --coverage --coverage-report=lcov
+
+      - name: Quality Gate Check
+        uses: unentropy/quality-gate-action@v1
+        with:
+          storage-type: sqlite-s3
+          quality-gate-mode: soft # Use 'hard' to block PRs that fail thresholds
+          s3-endpoint: ${{ secrets.AWS_ENDPOINT_URL }}
+          s3-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          s3-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          s3-bucket: ${{ secrets.AWS_BUCKET_NAME }}
+          s3-region: ${{ secrets.AWS_REGION }}
+          database-key: "unentropy-metrics.db"
 ```
 
 ### Publish the report to GitHub Pages
 
 ```yaml
 deploy:
-    name: Deploy to GitHub Pages
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: metrics
-    if: github.ref == 'refs/heads/main' && needs.metrics.result == 'success'
+  name: Deploy to GitHub Pages
+  environment:
+    name: github-pages
+    url: ${{ steps.deployment.outputs.page_url }}
+  runs-on: ubuntu-latest
+  needs: metrics
+  if: github.ref == 'refs/heads/main' && needs.metrics.result == 'success'
 ```
+
+### Quality Gate Modes
+
+The quality gate can operate in three modes:
+
+- **`off`** - Disabled, no threshold evaluation
+- **`soft`** (recommended for new setups) - Evaluates thresholds and posts PR comments, but never fails the build
+- **`hard`** - Fails the build when blocking thresholds are violated
+
+Start with `soft` mode to observe behavior, then switch to `hard` mode once your thresholds are stable.
 
 ### Review Reports
 
 After the CI run, download the `unentropy-report.html` artifact to see the latest trends and track your progress against codebase entropy!
 
-### Benefits for This Project
-
-- **Track test coverage trends** - Ensure we maintain or improve code quality
-- **Monitor code growth** - Keep an eye on project scope and complexity
-- **Demonstrate capabilities** - Show real-world usage of Unentropy
-- **Validate the tool** - Dogfooding helps us identify and fix issues quickly
+On pull requests, the quality gate will automatically post a comment showing how metrics compare to your baseline and whether any thresholds are violated.
 
 ## **Development Setup**
 
 ### Prerequisites
 
-- [Bun](https://bun.sh/) v1.2 or later
+- [Bun](https://bun.sh/) v1.3 or later
 
 ### Setup
 
@@ -105,23 +172,14 @@ cd unentropy
 
 # Install dependencies
 bun install
-
-# Verify setup
-bun run typecheck
-bun test
-bun run build
 ```
 
 ### Available Commands
 
-- `bun run build` - Compile TypeScript to JavaScript
 - `bun test` - Run test suite
-- `bun test --watch` - Run tests in watch mode
-- `bun run typecheck` - Type check without emitting files
-- `bun run lint` - Check code quality with ESLint
+- `bun run check` - Run linting type and formatting checks
 - `bun run lint:fix` - Auto-fix linting issues
 - `bun run format` - Format code with Prettier
-- `bun run format:check` - Check code formatting
 
 ## **Contribution**
 

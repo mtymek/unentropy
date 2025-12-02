@@ -48,6 +48,12 @@ const main = async () => {
       "track-metrics.js"
     );
 
+    await buildAction(
+      "./src/actions/quality-gate.ts",
+      "./.github/actions/quality-gate/dist",
+      "quality-gate.js"
+    );
+
     console.log("\n✓ All actions built successfully");
   } catch (error) {
     console.error("Build failed:", error);

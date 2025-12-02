@@ -33,5 +33,16 @@
   ],
   "storage": {
     "type": "sqlite-s3"
+  },
+  "qualityGate": {
+    "mode": "soft",
+    "thresholds": [
+      {
+        "metric": "test-coverage",
+        "mode": "min",
+        "target": 80,
+        "severity": "blocker"
+      }
+    ]
   }
 }

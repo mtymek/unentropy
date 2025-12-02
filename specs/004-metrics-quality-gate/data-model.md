@@ -122,11 +122,14 @@ interface UnentropyConfigWithQualityGate {
 
 ## Evaluation Entities (in-memory)
 
+**Location**: These types are defined in `src/quality-gate/types.ts` and re-exported from `src/quality-gate/index.ts`.
+
 ### 4. MetricSample
 
-Logical view of a metric’s values used for quality gate evaluation.
+Logical view of a metric's values used for quality gate evaluation.
 
 ```typescript
+// src/quality-gate/types.ts
 interface MetricSample {
   name: string;          // MetricDefinition.name
   unit?: string;         // MetricDefinition.unit
@@ -143,6 +146,7 @@ interface MetricSample {
 **Notes**:
 - Quality gate evaluation applies only to numeric metrics; label metrics are ignored for thresholds but may still be displayed.
 - The `baselineValues` array is populated from the last N successful reference-branch builds that satisfy the BaselineConfig window.
+- Sample building logic is in `src/quality-gate/samples.ts`.
 
 ---
 
@@ -151,6 +155,7 @@ interface MetricSample {
 Represents the outcome of evaluating a single metric against its threshold rule.
 
 ```typescript
+// src/quality-gate/types.ts
 type MetricGateStatus = 'pass' | 'fail' | 'unknown';
 
 interface MetricEvaluationResult {
@@ -185,6 +190,8 @@ interface MetricEvaluationResult {
 - For `min` or `max` modes, `fail` when the PR value is outside the allowed range.
 - For `delta-max-drop` mode, `fail` when the relative drop exceeds `maxDropPercent`.
 
+**Implementation**: Evaluation logic is in `src/quality-gate/evaluator.ts` (`evaluateThreshold` function).
+
 ---
 
 ### 6. QualityGateResult
@@ -192,6 +199,7 @@ interface MetricEvaluationResult {
 Represents the aggregated outcome of the quality gate for a single evaluation run (typically a pull request build).
 
 ```typescript
+// src/quality-gate/types.ts
 type QualityGateOverallStatus = 'pass' | 'fail' | 'unknown';
 
 interface QualityGateResult {
@@ -230,6 +238,8 @@ interface QualityGateResult {
 - When `mode` is `off`, `status` is always `unknown` and no failures should affect the CI result.
 - When `mode` is `soft`, `status` can be `pass` or `fail`, but failures are informational only; the CI job should not be failed solely because of the gate.
 - When `mode` is `hard`, `status` is `fail` if any `MetricEvaluationResult` with `isBlocking=true` has `status='fail'`; otherwise `pass` (or `unknown` if all metrics are `unknown`).
+
+**Implementation**: Aggregation logic is in `src/quality-gate/evaluator.ts` (`evaluateQualityGate` function).
 
 ## Pull Request Feedback Entity
 
