@@ -408,7 +408,6 @@ function buildMetricSamples(
 }
 
 function determineReferenceBranch(
-  inputs: QualityGateInputs,
   config: { qualityGate?: QualityGateConfig }
 ): string {
   const contextBase = process.env.GITHUB_BASE_REF;
@@ -483,7 +482,7 @@ async function createQualityGateComment(
 
     commentBody += `### Threshold Evaluation\n\n`;
     commentBody += `| Metric | Baseline | PR Value | Δ | Status | Threshold |\n`;
-    commentBody += `|--------|----------|----------|---|--------|-----------|\\n`;
+    commentBody += `|--------|----------|----------|---|--------|-----------|\n`;
 
     const metricsToShow = gateResult.metrics.slice(0, maxMetrics);
     for (const metric of metricsToShow) {
@@ -608,7 +607,7 @@ export async function runQualityGateAction(): Promise<void> {
       `Metrics collection completed: ${collectionResult.successful}/${collectionResult.total} successful`
     );
 
-    const referenceBranch = determineReferenceBranch(inputs, config);
+    const referenceBranch = determineReferenceBranch(config);
     const maxBuilds = config.qualityGate?.baseline?.maxBuilds ?? 20;
     const maxAgeDays = config.qualityGate?.baseline?.maxAgeDays ?? 90;
 
