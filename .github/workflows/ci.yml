@@ -57,7 +57,7 @@ jobs:
           s3-region: ${{ secrets.AWS_REGION }}
           database-key: "unentropy-metrics.db"
 
-      - name: Test quality-gate action
+      - name: Quality Gate
         id: quality-gate
         uses: ./.github/actions/quality-gate
         with:
