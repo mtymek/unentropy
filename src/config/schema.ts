@@ -68,6 +68,73 @@ export const StorageConfigSchema = z
   })
   .strict();
 
+export const MetricThresholdConfigSchema = z
+  .object({
+    metric: z.string().min(1, { message: "metric field is required" }),
+    mode: z.enum(["no-regression", "min", "max", "delta-max-drop"], {
+      message: "mode must be one of: no-regression, min, max, delta-max-drop",
+    }),
+    target: z.number().optional(),
+    tolerance: z.number().min(0, { message: "tolerance must be non-negative" }).optional(),
+    maxDropPercent: z.number().positive({ message: "maxDropPercent must be positive" }).optional(),
+    severity: z
+      .enum(["warning", "blocker"], {
+        message: "severity must be either 'warning' or 'blocker'",
+      })
+      .optional(),
+  })
+  .strict()
+  .refine(
+    (data) => {
+      if (data.mode === "min" || data.mode === "max") {
+        return data.target !== undefined;
+      }
+      return true;
+    },
+    {
+      message: "target is required when mode is 'min' or 'max'",
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.mode === "delta-max-drop") {
+        return data.maxDropPercent !== undefined;
+      }
+      return true;
+    },
+    {
+      message: "maxDropPercent is required when mode is 'delta-max-drop'",
+    }
+  );
+
+export const BaselineConfigSchema = z
+  .object({
+    referenceBranch: z.string().optional(),
+    maxBuilds: z.number().int().min(5).max(200).optional(),
+    maxAgeDays: z.number().int().positive().optional(),
+    aggregate: z
+      .enum(["median"], {
+        message: "aggregate must be 'median'",
+      })
+      .optional(),
+  })
+  .strict();
+
+export const QualityGateConfigSchema = z
+  .object({
+    mode: z
+      .enum(["off", "soft", "hard"], {
+        message: "mode must be one of: off, soft, hard",
+      })
+      .optional(),
+    enablePullRequestComment: z.boolean().optional(),
+    maxCommentMetrics: z.number().int().min(1).max(100).optional(),
+    maxCommentCharacters: z.number().int().positive().max(20000).optional(),
+    baseline: BaselineConfigSchema.optional(),
+    thresholds: z.array(MetricThresholdConfigSchema).optional(),
+  })
+  .strict();
+
 export const UnentropyConfigSchema = z
   .object({
     storage: StorageConfigSchema.optional(),
@@ -75,6 +142,7 @@ export const UnentropyConfigSchema = z
       .array(MetricConfigSchema)
       .min(1, { message: "metrics array must contain at least one metric" })
       .max(50),
+    qualityGate: QualityGateConfigSchema.optional(),
   })
   .strict()
   .transform((data) => ({
@@ -85,6 +153,9 @@ export const UnentropyConfigSchema = z
 export type MetricConfig = z.infer<typeof MetricConfigSchema>;
 export type ResolvedMetricConfig = z.infer<typeof ResolvedMetricConfigSchema>;
 export type StorageConfig = z.infer<typeof StorageConfigSchema>;
+export type MetricThresholdConfig = z.infer<typeof MetricThresholdConfigSchema>;
+export type BaselineConfig = z.infer<typeof BaselineConfigSchema>;
+export type QualityGateConfig = z.infer<typeof QualityGateConfigSchema>;
 export type UnentropyConfig = z.infer<typeof UnentropyConfigSchema>;
 
 export function validateConfig(config: unknown): UnentropyConfig {
@@ -112,6 +183,16 @@ export function validateConfig(config: unknown): UnentropyConfig {
         );
       }
       metricNames.add(metric.name);
+    }
+  }
+
+  if (result.data.qualityGate?.thresholds) {
+    for (const threshold of result.data.qualityGate.thresholds) {
+      if (!metricNames.has(threshold.metric)) {
+        throw new Error(
+          `Threshold references non-existent metric "${threshold.metric}". Metric must be defined in the metrics array.`
+        );
+      }
     }
   }
 

@@ -1,0 +1,21 @@
+{
+  "metrics": [
+    {
+      "name": "coverage",
+      "type": "numeric",
+      "command": "echo 85",
+      "unit": "percent"
+    }
+  ],
+  "qualityGate": {
+    "mode": "hard",
+    "thresholds": [
+      {
+        "metric": "coverage",
+        "mode": "min",
+        "target": 80,
+        "severity": "blocker"
+      }
+    ]
+  }
+}

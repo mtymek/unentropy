@@ -67,16 +67,16 @@ description: "Task list for Metrics Quality Gate feature"
 
 ### Tests for User Story 1
 
-- [ ] T014 [P] [US1] Add qualityGate schema validation tests for thresholds and baseline in tests/unit/config/schema.test.ts
-- [ ] T015 [P] [US1] Add loader tests ensuring UnentropyConfigWithQualityGate is returned in tests/unit/config/loader.test.ts
-- [ ] T016 [P] [US1] Add unit tests for MetricEvaluationResult and QualityGateResult behaviour in tests/unit/collector/quality-gate.test.ts
+- [x] T014 [P] [US1] Add qualityGate schema validation tests for thresholds and baseline in tests/unit/config/schema.test.ts
+- [x] T015 [P] [US1] Add loader tests ensuring UnentropyConfigWithQualityGate is returned in tests/unit/config/loader.test.ts
+- [x] T016 [P] [US1] Add unit tests for MetricEvaluationResult and QualityGateResult behaviour in tests/unit/collector/quality-gate.test.ts
 
 ### Implementation for User Story 1
 
-- [ ] T017 [P] [US1] Extend configuration schema with QualityGateConfig BaselineConfig and MetricThresholdConfig in src/config/schema.ts
-- [ ] T018 [P] [US1] Extend configuration loader to parse and default the qualityGate block in src/config/loader.ts
-- [ ] T019 [P] [US1] Implement MetricSample MetricEvaluationResult and QualityGateResult types from data-model in src/actions/quality-gate.ts
-- [ ] T020 [US1] Implement quality gate evaluation function using baseline and pull request MetricSample data in src/actions/quality-gate.ts
+- [x] T017 [P] [US1] Extend configuration schema with QualityGateConfig BaselineConfig and MetricThresholdConfig in src/config/schema.ts
+- [x] T018 [P] [US1] Extend configuration loader to parse and default the qualityGate block in src/config/loader.ts
+- [x] T019 [P] [US1] Implement MetricSample MetricEvaluationResult and QualityGateResult types from data-model in src/actions/quality-gate.ts
+- [x] T020 [US1] Implement quality gate evaluation function using baseline and pull request MetricSample data in src/actions/quality-gate.ts
 - [ ] T021 [US1] Integrate quality gate evaluation into track-metrics workflow after metrics collection in src/actions/track-metrics.ts
 - [ ] T022 [P] [US1] Extend action interface with quality-gate-mode input and gate status outputs in .github/actions/track-metrics/action.yml
 - [ ] T023 [US1] Map quality-gate-mode and configuration into evaluation mode selection in src/actions/track-metrics.ts

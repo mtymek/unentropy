@@ -1,11 +1,17 @@
 import { readFile } from "fs/promises";
 import { validateConfig } from "./schema";
 import { resolveMetricReference } from "../metrics/resolver.js";
-import type { ResolvedMetricConfig, StorageConfig, MetricConfig } from "./schema";
+import type {
+  ResolvedMetricConfig,
+  StorageConfig,
+  MetricConfig,
+  QualityGateConfig,
+} from "./schema";
 
 export interface ResolvedUnentropyConfig {
   metrics: ResolvedMetricConfig[];
   storage: StorageConfig;
+  qualityGate?: QualityGateConfig;
 }
 
 export async function loadConfig(configPath = "unentropy.json"): Promise<ResolvedUnentropyConfig> {
