@@ -12,11 +12,9 @@
  [x] Support the notion of "collectors" - plugins/scripts that can parse the output of common tools (e.g. clover coverage report)
 * [x] Initial metrics gallery - built-in metrics like LOC, coverage, etc.
 * [x] First-class support for standard metrics (e.g. "size in bytes", "coverage in %"). 
-  * [ ] Each metric may have a default chart type.
-  * [ ] MetricCard may look differently based on the metric type.
 * [x] Quality gates
 * [x] Thresholds
-* [ ] Separate GH action for quality gate
+* [x] Separate GH action for quality gate
 
 ## 0.2
 * [ ] Move to a dedicated organization
